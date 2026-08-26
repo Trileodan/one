@@ -148,7 +148,37 @@ h2.sec{font-family:var(--display);font-variation-settings:'wdth' 88,'wght' 700;f
   box-shadow:0 34px 74px -26px rgba(78,91,209,.5), 0 0 0 1px rgba(30,34,90,.3),
              0 3px 1px rgba(255,255,255,.3) inset, 0 -30px 52px -24px rgba(20,24,70,.9) inset;
 }
-.orb.quiet{filter:saturate(.3) brightness(.82)}
+/* a clear location is a win, not a corpse — the sphere goes calm and green */
+.orb.clear{
+  background:radial-gradient(circle at 34% 24%, #EBFFF6 0%, #ABF2D3 15%, #63DCB0 36%, #22B686 60%, #0C7B57 86%, #07523A 100%);
+  box-shadow:0 34px 74px -26px rgba(34,182,134,.45), 0 0 0 1px rgba(8,70,50,.3),
+             0 3px 1px rgba(255,255,255,.32) inset, 0 -30px 52px -24px rgba(4,52,36,.9) inset;
+}
+.orb.clear .orb-face,.orb.clear .loc,.orb.clear .pick-item{color:#062E20}
+.orb.clear .dial-mark{background:#062E20}
+.orb.clear .orb-skin{
+  background-image:
+    radial-gradient(closest-side circle at 25% 42%, rgba(226,255,242,.9), rgba(226,255,242,0) 100%),
+    radial-gradient(closest-side circle at 72% 66%, rgba(4,86,60,.8), rgba(4,86,60,0) 100%);
+}
+
+/* the press-and-hold task picker, spun through inside the sphere */
+.orb-pick{position:absolute;left:11%;right:11%;top:50%;height:0;z-index:6}
+.pick-item{
+  position:absolute;left:50%;top:0;width:100%;
+  appearance:none;border:0;background:transparent;color:#2B0C00;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:3px;padding:2px;
+  transform-origin:50% 50%;will-change:transform,opacity;
+}
+.orb.cool .pick-item{color:#111436}
+.pick-item b{
+  font-family:var(--display);font-variation-settings:'wdth' 76,'wght' 900;
+  font-size:clamp(.98rem,4.4vw,1.25rem);line-height:1;text-transform:uppercase;text-align:center;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+.pick-item small{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;opacity:.72}
+.pick-item.on b{filter:url(#inkwarp)}
+.orb.picking{cursor:ns-resize}
 /* the living mass: two blurred bodies drifting on different cycles, shifted
    horizontally by the spin so the sphere reads as actually turning */
 .orb-turn{position:absolute;inset:0;border-radius:50%;pointer-events:none;will-change:transform}
@@ -238,6 +268,14 @@ h2.sec{font-family:var(--display);font-variation-settings:'wdth' 88,'wght' 700;f
 }
 .orb.cool .dial-mark{background:#111436}
 
+.committed-note{
+  margin:14px auto 0;max-width:34ch;text-align:center;
+  display:flex;flex-direction:column;gap:4px;
+  padding:12px 14px;border-radius:var(--r);
+  border:1px solid color-mix(in srgb,var(--hi) 40%,transparent);background:var(--hi-soft);
+}
+.committed-note b{font-family:var(--display);font-variation-settings:'wdth' 90,'wght' 800;font-size:14px;letter-spacing:.02em;color:var(--hi)}
+.committed-note span{font-size:13.5px;color:var(--ink-2);line-height:1.35}
 .runway{text-align:center;font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);margin:2px 0 0}
 .dayline{text-align:center;font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:8px 0 0}
 
@@ -457,7 +495,7 @@ var DEFAULTS = {
     date:null, started:false, motivation:"meh", location:"work", lastPlace:"work", segIndex:-1,
     lunchState:"pending", lunchEndsAt:null, workFinished:false, dayClosed:false, briefed:false, spun:false
   },
-  tasks:[], focus:null,
+  tasks:[], focus:null, history:[],
   ui:{ tab:"now", arrival:null, pinnedId:null },
   log:[]
 };
@@ -501,6 +539,11 @@ var S = load() || JSON.parse(JSON.stringify(DEFAULTS));
     if(!("repeatEvery" in t)) t.repeatEvery = 0;
     if(!("nextDueAt" in t)) t.nextDueAt = null;
     if(!("checkCount" in t)) t.checkCount = 0;
+    if(!("originalEstimate" in t)) t.originalEstimate = null;
+    if(!("extensions" in t)) t.extensions = 0;
+    if(!("commit" in t)) t.commit = null;
+    if(!("safeStopped" in t)) t.safeStopped = false;
+    if(!("unblocks" in t)) t.unblocks = null;
   });
   S.version = 3;
 })();
@@ -518,6 +561,7 @@ var S = load() || JSON.parse(JSON.stringify(DEFAULTS));
       if(x.status === "done") x.archived = true;
       x.postponedToday = 0; x.lastPostponedAt = null; x.warned = false;
       x.nextDueAt = null; x.checkCount = 0;
+      x.commit = null; x.safeStopped = false;
     });
     save();
   }
@@ -605,37 +649,79 @@ function tone(){ return S.profile.tone || "normal"; }
 function pickOne(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 var VOICE = {
   gentle:{
-    done:[["Nice one."],["Done. You're doing fine."]],
-    start:[["Just this one for now."]],
-    dodge1:[["No problem — I'll find you something else."]],
-    dodge2:[["That's twice now. No judgement, but I've noticed."]],
-    dodge3:[["I think it's time. Let's do this one."]],
-    rabbit:[["Let's leave it there for now."]],
-    ext1:[["Sure. +{add} minutes."]],
-    extN:[["This has grown a bit. Still on track?"]],
-    out:[["Grab these while you're out."]]
+    done:[["Lovely. That's one less."],["Done — nice work."],["That's gone. Well done you."]],
+    start:[["Just this for the next {mins} minutes."],["Nothing else matters for {mins} minutes."]],
+    picked:[["Fair enough — your call."],["Righto, that one it is."]],
+    dodge1:[["No bother, I'll find you something else."]],
+    dodge2:[["That's twice. No judgement."]],
+    dodge3:[["Fine. It'll be first up after your next one, mind."]],
+    rabbit:[["Let's leave that one there for now."]],
+    ext1:[["Of course. +{add} minutes."]],
+    extN:[["That's grown a bit. Still worth it?"]],
+    out:[["Grab these while you're out."]],
+    commitOn:[["Understood. {mins} minutes to see it through."]],
+    commitAgain:[["Another {mins}. Take your time."]],
+    safestop:[["Left somewhere sensible. That's the right call."]],
+    clear:[["Nothing waiting at {where}. Enjoy it."]],
+    clearOut:[["Nothing to collect. Straight home."]],
+    empty:[["Give me something to work with."]],
+    nofit:[["Not enough runway. Have a breather."]],
+    endday:[["That's a good day's work."]]
   },
   normal:{
-    done:[["YES. That's another one gone."],["Done. Next."],["Good. One less thing in the world."]],
-    start:[["Your entire world for the next {mins} minutes is this."]],
-    dodge1:[["Fine. I'll find you something else."]],
-    dodge2:[["That's twice you've dodged this now. Just saying."]],
-    dodge3:[["Absolutely not. We're doing it."]],
-    rabbit:[["PUT. IT. DOWN. This was a task, not an archaeological excavation."]],
-    ext1:[["Fair enough. +{add} minutes. Make it count."]],
-    extN:[["Started at {plan} minutes, we're at {total}. Still important, or lost the plot?"]],
-    out:[["Do the lot while you're moving — don't make a second trip."]]
+    done:[["Get in. That's another one gone."],["Done. Don't stop now."],["Gone. Next."],
+          ["Well look at that — an actual finished thing."],["One down. The pile notices."]],
+    start:[["Right. {mins} minutes. Phone down."],["That's your whole world for {mins} minutes."],
+           ["{mins} minutes. Off you go."],["Nothing else exists for {mins} minutes."]],
+    picked:[["Your call. Don't make me regret it."],["Fine, we'll do it your way."],
+            ["Alright, boss. That one."],["Noted. Hope that was a decision and not a dodge."]],
+    dodge1:[["Fine. Something else then."],["Sure. Filed under 'later'."],["Alright. Not that one."]],
+    dodge2:[["That's twice. I'm noticing."],["Twice now. Just putting that out there."]],
+    dodge3:[["Third time. Fine — but it's first up the second you finish something."],
+            ["Dodged three times. I'll just keep putting it back at the front."],
+            ["Away it goes. Straight back to the top of the queue, though."]],
+    rabbit:[["PUT. IT. DOWN. That was a task, not an archaeological dig."],
+            ["Right, out. You've been in there far too long."]],
+    ext1:[["Fair enough. +{add} minutes. Make them count."],["Go on then. +{add}."]],
+    extN:[["Started at {plan} minutes. We're at {total}. Still important, or have we lost the plot?"],
+          ["{plan} became {total}. I'm not angry, I'm just keeping score."]],
+    out:[["You're out. Do the lot — I'm not doing this dance twice."],["All of it, one trip. Go on."]],
+    commitOn:[["Right — that's a proper job, not a wander. {mins} minutes. Finish it."],
+              ["Fair enough, you're in it now. {mins} minutes to a finish or a safe stop."],
+              ["Understood. No nagging from me. {mins} minutes."]],
+    commitAgain:[["Another {mins}. Deliberate, not drifting — I'll take it."],
+                 ["{mins} more then. Same deal: finish or find a safe place to stop."]],
+    safestop:[["Left somewhere sensible. That's a proper decision, that."],
+              ["Parked safe. It'll keep till you can do it properly."],
+              ["Good call. Half a job done well beats a mess."]],
+    clear:[["{where}'s clear. Genuinely nothing. Go and enjoy that."],
+           ["Nothing waiting at {where}. Feels weird, doesn't it."],
+           ["All done at {where}. Have a cup of tea about it."]],
+    clearOut:[["Nothing to pick up. Drive home smug."],["Nothing on the list. Just go home."]],
+    empty:[["Completely empty. Suspiciously empty."],["Nothing in here. Either you're on top of it or you're in denial."]],
+    nofit:[["Not enough time for anything useful. Have five minutes."],["Too tight. Don't start something you can't finish."]],
+    endday:[["You started today not knowing where to begin."],["Not bad at all, that."]]
   },
   ruthless:{
-    done:[["YES. Gone. Next."],["Finally. Keep going."]],
-    start:[["This is what you're doing now. Nothing else."]],
-    dodge1:[["Noted. Coward. Here's another one."]],
+    done:[["Finally. Next."],["Done. Keep going."],["About time. Move."]],
+    start:[["{mins} minutes. No tabs, no phone, no excuses."],["This. Only this. {mins} minutes."]],
+    picked:[["Your choice. Own it."],["Fine. But that's on you now."],["Chosen, not dodged. Prove it."]],
+    dodge1:[["Noted. Coward."],["Running away. Fine."]],
     dodge2:[["Twice. I'm keeping score and so are you."]],
-    dodge3:[["No. We're doing it now."]],
-    rabbit:[["PUT. IT. DOWN. You've been excavating, not working."]],
-    ext1:[["+{add} minutes. That's it."]],
+    dodge3:[["Three times. It's front of the queue now until you deal with it."],
+            ["Third dodge. Do it or delete it — it's back the moment you finish anything."]],
+    rabbit:[["PUT IT DOWN. You've been excavating, not working."]],
+    ext1:[["+{add}. That's your lot."]],
     extN:[["{plan} minutes became {total}. Explain yourself."]],
-    out:[["All of it, one trip. I'm not doing this again tomorrow."]]
+    out:[["All of it. One trip. I won't ask again."]],
+    commitOn:[["{mins} minutes. You said it, now do it."]],
+    commitAgain:[["{mins} more. That estimate had better be honest."]],
+    safestop:[["Safe and stopped. Fine."]],
+    clear:[["{where} is clear. Don't get comfortable."],["Nothing left here. Find something or finish."]],
+    clearOut:[["Nothing to collect. Go home."]],
+    empty:[["An empty list isn't an achievement. Fill it."]],
+    nofit:[["Nothing fits. Sit still for once."]],
+    endday:[["That'll do. Barely."]]
   }
 };
 function voice(key, vars){
@@ -658,6 +744,7 @@ function makeTask(o){
     locations:(o.locations && o.locations.length) ? o.locations.slice() : ["anywhere"],
     type:o.type||"Admin",
     fixedStart:o.fixedStart||null, fixedEnd:o.fixedEnd||null, warned:false,
+    unblocks:o.unblocks||null,
     repeatEvery:o.repeatEvery||0, nextDueAt:null, checkCount:0,
     status:"open", blockedReason:null, postponedToday:0, lastPostponedAt:null,
     actualMinutes:0, createdAt:Date.now(), completedAt:null, archived:false
@@ -673,6 +760,47 @@ function doneToday(){
 function transitTasks(){
   var ids = transitLocs().map(function(l){ return l.id; });
   return openTasks().filter(function(t){ return !t.fixedStart && !isCooling(t) && t.locations.some(function(l){ return ids.indexOf(l) > -1; }); });
+}
+/* ============================================================
+   COMMITTED TASKS
+   The ordinary timer exists to stop you drifting. This is the
+   opposite case: the timer ran out but stopping now would cost
+   more than carrying on. It is a conscious re-commitment, not a
+   licence to ignore the clock — every extension is re-estimated.
+   ============================================================ */
+var COMMIT_REASONS = [
+  "Work would be unsafe or incomplete",
+  "Equipment or work area is dismantled",
+  "I've reached a point of no return",
+  "Stopping now would create more work",
+  "Unexpected problems made it much bigger",
+  "Other"
+];
+var COMMIT_MINUTES = [15, 30, 45, 60, 90];
+function isCommitted(t){ return !!(t && t.commit && t.commit.on); }
+function committedTask(){
+  var f = S.focus; if(!f) return null;
+  var t = byId(f.taskId);
+  return isCommitted(t) ? t : null;
+}
+function spentOn(t){ return Math.round(t.actualMinutes || 0); }
+/* everything worth learning from a run, kept beyond the task's own life */
+function recordRun(t, outcome, extraMins){
+  if(!t) return;
+  var rec = {
+    at: Date.now(), date: todayKey(), name: t.name, type: t.type,
+    est: t.originalEstimate || t.duration,
+    actual: (t.actualMinutes || 0) + (extraMins || 0),
+    extensions: t.extensions || 0,
+    committed: isCommitted(t),
+    reasons: isCommitted(t) ? t.commit.reasons.slice() : [],
+    added: isCommitted(t) ? t.commit.added.slice() : [],
+    outcome: outcome
+  };
+  if(!Array.isArray(S.history)) S.history = [];
+  S.history.push(rec);
+  if(S.history.length > 400) S.history = S.history.slice(-400);
+  return rec;
 }
 function isRecurring(t){ return !!(t.repeatEvery && t.repeatEvery > 0); }
 /* how long a dodged task stays out of the way */
@@ -694,6 +822,7 @@ function overdueMins(t){
 /* a check-in doesn't finish the task — it restarts its clock */
 function checkTask(t, mins){
   unpin();
+  releaseNags();
   t.checkCount = (t.checkCount||0) + 1;
   t.nextDueAt = Date.now() + t.repeatEvery*60000;
   t.actualMinutes = (t.actualMinutes||0) + (mins || 0);
@@ -828,7 +957,11 @@ function scoreTask(t, ctx){
   if(rec.length && t.type === rec[0].type && t.effort === rec[0].effort) s -= 12;
 
   if(t.postponedToday > 0){
-    if(t.priority === "must" || t.priority === "important"){
+    if(t.postponedToday >= 3){
+      /* three dodges and it goes to the front of the queue, whatever it is */
+      s += 110 + (t.postponedToday - 3) * 12;
+      why.push("Dodged "+t.postponedToday+" times. It's not going anywhere.");
+    } else if(t.priority === "must" || t.priority === "important"){
       s += t.postponedToday * 26;
       why.push("That's "+(t.postponedToday===2?"twice":t.postponedToday+" times")+" you've dodged this now.");
     } else if(t.priority === "optional"){ s -= t.postponedToday * 30; }
@@ -867,6 +1000,7 @@ function chooseTask(){
      of the queue for a while — briefly if it matters, ages if it doesn't — and
      comes back near the top rather than at the bottom. It only reappears
      immediately if it's genuinely the last thing standing. */
+  var eligible = pool.slice();
   var awake = pool.filter(function(t){ return !isDodged(t); });
   if(awake.length) pool = awake;
 
@@ -886,11 +1020,11 @@ function chooseTask(){
   /* Once a task is on the orb it stays there until something actually changes.
      Without this the random tie-breaker could swap it out mid-glance. */
   if(S.ui.pinnedId){
-    for(var pi=0; pi<pool.length; pi++){
-      if(pool[pi].id === S.ui.pinnedId){
-        if(!transit && pool[pi].duration > ctx.runway.mins + 5) break;   /* wall moved — pick again */
-        var kept = scoreTask(pool[pi], ctx);
-        return { task:pool[pi], why:kept.why, pinned:true,
+    for(var pi=0; pi<eligible.length; pi++){
+      if(eligible[pi].id === S.ui.pinnedId){
+        if(!transit && eligible[pi].duration > ctx.runway.mins + 5) break;   /* wall moved — pick again */
+        var kept = scoreTask(eligible[pi], ctx);
+        return { task:eligible[pi], why:kept.why, pinned:true,
                  rest: pool.filter(function(x){ return x.id !== S.ui.pinnedId; }) };
       }
     }
@@ -970,7 +1104,7 @@ function orbHTML(inner, opts){
           '<circle class="t-track" cx="60" cy="60" r="56"></circle>'+
           '<circle class="t-prog" id="tprog" cx="60" cy="60" r="56" stroke-dasharray="351.9" stroke-dashoffset="351.9"></circle>'+
         '</svg>'+
-        '<div class="orb'+(opts.cool?" cool":"")+(opts.quiet?" quiet":"")+'" id="orb">'+
+        '<div class="orb'+(opts.cool?" cool":"")+(opts.clear?" clear":"")+'" id="orb">'+
           '<div class="orb-turn" id="orbTurn"><div class="orb-skin" id="orbSkin"></div></div>'+
           '<div class="orb-face" id="orbFace">'+inner+'</div>'+
           '<div class="orb-dial" id="orbDial">'+labels+'</div>'+
@@ -1097,6 +1231,7 @@ function orbCentre(){
 function bezelAngle(x, y, c){ return Math.atan2(x - c.x, -(y - c.y)); }
 function orbDown(e){
   if(Orb.twoFinger) return;
+  if(Pick.on) return;
   var c = orbCentre();
   var dist = Math.sqrt(Math.pow(e.clientX-c.x,2) + Math.pow(e.clientY-c.y,2)) / c.r;
   if(dist > 0.58) startBezel(e, c);
@@ -1190,10 +1325,166 @@ function changeLocation(id){
   save(); applyHue(); renderNow(true); renderChips();
 }
 
+/* ============================================================
+   THE PICKER — press and hold to flick through what's here
+   ============================================================ */
+var Pick = { on:false, list:[], els:[], pos:0, vel:0, raf:null, drag:null, step:54 };
+
+function pickerList(){
+  var pool = openTasks().filter(function(t){ return !t.fixedStart && !isCooling(t); }).filter(locationOK);
+  if(!isTransit(S.session.location) && S.session.workFinished) pool = pool.filter(function(t){ return t.category !== "Work"; });
+  var recent = recentDone(3);
+  var ctx = {
+    recent:recent, lunch:lunchInfo(), transit:isTransit(S.session.location),
+    heavy: recent.filter(function(r){ return r.effort==="deep" || r.duration>=45; }).length,
+    workingHours: workingHours(),
+    workEasyWin: pool.some(function(t){ return t.category === "Work" && (t.effort === "easy" || t.duration <= 15); }),
+    runway: isTransit(S.session.location) ? { mins:600, what:"", kind:"none" } : runway(),
+    minsLeftOfDay: Math.max(0, hhmmToMins(S.settings.workUntil) - minsOfDay())
+  };
+  return pool.map(function(t){ return { t:t, s:scoreTask(t, ctx).score }; })
+             .sort(function(a,b){ return b.s - a.s; })
+             .map(function(r){ return r.t; });
+}
+function canPick(){
+  if(S.session.dayClosed || !S.session.started) return false;
+  if(committedTask()) return false;      /* you committed — no browsing for something nicer */
+  if(currentFixed()) return false;
+  if(S.focus && !S.focus.paused) return false;      /* not while the clock is running */
+  if(!isTransit(S.session.location) && S.session.lunchState === "active") return false;
+  return true;
+}
+function openPicker(){
+  if(!canPick()) return;
+  var list = pickerList();
+  if(list.length < 2){ toast(list.length ? "That's the only thing here." : "Nothing here to choose from."); return; }
+  Pick.on = true; Pick.list = list; Pick.vel = 0;
+  Pick.armed = false;      /* the release that opened this must not also choose */
+  var cur = S.ui.pinnedId, idx = 0;
+  for(var i=0;i<list.length;i++) if(list[i].id === cur) idx = i;
+  Pick.pos = idx;
+  var orb = document.getElementById("orb");
+  var face = document.getElementById("orbFace"), dial = document.getElementById("orbDial");
+  if(face) face.style.display = "none";
+  if(dial) dial.style.display = "none";
+  if(orb) orb.classList.add("picking");
+  var el = document.getElementById("orbPick");
+  if(!el){ el = document.createElement("div"); el.id = "orbPick"; el.className = "orb-pick"; orb.appendChild(el); }
+  el.innerHTML = list.map(function(t,i){
+    var note = t.duration+" min";
+    if(t.postponedToday >= 3) note += " · dodged "+t.postponedToday+"×";
+    else if(isRecurring(t)) note += " · "+repeatLabel(t.repeatEvery);
+    return '<button class="pick-item" type="button" data-pi="'+i+'"><b>'+esc(t.name)+'</b><small>'+esc(note)+'</small></button>';
+  }).join("");
+  Pick.els = [].slice.call(el.querySelectorAll(".pick-item"));
+  Pick.els.forEach(function(b){
+    b.addEventListener("click", function(ev){
+      ev.stopPropagation();
+      if(!Pick.armed) return;
+      if(Pick.moved && performance.now() - Pick.movedAt < 320) return;
+      var i = +b.dataset.pi;
+      if(Math.abs(cyc(i - Pick.pos, Pick.list.length)) < 0.5) choosePicked(i);
+      else { Pick.settleTo = Pick.pos + cyc(i - Pick.pos, Pick.list.length); Pick.vel = 0; Pick.snapping = true; pickRun(); }
+    });
+  });
+  layoutPicker();
+  var rl = document.querySelector("#nowRoot .runway");
+  if(rl){ rl.dataset.was = rl.textContent; rl.textContent = "Scroll · tap to pick"; }
+  el.addEventListener("pointerdown", pickDown);
+}
+function layoutPicker(){
+  var orb = document.getElementById("orb");
+  if(!orb) return;
+  var R = orb.offsetWidth/2, n = Pick.list.length;
+  Pick.step = Math.max(48, R*0.29);
+  Pick.els.forEach(function(el,i){
+    var off = cyc(i - Pick.pos, n), ad = Math.abs(off);
+    if(ad > 1.55){ el.style.opacity = "0"; el.style.visibility = "hidden"; return; }
+    el.style.visibility = "visible";
+    var op = Math.max(0, 1 - ad/1.45);
+    el.style.transform = "translate(-50%,-50%) translateY("+(off*Pick.step).toFixed(1)+"px) scale("+(0.84+0.16*op).toFixed(3)+")";
+    el.style.opacity = (0.06 + 0.94*op*op).toFixed(3);
+    el.classList.toggle("on", ad < 0.04);
+  });
+}
+function pickDown(e){
+  Pick.armed = true;
+  Pick.drag = { y:e.clientY, t:performance.now() };
+  Pick.moved = false; Pick.snapping = false; Pick.vel = 0;
+  window.addEventListener("pointermove", pickMove);
+  window.addEventListener("pointerup", pickUp);
+  window.addEventListener("pointercancel", pickUp);
+}
+function pickMove(e){
+  if(!Pick.drag) return;
+  var dy = e.clientY - Pick.drag.y, t = performance.now(), dt = Math.max(8, t - Pick.drag.t);
+  if(Math.abs(dy) > 3){ Pick.moved = true; Pick.movedAt = t; }
+  var d = -dy / Pick.step;
+  Pick.pos += d;
+  Pick.vel = Math.max(-0.12, Math.min(0.12, d / dt * 16));
+  Pick.drag.y = e.clientY; Pick.drag.t = t;
+  layoutPicker();
+  e.preventDefault();
+}
+function pickUp(){
+  if(!Pick.drag) return;
+  Pick.drag = null;
+  window.removeEventListener("pointermove", pickMove);
+  window.removeEventListener("pointerup", pickUp);
+  window.removeEventListener("pointercancel", pickUp);
+  if(Pick.moved) pickRun();
+}
+function pickRun(){
+  if(Pick.raf) return;
+  var tick = function(){
+    Pick.raf = null;
+    if(Pick.drag) return;
+    if(!Pick.snapping){
+      Pick.pos += Pick.vel; Pick.vel *= 0.86;
+      if(Math.abs(Pick.vel) < 0.005){ Pick.snapping = true; Pick.settleTo = Math.round(Pick.pos); }
+    } else {
+      var diff = Pick.settleTo - Pick.pos;
+      Pick.pos += diff * 0.28;
+      if(Math.abs(diff) < 0.002){ Pick.pos = Pick.settleTo; layoutPicker(); return; }
+    }
+    layoutPicker();
+    Pick.raf = requestAnimationFrame(tick);
+  };
+  Pick.raf = requestAnimationFrame(tick);
+}
+function choosePicked(i){
+  var n = Pick.list.length;
+  var idx = ((Math.round(i) % n) + n) % n;
+  var t = Pick.list[idx];
+  closePicker();
+  if(!t) return;
+  S.ui.pinnedId = t.id;
+  if(t.lastPostponedAt) t.lastPostponedAt = null;      /* you chose it, so it isn't resting any more */
+  save(); renderNow(true);
+  toast(voice("picked")[0]);
+}
+function closePicker(){
+  if(!Pick.on) return;
+  Pick.on = false;
+  if(Pick.raf){ cancelAnimationFrame(Pick.raf); Pick.raf = null; }
+  var el = document.getElementById("orbPick");
+  if(el) el.remove();
+  var face = document.getElementById("orbFace"), dial = document.getElementById("orbDial");
+  if(face) face.style.display = "";
+  if(dial) dial.style.display = "";
+  var orb = document.getElementById("orb"); if(orb) orb.classList.remove("picking");
+  var rl = document.querySelector("#nowRoot .runway");
+  if(rl && rl.dataset.was){ rl.textContent = rl.dataset.was; delete rl.dataset.was; }
+}
+
 /* ---------- swipes on the sphere ---------- */
 function swipeDown(e){
-  if(Orb.twoFinger) return;
+  if(Orb.twoFinger || Pick.on) return;
   Orb.swipe = { x:e.clientX, y:e.clientY, t:performance.now(), dir:null };
+  clearTimeout(Orb.holdT);
+  Orb.holdT = setTimeout(function(){
+    if(Orb.swipe && !Orb.swipe.dir){ cancelSwipe(); openPicker(); }
+  }, 480);
   e.currentTarget.classList.add("grabbing");
   window.addEventListener("pointermove", swipeMove);
   window.addEventListener("pointerup", swipeUp);
@@ -1213,6 +1504,7 @@ function swipeMove(e){
     float.style.animation = "none";
     float.style.transform = "translate("+(Math.cos(ang)*damp).toFixed(1)+"px,"+(Math.sin(ang)*damp).toFixed(1)+"px)";
   }
+  if(dist > 10) clearTimeout(Orb.holdT);
   var dir = dist > 18 ? swipeDir(dx, dy) : null;
   if(dir !== s.dir){
     ["l","r","u","d"].forEach(function(k){
@@ -1229,6 +1521,7 @@ function clearSwipeVisuals(){
   var o = document.getElementById("orb"); if(o) o.classList.remove("grabbing");
 }
 function cancelSwipe(){
+  clearTimeout(Orb.holdT);
   Orb.swipe = null;
   clearSwipeVisuals();
   window.removeEventListener("pointermove", swipeMove);
@@ -1328,18 +1621,21 @@ function viewStart(){
   '</div>';
 }
 function viewEmpty(){
-  return orbHTML('<div class="orb-task">Empty</div><div class="orb-sub">nothing in the ball</div>', { quiet:true })+
-    '<p class="runway">Swipe down on the orb to add something</p>'+
-    (micSupported() ? '<p class="dayline">or hold the mic in Add Task and just say it</p>' : '');
+  return orbHTML('<div class="orb-task">Nothing<br>in here</div><div class="orb-sub">the ball is empty</div>', { clear:true })+
+    '<p class="runway">'+esc(voice("empty")[0])+'</p>'+
+    '<p class="dayline">Swipe down to add'+(micSupported() ? ' · or hold the mic and say it' : '')+'</p>';
 }
 function viewNothing(choice){
   var here = locLabel(S.session.location);
-  var msg = choice.reason === "nofit"
-    ? "Nothing fits the "+fmtDur(choice.gap.mins)+" before "+choice.gap.what
-    : (isTransit(S.session.location) ? "Nothing to pick up" : "Nothing for "+here);
-  return orbHTML('<div class="orb-task">Clear</div><div class="orb-sub">'+esc(here)+'</div>', { quiet:true })+
-    '<p class="runway">'+esc(msg)+'</p>'+
-    '<p class="dayline">Swipe down to add · spin the dial to move</p>';
+  if(choice.reason === "nofit"){
+    return orbHTML('<div class="orb-task">Too<br>tight</div><div class="orb-sub">'+fmtDur(choice.gap.mins)+' left</div>', { clear:true })+
+      '<p class="runway">Nothing fits before '+esc(choice.gap.what)+'</p>'+
+      '<p class="dayline">'+esc(voice("nofit")[0])+'</p>';
+  }
+  var line = isTransit(S.session.location) ? voice("clearOut")[0] : voice("clear", { where:here })[0];
+  return orbHTML('<div class="orb-task">All<br>clear</div><div class="orb-sub">'+esc(here)+'</div>', { clear:true })+
+    '<p class="runway">'+esc(line)+'</p>'+
+    '<p class="dayline">Turn the dial to move · swipe down to add</p>';
 }
 function viewOne(choice){
   var t = choice.task, p = dayProgress(), fixedNow = choice.fixed, w = runway();
@@ -1371,6 +1667,21 @@ function viewFocus(){
   var total = (f.plannedMin + f.addedMin)*60;
   var inner = '<div class="orb-clock" id="clock">'+mmss(total)+'</div>'+
               '<div class="orb-sub" id="clocksub">'+(f.paused?"Paused":esc(t.name))+'</div>';
+
+  if(isCommitted(t)){
+    var added = t.commit.added.reduce(function(a,m){ return a+m; }, 0);
+    return ''+
+      '<p class="eyebrow hot">Committed task'+(f.makingSafe ? " · making it safe" : "")+'</p>'+
+      orbHTML(inner, { running:true })+
+      '<p class="runway" id="runwayLine">'+ (t.originalEstimate||t.duration)+'m estimated · '+
+        fmtDur(spentOn(t))+' spent · +'+fmtDur(added)+' committed</p>'+
+      '<div class="committed-note">'+
+        '<b>We\'re past the point where stopping helps.</b>'+
+        '<span>Finish it, or get it somewhere sensible to leave. Don\'t start anything else.</span>'+
+      '</div>'+
+      '<p class="dayline">Tap to '+(f.paused?"resume":"pause")+' · swipe left when you need to reassess</p>';
+  }
+
   return ''+
     '<p class="eyebrow hot">'+(f.paused ? "Paused" : "Working")+'</p>'+
     orbHTML(inner, { running:true })+
@@ -1382,7 +1693,7 @@ function viewLunchDue(early){
     '<p class="eyebrow cool">Stop</p>'+
     orbHTML('<div class="orb-task">Lunch</div><div class="orb-sub">'+S.settings.lunchDuration+' minutes</div>', { cool:true })+
     '<p class="runway">'+(early ? "Nothing worth starting first" : "Nice try. You\'re having lunch.")+'</p>'+
-    '<p class="dayline">Tap the orb to start</p>';
+    '<p class="dayline">Tap to start · food is not optional</p>';
 }
 function viewLunchActive(){
   var left = Math.max(0, Math.round((S.session.lunchEndsAt - Date.now())/60000));
@@ -1398,7 +1709,7 @@ function viewDayClosed(){
     '<p class="eyebrow">Today</p>'+
     orbHTML('<div class="orb-count">'+d.length+'</div><div class="orb-sub">tasks destroyed</div>')+
     '<p class="runway">'+fmtDur(dayProgress().done)+' on the clock</p>'+
-    '<div style="margin-top:16px">'+coachHTML(["You started today unable to decide what to work on.","You got "+d.length+" things done. That'll do."])+'</div>'+
+    '<div style="margin-top:16px">'+coachHTML([voice("endday")[0], d.length+" things done and "+fmtDur(dayProgress().done)+" on the clock."])+'</div>'+
     '<button class="btn wide" data-act="reopen" style="margin-top:12px">Actually, I\'m not finished</button>';
 }
 
@@ -1432,6 +1743,13 @@ function orbSwipe(dir){
   if(dir === "d"){ draft = draft || newDraft(); openSheet(sheetAddTask(), bindAddTask); return; }
   if(s.dayClosed) return;
   if(S.focus){
+    var ct = committedTask();
+    if(ct){
+      /* no walking away from a committed job by accident — reassess instead */
+      if(dir === "r"){ openSheet(sheetCommitCheck()); return; }
+      openSheet(sheetCommitCheck());
+      return;
+    }
     if(dir === "r"){ finishFocus(); return; }
     if(dir === "l"){ abandonFocus(); return; }
     if(dir === "u"){ abandonFocus(true); return; }
@@ -1444,8 +1762,9 @@ function orbSwipe(dir){
     if(choice.fixed){ toast("That one's happening whether you like it or not."); return; }
     t.postponedToday++; t.lastPostponedAt = Date.now();
     unpin(); save();
-    toast(t.postponedToday === 1 ? voice("dodge1")[0] : (t.postponedToday === 2 ? voice("dodge2")[0] : voice("dodge3")[0]));
-    renderNow();
+    toast(t.postponedToday === 1 ? voice("dodge1")[0]
+        : (t.postponedToday === 2 ? voice("dodge2")[0] : voice("dodge3")[0]));
+    renderNow(true);
     return;
   }
   if(dir === "u"){ openSheet(sheetBlocked(t.id)); return; }
@@ -1455,6 +1774,15 @@ function flashDone(t){
 }
 /* completing a check-in cycles it; the toast is where you close it off for good */
 function settleTask(t, mins){
+  var parent = t.unblocks ? byId(t.unblocks) : null;
+  if(parent && parent.status === "blocked"){
+    completeTask(t, mins);
+    toast(parent.name+" was waiting on that", function(){
+      parent.status = "open"; parent.blockedReason = null; parent.lastPostponedAt = null;
+      unpin(); save(); render(); toast("Back in play.");
+    }, "put it back");
+    return;
+  }
   if(isRecurring(t)){
     checkTask(t, mins);
     toast("✓ "+t.name+" · back in "+repeatLabel(t.repeatEvery).replace("every ",""),
@@ -1487,16 +1815,28 @@ function tick(){
     if(ring) ring.classList.toggle("over", left < 0);
   }
   var rl = document.getElementById("runwayLine");
-  if(rl){
+  if(rl && !isCommitted(byId(f.taskId))){
     var w = runway();
     rl.textContent = f.paused ? "Paused" : (w.kind==="none" ? "" : fmtDur(w.mins)+" until "+w.what);
   }
   if(left <= 0 && !f.rang && !f.paused){
     f.rang = true; save(); stopTicker(); chime();
-    openSheet(sheetTimeUp());
+    if(f.makingSafe){
+      var mt = byId(f.taskId), mm = endFocus();
+      if(mt){
+        mt.actualMinutes = (mt.actualMinutes||0) + mm;
+        recordRun(mt, "rabbit");
+        mt.commit = null; mt.safeStopped = true; mt.lastPostponedAt = Date.now();
+      }
+      unpin(); save(); renderNow(true);
+      toast("Down tools. That's enough of that one.");
+      return;
+    }
+    openSheet(committedTask() ? sheetCommitCheck() : sheetTimeUp());
   }
 }
 function beginFocus(t, forcedMins){
+  if(!t.originalEstimate) t.originalEstimate = t.duration;
   S.focus = { taskId:t.id, startedAt:Date.now(), plannedMin:forcedMins || t.duration, addedMin:0, extensions:0, paused:false, pausedAt:null, rang:false };
   save(); renderNow(true);
   toast(voice("start", { mins: forcedMins || t.duration })[0]);
@@ -1509,6 +1849,7 @@ function endFocus(){
 }
 function finishFocus(){
   var t = byId(S.focus && S.focus.taskId), mins = endFocus();
+  if(t){ recordRun(t, "finished", mins); t.commit = null; }
   if(t) settleTask(t, mins);
   closeSheet(); save(); renderNow(true);
 }
@@ -1750,7 +2091,7 @@ function newDraft(){
     name:"", category:"Work", priority:"normal", effort:"normal",
     duration:S.settings.defaultDuration,
     locations: isTransit(here) ? [here] : ["anywhere"],
-    type:"Admin", timed:false, repeatEvery:0,
+    type:"Admin", timed:false, repeatEvery:0, unblocks:null,
     fixedStart:minsToHHMM(Math.ceil((minsOfDay()+30)/15)*15), fixedEnd:null
   };
 }
@@ -1919,6 +2260,7 @@ function commitTask(){
     name:draft.name, category:draft.category, priority:draft.priority, effort:draft.effort,
     duration:draft.duration, locations:draft.locations, type:draft.type,
     repeatEvery: draft.timed ? 0 : draft.repeatEvery,
+    unblocks: draft.unblocks || null,
     fixedStart: draft.timed ? draft.fixedStart : null,
     fixedEnd: draft.timed ? draft.fixedEnd : null
   });
@@ -1991,15 +2333,78 @@ function bindBrainDump(){
 }
 function sheetTimeUp(){
   var f = S.focus, t = byId(f.taskId);
+  var again = f.reassessed > 0;
   return ''+
-  '<div class="sheet-head"><h2 class="sec">Time</h2></div>'+
+  '<div class="sheet-head"><h2 class="sec">'+(again ? "Half hour's up" : "Time")+'</h2></div>'+
   '<h1 class="big" style="font-size:clamp(1.7rem,7vw,2.2rem)">'+esc(t? t.name : "Task")+'</h1>'+
-  coachHTML(["What's happening?"])+
+  coachHTML([again ? "That was the extra 30. Honestly — how close?" : "What's happening?"])+
   '<div class="stack">'+
     '<button class="btn go wide" data-act="tu-done">Done</button>'+
-    '<button class="btn wide" data-act="extend" data-min="5">Nearly — give me 5</button>'+
-    '<button class="btn wide" data-act="extend" data-min="15">Still working — 15 more</button>'+
-    '<button class="btn wide" data-act="tu-rabbit">I\'ve gone down a rabbit hole</button>'+
+    '<button class="btn wide" data-act="extend" data-min="5">Nearly — 5 more</button>'+
+    '<button class="btn wide" data-act="extend" data-min="15">Still going — 15 more</button>'+
+    '<button class="btn wide" data-act="tu-rabbit">Rabbit hole. Get me out</button>'+
+    '<button class="btn wide" data-act="tu-commit" style="border-color:color-mix(in srgb,var(--hi) 45%,transparent)">Can\'t reasonably stop here</button>'+
+  '</div>';
+}
+/* Parking something because you're waiting on a person or a part usually means
+   there's a small job hiding behind it. Offer to write that one down. */
+var UNBLOCK_HINTS = {
+  "Waiting for someone":      { name:"Chase up: ", type:"Email",  mins:10, where:null },
+  "Need information":         { name:"Get the details for: ", type:"Admin", mins:10, where:null },
+  "Need equipment/materials": { name:"Get what's needed for: ", type:"Errand", mins:15, where:"transit" },
+  "Can't access it right now":{ name:"Sort access for: ", type:"Admin", mins:10, where:null },
+  "Other":                    { name:"Unblock: ", type:"Admin", mins:10, where:null }
+};
+function sheetUnblock(id, reason){
+  var t = byId(id);
+  return ''+
+  '<div class="sheet-head"><h2 class="sec">Anything to do about it?</h2></div>'+
+  coachHTML(["Parked: "+(t ? t.name : "that one")+".", reason+" — is there a job in that?"])+
+  '<div class="stack">'+
+    '<button class="btn go wide" data-act="unblock-add" data-id="'+id+'" data-reason="'+esc(reason)+'">Yes — add that task</button>'+
+    '<button class="btn wide" data-act="unblock-skip">No, just park it</button>'+
+  '</div>'+
+  '<p class="hint">If you add it, finishing it will offer to put the parked job back.</p>';
+}
+function sheetCommitWhy(){
+  var f = S.focus, t = byId(f.taskId);
+  return ''+
+  '<div class="sheet-head"><h2 class="sec">Why can\'t you stop?</h2><button class="icon-btn" data-act="close-sheet" aria-label="Close">✕</button></div>'+
+  '<p class="hint">'+esc(t ? t.name : "This task")+' · '+spentOn(t)+'m in so far.</p>'+
+  '<div class="stack">'+ COMMIT_REASONS.map(function(r){
+    return '<button class="btn wide" data-act="commit-why" data-reason="'+esc(r)+'" style="font-family:var(--body);font-weight:600;letter-spacing:0;text-transform:none;font-size:15px">'+esc(r)+'</button>';
+  }).join("")+'</div>';
+}
+function sheetCommitHowLong(again){
+  return ''+
+  '<div class="sheet-head"><h2 class="sec">'+(again ? "How much longer?" : "Realistically, how long?")+'</h2>'+
+    '<button class="icon-btn" data-act="close-sheet" aria-label="Close">✕</button></div>'+
+  coachHTML(["From now, not from when you started.","How long to reach finished — or a sensible place to stop?"])+
+  '<div class="choices">'+ COMMIT_MINUTES.map(function(m){
+    return '<button class="choice grow" data-commit-min="'+m+'">'+m+' min</button>';
+  }).join("")+'<button class="choice grow" data-commit-min="custom">Custom</button></div>';
+}
+function sheetCommitCheck(){
+  var t = committedTask();
+  return ''+
+  '<div class="sheet-head"><h2 class="sec">Where are we now?</h2></div>'+
+  '<h1 class="big" style="font-size:clamp(1.6rem,6.5vw,2rem)">'+esc(t ? t.name : "Task")+'</h1>'+
+  '<p class="hint">'+(t ? (t.originalEstimate||t.duration)+'m estimated · '+fmtDur(spentOn(t))+' in' : '')+'</p>'+
+  '<div class="stack">'+
+    '<button class="btn go wide" data-act="commit-finished">Finished</button>'+
+    '<button class="btn wide" data-act="commit-safe">Safe stopping point — leave it here</button>'+
+    '<button class="btn wide" data-act="commit-more">Still can\'t stop</button>'+
+    '<button class="btn wide" data-act="commit-rabbit">This has become a rabbit hole</button>'+
+  '</div>'+
+  '<p class="hint">A safe stopping point leaves the job open for later. That\'s not failure — it\'s just where it got to.</p>';
+}
+function sheetCommitRabbit(){
+  return ''+
+  '<div class="sheet-head"><h2 class="sec">Get it safe, then out</h2></div>'+
+  coachHTML(["Fine — it ran away with you.","Don't just down tools. Make it safe, then walk away."])+
+  '<div class="stack">'+
+    '<button class="btn go wide" data-act="commit-makesafe">Give me 5 to make it safe</button>'+
+    '<button class="btn wide" data-act="commit-stopnow">It\'s already safe — stop now</button>'+
   '</div>';
 }
 function sheetBlocked(id){
@@ -2087,6 +2492,37 @@ function sheetAddLocation(){
   '</div></div>'+
   '<button class="btn go wide" id="nl-save">Add it to the dial</button>';
 }
+function bindCommitMinutes(){
+  var r = document.getElementById("sheetRoot");
+  r.querySelectorAll("[data-commit-min]").forEach(function(b){
+    b.addEventListener("click", function(){
+      var v = b.dataset.commitMin, mins;
+      if(v === "custom"){
+        var got = prompt("How many more minutes, from now?", "45");
+        mins = Math.max(5, Math.min(480, Math.round(+got || 0)));
+        if(!mins) return;
+      } else mins = +v;
+      commitTo(mins);
+    });
+  });
+}
+/* hand the task a fresh clock and put it in committed mode */
+function commitTo(mins){
+  var f = S.focus; if(!f) return;
+  var t = byId(f.taskId); if(!t) return;
+  if(!t.originalEstimate) t.originalEstimate = t.duration;
+  t.actualMinutes = (t.actualMinutes||0) + Math.max(0, Math.round((Date.now() - f.startedAt)/60000));
+  t.extensions = (t.extensions||0) + 1;
+  if(!t.commit) t.commit = { on:false, reasons:[], added:[], startedAt:Date.now() };
+  var again = t.commit.on;
+  t.commit.on = true;
+  t.commit.added.push(mins);
+  S.focus = { taskId:t.id, startedAt:Date.now(), plannedMin:mins, addedMin:0,
+              extensions:0, paused:false, pausedAt:null, rang:false, committed:true };
+  save(); closeSheet(); renderNow(true); startTicker();
+  toast(voice(again ? "commitAgain" : "commitOn", { mins:mins })[0]);
+}
+
 function bindAddLocation(){
   var r = document.getElementById("sheetRoot"), kind = "place";
   var a = r.querySelector("#nl-place"), b = r.querySelector("#nl-transit");
@@ -2239,6 +2675,10 @@ function rowHTML(t){
     meta += isCooling(t) ? '<span class="mini">next in '+coolMins(t)+'m</span>' : '<span class="mini hot">due now</span>';
     if(t.checkCount) meta += '<span class="mini good">checked '+t.checkCount+'×</span>';
   }
+  if(isCommitted(t)) meta += '<span class="mini hot">Committed</span>';
+  if(t.safeStopped) meta += '<span class="mini good">Left safe</span>';
+  if(t.originalEstimate && t.actualMinutes > t.originalEstimate)
+    meta += '<span class="mini">'+t.originalEstimate+'m est · '+fmtDur(t.actualMinutes)+' actual</span>';
   if(t.postponedToday) meta += '<span class="mini hot">Dodged '+t.postponedToday+'×</span>';
   if(t.status === "blocked" && t.blockedReason) meta += '<span class="mini">'+esc(t.blockedReason)+'</span>';
   if(t.status === "done" && t.actualMinutes) meta += '<span class="mini good">'+t.actualMinutes+'m actual</span>';
@@ -2301,6 +2741,7 @@ function renderDone(){
       '<div class="slab"><div class="num">'+(est ? Math.round(act/est*100)+'%' : '—')+'</div><p class="hint">of estimate</p></div>'+
     '</div>'+
     (bars ? '<div class="group"><h2 class="sec">Where the time went</h2><div class="bars">'+bars+'</div></div>' : '')+
+    runsHTML()+
     (d.length ? '<div class="group"><h2 class="sec">Completed</h2>'+d.map(function(t){
       return '<div class="row done"><div class="row-main"><div class="row-title">✓ '+esc(t.name)+'</div>'+
         '<div class="row-meta">'+(t.actualMinutes ? '<span class="mini good">'+t.actualMinutes+'m on the clock</span>' : '<span class="mini">not timed</span>')+
@@ -2308,6 +2749,28 @@ function renderDone(){
     }).join("")+'</div>' : '<div class="empty">Nothing finished yet today.</div>')+
     '<button class="btn wide" data-act="close-day">Finish for the day</button>'+
   '</div>';
+}
+/* estimate against reality — the raw material for better guesses later */
+function runsHTML(){
+  var d = todayKey();
+  var runs = (S.history||[]).filter(function(r){ return r.date === d; }).slice().reverse();
+  if(!runs.length) return "";
+  var over = runs.filter(function(r){ return r.actual > r.est; }).length;
+  return '<div class="group"><div class="group-head"><h2 class="sec">Estimate vs reality</h2>'+
+    '<span class="count">'+over+' of '+runs.length+' ran over</span></div>'+
+    runs.map(function(r){
+      var badge = r.committed ? '<span class="mini hot">Committed</span>' : '';
+      var out = { finished:'<span class="mini good">Finished</span>',
+                  "safe-stop":'<span class="mini cool">Left safe</span>',
+                  rabbit:'<span class="mini">Rabbit hole</span>' }[r.outcome] || '';
+      return '<div class="row"><div class="row-main"><div class="row-title">'+esc(r.name)+'</div>'+
+        '<div class="row-meta"><span class="mini">'+r.est+'m est</span>'+
+        '<span class="mini'+(r.actual > r.est ? ' hot' : ' good')+'">'+fmtDur(r.actual)+' actual</span>'+
+        (r.extensions ? '<span class="mini">'+r.extensions+' extension'+(r.extensions>1?'s':'')+'</span>' : '')+
+        badge + out +
+        (r.reasons && r.reasons.length ? '<span class="mini">'+esc(r.reasons[0])+'</span>' : '')+
+        '</div></div></div>';
+    }).join("")+'</div>';
 }
 function renderYou(){
   var p = S.profile, st = S.settings;
@@ -2407,10 +2870,18 @@ function renderChips(){
    16. ACTIONS
    ============================================================ */
 function unpin(){ S.ui.pinnedId = null; }
+/* Anything dodged three times keeps its place at the front: you can skip past
+   it as often as you like, but the moment you finish something it's back. */
+function releaseNags(){
+  S.tasks.forEach(function(x){
+    if(x.status === "open" && x.postponedToday >= 3) x.lastPostponedAt = null;
+  });
+}
 /* mins is time actually measured on the timer. Ticking something off by hand
    records the completion but claims no time — the day's totals stay honest. */
 function completeTask(t, mins){
   unpin();
+  releaseNags();
   t.status = "done"; t.completedAt = Date.now();
   t.actualMinutes = (t.actualMinutes || 0) + (mins || 0);
   S.log.push({ date:todayKey(), taskId:t.id, name:t.name, type:t.type, minutes:mins || 0, at:t.completedAt, kind:"done" });
@@ -2429,10 +2900,32 @@ document.addEventListener("click", function(e){
     case "finish-recurring": if(t){ finishRecurring(t); closeSheet(); render(); toast("Closed off for today."); } break;
     case "undone": if(t){ t.status="open"; t.completedAt=null; save(); render(); } break;
     case "unblock": if(t){ t.status="open"; t.blockedReason=null; save(); render(); toast("Back in play."); } break;
-    case "block-reason":
-      if(t){ t.status="blocked"; t.blockedReason=b.dataset.reason; unpin(); save(); }
-      closeSheet(); toast("Parked. I won't keep asking."); render();
+    case "block-reason": {
+      var reason = b.dataset.reason;
+      if(t){ t.status = "blocked"; t.blockedReason = reason; unpin(); save(); }
+      if(t && UNBLOCK_HINTS[reason]){ openSheet(sheetUnblock(t.id, reason)); render(); }
+      else { closeSheet(); toast("Parked. I won't keep asking."); render(); }
       break;
+    }
+    case "unblock-skip": closeSheet(); toast("Parked. I won't keep asking."); render(); break;
+    case "unblock-add": {
+      var hint = UNBLOCK_HINTS[b.dataset.reason] || UNBLOCK_HINTS.Other;
+      draft = newDraft();
+      draft.name = hint.name + (t ? t.name : "");
+      draft.duration = hint.mins;
+      draft.effort = "easy";
+      draft.type = hint.type;
+      draft.category = t ? t.category : draft.category;
+      draft.unblocks = t ? t.id : null;
+      if(hint.where === "transit"){
+        var tl = transitLocs()[0];
+        if(tl) draft.locations = [tl.id];
+      } else if(t){
+        draft.locations = t.locations.slice();
+      }
+      openSheet(sheetAddTask(), bindAddTask);
+      break;
+    }
     case "edit": openEditSheet(id); break;
     case "save-edit":
       if(t){
@@ -2450,9 +2943,71 @@ document.addEventListener("click", function(e){
       closeSheet(); render(); toast("Gone.");
       break;
     case "tu-done": finishFocus(); break;
+    case "tu-commit": openSheet(sheetCommitWhy()); break;
+    case "commit-open-minutes": openSheet(sheetCommitHowLong(true), bindCommitMinutes); break;
+    case "commit-why": {
+      var ct = byId(S.focus && S.focus.taskId); if(!ct) break;
+      if(!ct.commit) ct.commit = { on:false, reasons:[], added:[], startedAt:Date.now() };
+      ct.commit.reasons.push(b.dataset.reason);
+      save(); openSheet(sheetCommitHowLong(false), bindCommitMinutes);
+      break;
+    }
+    case "commit-more": openSheet(sheetCommitHowLong(true), bindCommitMinutes); break;
+    case "commit-finished": {
+      var ft2 = byId(S.focus && S.focus.taskId);
+      var fm = endFocus();
+      if(ft2){
+        ft2.actualMinutes = (ft2.actualMinutes||0) + fm;
+        recordRun(ft2, "finished");
+        ft2.commit = null;
+        completeTask(ft2, 0);
+        flashDone(ft2);
+      }
+      closeSheet(); save(); renderNow(true);
+      break;
+    }
+    case "commit-safe": {
+      var st2 = byId(S.focus && S.focus.taskId);
+      var sm = endFocus();
+      if(st2){
+        st2.actualMinutes = (st2.actualMinutes||0) + sm;
+        recordRun(st2, "safe-stop");
+        st2.commit = null; st2.safeStopped = true;
+        st2.lastPostponedAt = Date.now();     /* parked, not dodged */
+        releaseNags();
+      }
+      unpin(); closeSheet(); save(); renderNow(true);
+      toast(voice("safestop")[0]);
+      break;
+    }
+    case "commit-rabbit": openSheet(sheetCommitRabbit()); break;
+    case "commit-makesafe": {
+      var mf = S.focus; if(!mf) break;
+      mf.addedMin += 5; mf.rang = false; mf.makingSafe = true;
+      save(); closeSheet(); renderNow(true);
+      toast("Five minutes. Make it safe, then stop.");
+      break;
+    }
+    case "commit-stopnow": {
+      var rt2 = byId(S.focus && S.focus.taskId);
+      var rm2 = endFocus();
+      if(rt2){
+        rt2.actualMinutes = (rt2.actualMinutes||0) + rm2;
+        recordRun(rt2, "rabbit");
+        rt2.commit = null; rt2.safeStopped = true;
+        rt2.lastPostponedAt = Date.now();
+      }
+      unpin(); closeSheet(); save(); renderNow(true);
+      toast(voice("rabbit")[0]);
+      break;
+    }
     case "tu-rabbit": {
       var rt = byId(S.focus && S.focus.taskId), rm = endFocus();
-      if(rt){ rt.actualMinutes = (rt.actualMinutes||0)+rm; rt.lastPostponedAt = Date.now(); }
+      if(rt){
+        rt.actualMinutes = (rt.actualMinutes||0)+rm;
+        recordRun(rt, "rabbit"); rt.commit = null;
+        rt.lastPostponedAt = Date.now();
+      }
       closeSheet(); save(); renderNow(true); toast(voice("rabbit")[0]);
       break;
     }
@@ -2460,6 +3015,7 @@ document.addEventListener("click", function(e){
       var ef = S.focus; if(!ef) break;
       var add = +b.dataset.min;
       ef.addedMin += add; ef.extensions++; ef.rang = false;
+      var xt = byId(ef.taskId); if(xt) xt.extensions = (xt.extensions||0) + 1;
       save(); closeSheet(); renderNow(true);
       toast(ef.extensions === 1 ? voice("ext1",{add:add})[0] : voice("extN",{plan:ef.plannedMin,total:fmtDur(ef.plannedMin+ef.addedMin)})[0]);
       break;
@@ -2517,13 +3073,19 @@ document.addEventListener("click", function(e){
    17. WARNINGS
    ============================================================ */
 function checkWarnings(){
-  var m = minsOfDay(), fired = false;
+  var m = minsOfDay(), fired = false, committed = committedTask();
   fixedToday().forEach(function(t){
     var lead = hhmmToMins(t.fixedStart) - m;
     if(!t.warned && lead <= S.settings.warnMinutes && lead > 0){
       t.warned = true; fired = true;
       chime(true);
-      toast(t.name+" in "+lead+" min — start wrapping up.");
+      toast(committed ? t.name+" in "+lead+" min. Get this somewhere safe."
+                      : t.name+" in "+lead+" min — start wrapping up.");
+    }
+    /* a genuine appointment still gets through a committed task */
+    if(!t.started && lead <= 0 && lead > -3){
+      t.started = true; fired = true;
+      if(committed){ chime(true); toast(t.name+" is starting now."); }
     }
   });
   if(fired) save();
@@ -2543,8 +3105,9 @@ function showGestures(){
     '<div class="gkey"><b>Swipe ←</b><span>Not now</span></div>'+
     '<div class="gkey"><b>Swipe ↑</b><span>Can\'t do this yet</span></div>'+
     '<div class="gkey"><b>Swipe ↓</b><span>Add a task</span></div>'+
-    '<div class="gkey"><b>Two fingers</b><span>Spin the dial to change location</span></div>'+
-    '<p class="hint">You can also drag the dial under the orb, or tap a location name.</p>'+
+    '<div class="gkey"><b>Hold</b><span>Flick through everything here and pick one</span></div>'+
+    '<div class="gkey"><b>Two fingers</b><span>Turn the dial to change location</span></div>'+
+    '<p class="hint">Or grab the edge of the orb and turn it like a dial.</p>'+
     '<button class="btn go wide" id="g-close">Got it</button></div>';
   document.body.appendChild(el);
   el.querySelector("#g-close").addEventListener("click", function(){
@@ -2596,7 +3159,10 @@ document.addEventListener("visibilitychange", function(){
   if(S.focus) startTicker(); else if(S.ui.tab === "now") renderNow(true);
   renderChips();
 });
-window.addEventListener("resize", orbLayout);
+window.addEventListener("resize", function(){ orbLayout(); if(Pick.on) layoutPicker(); });
+document.addEventListener("pointerdown", function(e){
+  if(Pick.on && !e.target.closest("#orb")) closePicker();
+}, true);
 
 if(!CAN_STORE){
   var warn = document.createElement("div");
