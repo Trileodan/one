@@ -128,8 +128,8 @@ h2.sec{font-family:var(--display);font-variation-settings:'wdth' 88,'wght' 700;f
    THE ORB
    ============================================================ */
 .orb-stage{
-  --orb:min(88vw, 52vh, 460px);
-  position:relative;width:calc(100% + 36px);margin:0 -18px;height:calc(var(--orb) + 128px);
+  --orb:min(88vw, 54vh, 460px);
+  position:relative;width:calc(100% + 36px);margin:0 -18px;height:calc(var(--orb) + 62px);
   display:grid;place-items:center;touch-action:none;user-select:none;-webkit-user-select:none;
 }
 .orb-wrap{position:relative;width:var(--orb);height:var(--orb);display:grid;place-items:center;transform:translateY(-16px)}
@@ -219,20 +219,24 @@ h2.sec{font-family:var(--display);font-variation-settings:'wdth' 88,'wght' 700;f
 .swipe-hint.u{top:4px;left:50%;transform:translateX(-50%);color:var(--cool)}
 .swipe-hint.d{bottom:4px;left:50%;transform:translateX(-50%)}
 
-.orb-orbit{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
-.orb-orbit .path{fill:none;stroke:var(--line);stroke-width:1;stroke-dasharray:2 7;stroke-linecap:round}
-.dial-zone{position:absolute;left:0;right:0;bottom:0;height:88px;z-index:5;cursor:grab;touch-action:none}
-.dial-zone.grabbing{cursor:grabbing}
+/* the dial rides the sphere itself, like a safe or a thermostat: the live
+   location sits at 12 o'clock, its neighbours fade away at 10 and 2 */
+.orb-dial{position:absolute;inset:0;z-index:4;pointer-events:none}
 .loc{
-  position:absolute;left:50%;top:50%;z-index:6;
-  font-family:var(--display);font-variation-settings:'wdth' 88,'wght' 700;
-  font-size:12.5px;letter-spacing:.11em;text-transform:uppercase;
-  color:var(--ink-2);white-space:nowrap;max-width:30vw;overflow:hidden;text-overflow:ellipsis;
-  padding:6px 11px;border-radius:999px;border:1px solid transparent;background:transparent;cursor:pointer;
+  position:absolute;left:50%;top:50%;
+  font-family:var(--display);font-variation-settings:'wdth' 82,'wght' 800;
+  font-size:12px;letter-spacing:.13em;text-transform:uppercase;
+  color:#2B0C00;white-space:nowrap;max-width:52%;overflow:hidden;text-overflow:ellipsis;
+  padding:3px 6px;border:0;background:transparent;cursor:pointer;pointer-events:auto;
   will-change:transform,opacity;transform-origin:50% 50%;
 }
-.loc.sel{max-width:64vw;color:var(--hi);border-color:color-mix(in srgb,var(--hi) 38%,transparent);background:var(--hi-soft)}
-.loc.sel.transit{color:var(--cool);border-color:color-mix(in srgb,var(--cool) 38%,transparent);background:var(--cool-soft)}
+.orb.cool .loc{color:#111436}
+.loc.sel{font-variation-settings:'wdth' 86,'wght' 900}
+.dial-mark{
+  position:absolute;left:50%;top:3.2%;width:2px;height:11px;margin-left:-1px;border-radius:2px;
+  background:#2B0C00;opacity:.5;z-index:5;pointer-events:none;
+}
+.orb.cool .dial-mark{background:#111436}
 
 .runway{text-align:center;font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);margin:2px 0 0}
 .dayline{text-align:center;font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:8px 0 0}
@@ -454,7 +458,7 @@ var DEFAULTS = {
     lunchState:"pending", lunchEndsAt:null, workFinished:false, dayClosed:false, briefed:false, spun:false
   },
   tasks:[], focus:null,
-  ui:{ tab:"now", forcedId:null, arrival:null, pinnedId:null },
+  ui:{ tab:"now", arrival:null, pinnedId:null },
   log:[]
 };
 
@@ -509,7 +513,7 @@ var S = load() || JSON.parse(JSON.stringify(DEFAULTS));
     S.session.date = t;
     S.session.location = keep;
     S.session.lastPlace = isTransit(keep) ? (((places()[0]||{}).id) || keep) : keep;
-    S.focus = null; S.ui.forcedId = null; S.ui.arrival = null;
+    S.focus = null; S.ui.arrival = null; S.ui.pinnedId = null;
     S.tasks.forEach(function(x){
       if(x.status === "done") x.archived = true;
       x.postponedToday = 0; x.lastPostponedAt = null; x.warned = false;
@@ -671,6 +675,16 @@ function transitTasks(){
   return openTasks().filter(function(t){ return !t.fixedStart && !isCooling(t) && t.locations.some(function(l){ return ids.indexOf(l) > -1; }); });
 }
 function isRecurring(t){ return !!(t.repeatEvery && t.repeatEvery > 0); }
+/* how long a dodged task stays out of the way */
+function dodgeRestMins(t){
+  if(t.priority === "must") return 12;
+  if(t.priority === "important") return 20;
+  if(t.priority === "optional") return 120;
+  return 35;
+}
+function isDodged(t){
+  return !!(t.lastPostponedAt && (Date.now() - t.lastPostponedAt) < dodgeRestMins(t)*60000);
+}
 function isCooling(t){ return isRecurring(t) && t.nextDueAt && Date.now() < t.nextDueAt; }
 function coolMins(t){ return isCooling(t) ? Math.max(1, Math.round((t.nextDueAt - Date.now())/60000)) : 0; }
 function overdueMins(t){
@@ -682,10 +696,9 @@ function checkTask(t, mins){
   unpin();
   t.checkCount = (t.checkCount||0) + 1;
   t.nextDueAt = Date.now() + t.repeatEvery*60000;
-  t.actualMinutes = (t.actualMinutes||0) + (mins || t.duration);
+  t.actualMinutes = (t.actualMinutes||0) + (mins || 0);
   t.postponedToday = 0; t.lastPostponedAt = null;
-  S.log.push({ date:todayKey(), taskId:t.id, name:t.name, type:t.type, minutes:mins||t.duration, at:Date.now(), kind:"check" });
-  S.ui.forcedId = null;
+  S.log.push({ date:todayKey(), taskId:t.id, name:t.name, type:t.type, minutes:mins || 0, at:Date.now(), kind:"check" });
   save();
 }
 function finishRecurring(t){
@@ -820,7 +833,6 @@ function scoreTask(t, ctx){
       why.push("That's "+(t.postponedToday===2?"twice":t.postponedToday+" times")+" you've dodged this now.");
     } else if(t.priority === "optional"){ s -= t.postponedToday * 30; }
     else { s -= t.postponedToday * 10; }
-    if(t.lastPostponedAt && (Date.now() - t.lastPostponedAt) < 12*60000) s -= 45;
   }
 
   var gap = ctx.runway.mins;
@@ -851,6 +863,13 @@ function chooseTask(){
   if(!transit && S.session.workFinished) pool = pool.filter(function(t){ return t.category !== "Work"; });
   if(!pool.length) return { task:null, reason:"none" };
 
+  /* You can always pass on something, whatever it is. A dodged task steps out
+     of the queue for a while — briefly if it matters, ages if it doesn't — and
+     comes back near the top rather than at the bottom. It only reappears
+     immediately if it's genuinely the last thing standing. */
+  var awake = pool.filter(function(t){ return !isDodged(t); });
+  if(awake.length) pool = awake;
+
   var recent = recentDone(3);
   var ctx = {
     recent:recent, lunch:L, transit:transit,
@@ -863,12 +882,6 @@ function chooseTask(){
     runway: transit ? { mins:600, what:"", kind:"none" } : runway(),
     minsLeftOfDay: Math.max(0, hhmmToMins(S.settings.workUntil) - minsOfDay())
   };
-
-  if(!transit && S.ui.forcedId){
-    var f = byId(S.ui.forcedId);
-    if(f && f.status === "open" && locationOK(f)) return { task:f, forced:true, why:[] };
-    S.ui.forcedId = null;
-  }
 
   /* Once a task is on the orb it stays there until something actually changes.
      Without this the random tie-breaker could swap it out mid-glance. */
@@ -940,7 +953,7 @@ function chime(low){
 /* ============================================================
    10. THE ORB
    ============================================================ */
-var Orb = { stage:null, labels:[], n:0, step:0, angle:0, vel:0, dragging:false, twoFinger:false, lastTwist:0,
+var Orb = { stage:null, labels:[], n:0, pos:0, vel:0, bezel:null, twoFinger:false, lastTwist:0, lastBezel:0,
             lastX:0, lastT:0, raf:null, snapping:false, settleTo:0, spinning:false, moved:false, movedAt:0, swipe:null };
 
 function orbHTML(inner, opts){
@@ -950,7 +963,6 @@ function orbHTML(inner, opts){
   }).join("");
   return ''+
   '<div class="orb-stage" id="orbStage" role="group" aria-label="Location dial and current task">'+
-    '<svg class="orb-orbit" aria-hidden="true"><ellipse class="path" id="orbitPath" cx="50%" cy="50%" rx="10" ry="10"></ellipse></svg>'+
     '<div class="orb-wrap">'+
       '<div class="orb-float" id="orbFloat">'+
         '<div class="orb-breath"></div>'+
@@ -961,6 +973,8 @@ function orbHTML(inner, opts){
         '<div class="orb'+(opts.cool?" cool":"")+(opts.quiet?" quiet":"")+'" id="orb">'+
           '<div class="orb-turn" id="orbTurn"><div class="orb-skin" id="orbSkin"></div></div>'+
           '<div class="orb-face" id="orbFace">'+inner+'</div>'+
+          '<div class="orb-dial" id="orbDial">'+labels+'</div>'+
+          '<span class="dial-mark"></span>'+
         '</div>'+
       '</div>'+
     '</div>'+
@@ -968,8 +982,6 @@ function orbHTML(inner, opts){
     '<span class="swipe-hint r" id="hint-r">Done</span>'+
     '<span class="swipe-hint u" id="hint-u">Can\'t yet</span>'+
     '<span class="swipe-hint d" id="hint-d">Add task</span>'+
-    '<div class="dial-zone" id="dialZone"></div>'+
-    labels+
   '</div>';
 }
 function faceTask(t, sub){
@@ -981,78 +993,75 @@ function orbMount(){
   if(!stage) return;
   Orb.labels = [].slice.call(stage.querySelectorAll(".loc"));
   Orb.n = Orb.labels.length;
-  Orb.step = Orb.n ? (Math.PI*2)/Orb.n : Math.PI*2;
-  Orb.angle = locIndex(S.session.location) * Orb.step;
+  Orb.pos = locIndex(S.session.location);
   Orb.vel = 0; Orb.snapping = false; Orb.spinning = false; Orb.twoFinger = false;
   orbLayout();
 
-  var dial = document.getElementById("dialZone");
-  if(dial) dial.addEventListener("pointerdown", dialDown);
   var orb = document.getElementById("orb");
-  if(orb) orb.addEventListener("pointerdown", swipeDown);
+  if(orb) orb.addEventListener("pointerdown", orbDown);
 
   stage.addEventListener("touchstart", function(e){
     if(e.touches.length >= 2){
       Orb.twoFinger = true; Orb.moved = false;
       Orb.lastTwist = twistAngle(e);
-      Orb.lastX = (e.touches[0].clientX + e.touches[1].clientX)/2;
       Orb.lastT = performance.now(); Orb.vel = 0; Orb.snapping = false;
       if(Orb.swipe) cancelSwipe();
+      if(Orb.bezel) endBezel();
     }
   }, { passive:true });
   stage.addEventListener("touchmove", function(e){
     if(!Orb.twoFinger || e.touches.length < 2) return;
-    /* a thermostat knob: the dial turns with the twist between your fingers,
-       and still responds if you simply sweep both of them sideways */
     var a = twistAngle(e), twist = normAngle(a - Orb.lastTwist);
-    var mid = (e.touches[0].clientX + e.touches[1].clientX)/2;
-    var slide = mid - Orb.lastX;
-    Orb.lastTwist = a; Orb.lastX = mid;
-    applySpin(twist * 1.6 - slide * 0.0085, Math.abs(twist) > 0.004 || Math.abs(slide) > 2);
+    Orb.lastTwist = a;
+    applySpin(-twist / SPREAD, Math.abs(twist) > 0.004);   /* markings follow your fingers */
     e.preventDefault();
   }, { passive:false });
   stage.addEventListener("touchend", function(e){
     if(Orb.twoFinger && e.touches.length < 2){ Orb.twoFinger = false; orbRun(); }
   });
 
-  Orb.labels.forEach(function(b){
-    b.addEventListener("pointerdown", dialDown);   /* grabbing a label still turns the dial */
-    b.addEventListener("click", function(e){
-      e.stopPropagation();
-      if(Orb.moved && performance.now() - Orb.movedAt < 300) return;
-      orbStepTo(+b.dataset.locI);
+  Orb.labels.forEach(function(el){
+    el.addEventListener("click", function(ev){
+      ev.stopPropagation();
+      if(Orb.moved && performance.now() - Orb.movedAt < 320) return;   /* that was a turn */
+      orbStepTo(+el.dataset.locI);
     });
   });
 }
-function orbGeom(){
-  var stage = Orb.stage; if(!stage || !stage.isConnected) return null;
-  var wrap = stage.querySelector(".orb-wrap");
-  var d = wrap ? wrap.offsetWidth : 240;
-  var W = stage.offsetWidth || 360, widest = 0;
-  Orb.labels.forEach(function(el){ widest = Math.max(widest, el.offsetWidth); });
-  var rx = Math.max(72, Math.min(d/2 + 58, W/2 - widest/2 - 8));
-  return { r:d/2, rx:rx, ry:20, yOff:d/2 + 22, w:W };
+
+/* ---------- dial geometry ----------
+   Neighbours sit 60 degrees apart around the sphere. Whatever is at 12 o'clock
+   is live; everything past about 88 degrees has faded out entirely, so you
+   never see more than the active one and its two neighbours. */
+var SPREAD = Math.PI/3;
+var FADE_AT = Math.PI*0.49;
+function cyc(x, n){
+  var y = ((x % n) + n) % n;
+  if(y > n/2) y -= n;
+  return y;
 }
 function orbLayout(){
   if(!Orb.stage || !Orb.stage.isConnected) return;
-  var g = orbGeom(); if(!g) return;
-  var path = document.getElementById("orbitPath");
-  if(path){ path.setAttribute("rx", g.rx); path.setAttribute("ry", g.ry); path.setAttribute("cy", "calc(50% + "+g.yOff+"px)"); }
-  var skin = document.getElementById("orbSkin");
-  if(skin) skin.style.setProperty("--spin", (Orb.angle * 46).toFixed(1));
-  var turn = document.getElementById("orbTurn");
-  if(turn) turn.style.transform = "rotate("+(Orb.angle * 13).toFixed(2)+"deg)";
-  var selIdx = Math.round(Orb.angle / Orb.step);
+  var orbEl = document.getElementById("orb");
+  if(!orbEl) return;
+  var R = orbEl.offsetWidth / 2;
+  var rad = R * 0.735, n = Orb.n || 1, cMin = Math.cos(FADE_AT);
+  var sel = ((Math.round(Orb.pos) % n) + n) % n;
   Orb.labels.forEach(function(el, i){
-    var a = i*Orb.step - Orb.angle;
-    var c = Math.cos(a), sn = Math.sin(a);
-    var x = g.rx * sn, y = g.yOff + g.ry * c;
-    var depth = (c + 1) / 2, scale = 0.76 + 0.30*depth;
-    el.style.transform = "translate(-50%,-50%) translate("+x.toFixed(1)+"px,"+y.toFixed(1)+"px) scale("+scale.toFixed(3)+")";
-    el.style.opacity = (0.10 + 0.90*Math.pow(depth,1.35)).toFixed(3);
-    el.style.zIndex = c > 0 ? 7 : 5;
-    el.classList.toggle("sel", !Orb.spinning && (((i - selIdx) % Orb.n + Orb.n) % Orb.n) === 0);
+    var off = cyc(i - Orb.pos, n), th = off * SPREAD;
+    if(Math.abs(th) >= FADE_AT){ el.style.opacity = "0"; el.style.visibility = "hidden"; return; }
+    var c = Math.cos(th);
+    var op = Math.max(0, (c - cMin) / (1 - cMin));
+    var x = rad * Math.sin(th), y = -rad * c;
+    el.style.visibility = "visible";
+    el.style.transform = "translate(-50%,-50%) translate("+x.toFixed(1)+"px,"+y.toFixed(1)+"px) scale("+(0.82 + 0.18*op).toFixed(3)+")";
+    el.style.opacity = (0.10 + 0.90*op*op).toFixed(3);
+    el.classList.toggle("sel", !Orb.spinning && i === sel && Math.abs(off) < 0.03);
   });
+  var skin = document.getElementById("orbSkin");
+  if(skin) skin.style.setProperty("--spin", (Orb.pos * 96).toFixed(1));
+  var turn = document.getElementById("orbTurn");
+  if(turn) turn.style.transform = "rotate("+(Orb.pos * 26).toFixed(2)+"deg)";
 }
 function orbSetSpinning(on){
   if(Orb.spinning === on) return;
@@ -1069,59 +1078,81 @@ function normAngle(a){
   while(a < -Math.PI) a += Math.PI*2;
   return a;
 }
-/* positive dAngle turns the dial clockwise (the near label travels left) */
-function applySpin(dAngle, moved){
+/* dPos is in dial slots; positive brings the 2 o'clock label round to the top */
+function applySpin(dPos, moved){
   var t = performance.now(), dt = Math.max(8, t - Orb.lastT);
   if(moved){ Orb.moved = true; Orb.movedAt = t; }
-  Orb.angle += dAngle;
-  Orb.vel = Math.max(-0.06, Math.min(0.06, dAngle / dt * 16));
+  Orb.pos += dPos;
+  Orb.vel = Math.max(-0.08, Math.min(0.08, dPos / dt * 16));
   Orb.lastT = t;
   if(Orb.moved) orbSetSpinning(true);
   orbLayout();
 }
-function spinBy(dx, newX){
-  Orb.lastX = newX;
-  applySpin(-dx * 0.0085, Math.abs(dx) > 2);
+
+/* ---------- one pointer, two zones: bezel turns, face responds ---------- */
+function orbCentre(){
+  var r = document.getElementById("orb").getBoundingClientRect();
+  return { x:r.left + r.width/2, y:r.top + r.height/2, r:r.width/2 };
 }
-function dialDown(e){
-  Orb.dragging = true; Orb.moved = false;
-  Orb.lastX = e.clientX; Orb.lastT = performance.now(); Orb.vel = 0; Orb.snapping = false;
-  if(e.currentTarget.classList) e.currentTarget.classList.add("grabbing");
-  window.addEventListener("pointermove", dialMove);
-  window.addEventListener("pointerup", dialUp);
-  window.addEventListener("pointercancel", dialUp);
+function bezelAngle(x, y, c){ return Math.atan2(x - c.x, -(y - c.y)); }
+function orbDown(e){
+  if(Orb.twoFinger) return;
+  var c = orbCentre();
+  var dist = Math.sqrt(Math.pow(e.clientX-c.x,2) + Math.pow(e.clientY-c.y,2)) / c.r;
+  if(dist > 0.58) startBezel(e, c);
+  else swipeDown(e);
 }
-function dialMove(e){ if(Orb.dragging) spinBy(e.clientX - Orb.lastX, e.clientX); }
-function dialUp(){
-  if(!Orb.dragging) return;
-  Orb.dragging = false;
-  var dz = document.getElementById("dialZone"); if(dz) dz.classList.remove("grabbing");
-  Orb.labels.forEach(function(l){ l.classList.remove("grabbing"); });
-  window.removeEventListener("pointermove", dialMove);
-  window.removeEventListener("pointerup", dialUp);
-  window.removeEventListener("pointercancel", dialUp);
-  if(!Orb.moved){ orbSetSpinning(false); orbLayout(); return; }
+function startBezel(e, c){
+  Orb.bezel = { c:c };
+  Orb.moved = false; Orb.snapping = false; Orb.vel = 0;
+  Orb.lastBezel = bezelAngle(e.clientX, e.clientY, c);
+  Orb.lastT = performance.now();
+  document.getElementById("orb").classList.add("grabbing");
+  window.addEventListener("pointermove", bezelMove);
+  window.addEventListener("pointerup", bezelUp);
+  window.addEventListener("pointercancel", bezelUp);
+}
+function bezelMove(e){
+  if(!Orb.bezel) return;
+  var a = bezelAngle(e.clientX, e.clientY, Orb.bezel.c);
+  var d = normAngle(a - Orb.lastBezel);
+  Orb.lastBezel = a;
+  applySpin(-d / SPREAD, Math.abs(d) > 0.012);
+  e.preventDefault();
+}
+function endBezel(){
+  Orb.bezel = null;
+  var o = document.getElementById("orb"); if(o) o.classList.remove("grabbing");
+  window.removeEventListener("pointermove", bezelMove);
+  window.removeEventListener("pointerup", bezelUp);
+  window.removeEventListener("pointercancel", bezelUp);
+}
+function bezelUp(){
+  var b = Orb.bezel; if(!b) return;
+  var moved = Orb.moved;
+  endBezel();
+  if(!moved){ orbSetSpinning(false); orbLayout(); return; }   /* a tap is handled by the label's click */
   orbRun();
 }
 function orbStepTo(i){
   if(!Orb.n) return;
-  var cur = Math.round(Orb.angle / Orb.step);
-  Orb.settleTo = i * Orb.step; Orb.vel = 0; Orb.snapping = true;
-  orbSetSpinning(cur !== ((i % Orb.n) + Orb.n) % Orb.n);
+  Orb.settleTo = Orb.pos + cyc(i - Orb.pos, Orb.n);
+  Orb.vel = 0; Orb.snapping = true;
+  orbSetSpinning(Math.abs(Orb.settleTo - Orb.pos) > 0.03);
   orbRun();
 }
 function orbRun(){
   if(Orb.raf) return;
   var tick = function(){
     Orb.raf = null;
-    if(Orb.dragging || Orb.twoFinger) return;
+    if(Orb.bezel || Orb.twoFinger) return;
     if(!Orb.snapping){
-      Orb.angle += Orb.vel; Orb.vel *= 0.82;
-      if(Math.abs(Orb.vel) < 0.004){ Orb.snapping = true; Orb.settleTo = Math.round(Orb.angle / Orb.step) * Orb.step; }
+      Orb.pos += Orb.vel; Orb.vel *= 0.82;
+      if(Math.abs(Orb.vel) < 0.004){ Orb.snapping = true; Orb.settleTo = Math.round(Orb.pos); }
     } else {
-      var diff = Orb.settleTo - Orb.angle;
-      Orb.angle += diff * 0.26;
-      if(Math.abs(diff) < 0.0015){ Orb.angle = Orb.settleTo; orbLayout(); orbSettled(); return; }
+      var diff = Orb.settleTo - Orb.pos;
+      Orb.pos += diff * 0.26;
+      if(Math.abs(diff) < 0.002){ Orb.pos = Orb.settleTo; orbLayout(); orbSettled(); return; }
     }
     orbLayout();
     Orb.raf = requestAnimationFrame(tick);
@@ -1129,8 +1160,8 @@ function orbRun(){
   Orb.raf = requestAnimationFrame(tick);
 }
 function orbSettled(){
-  var n = Orb.n, idx = ((Math.round(Orb.angle / Orb.step) % n) + n) % n;
-  Orb.angle = idx * Orb.step; Orb.settleTo = Orb.angle;
+  var n = Orb.n, idx = ((Math.round(Orb.pos) % n) + n) % n;
+  Orb.pos = idx; Orb.settleTo = idx;
   orbSetSpinning(false); orbLayout();
   var loc = S.locations[idx];
   if(!loc) return;
@@ -1148,7 +1179,6 @@ function changeLocation(id){
   unpin();
   var prev = S.session.location, prevPlace = S.session.lastPlace;
   S.session.location = id;
-  S.ui.forcedId = null;
   if(isTransit(id)){ S.session.briefed = true; }
   else {
     var outstanding = transitTasks();
@@ -1246,7 +1276,7 @@ function refreshNowLines(){
   }
   if(dl){
     var p = dayProgress();
-    if(/done/.test(dl.textContent)) dl.textContent = p.count+" done · "+fmtDur(p.done)+" focused";
+    if(/done/.test(dl.textContent)) dl.textContent = p.count+" done · "+fmtDur(p.done)+" on the clock";
   }
   paintDayRing();
 }
@@ -1273,10 +1303,9 @@ function todayLog(){ var d = todayKey(); return S.log.filter(function(l){ return
 function dayProgress(){
   var entries = todayLog();
   var done = entries.reduce(function(a,l){ return a + (l.minutes||0); }, 0);
-  var left = openTasks().filter(function(t){ return !t.locations.some(isTransit) && !isCooling(t); })
-                        .reduce(function(a,t){ return a + t.duration; }, 0);
-  var total = done + left;
-  return { done:done, left:left, frac: total ? done/total : 0, count:entries.length,
+  var leftCount = openTasks().filter(function(t){ return !t.locations.some(isTransit) && !isCooling(t); }).length;
+  var total = entries.length + leftCount;
+  return { done:done, leftCount:leftCount, frac: total ? entries.length/total : 0, count:entries.length,
            checks: entries.filter(function(l){ return l.kind === "check"; }).length };
 }
 function paintDayRing(){
@@ -1320,10 +1349,10 @@ function viewOne(choice){
     ? "You're in this until "+minsToHHMM(taskEndMins(t))
     : (w.kind === "none" ? "Nothing in the way" : fmtDur(w.mins)+" until "+w.what);
   return ''+
-    '<p class="eyebrow'+(fixedNow?" hot":"")+'">'+(fixedNow ? "Happening now" : (isRecurring(t) ? "Check-in · "+esc(locLabel(S.session.location)) : esc(locLabel(S.session.location))))+'</p>'+
+    (fixedNow ? '<p class="eyebrow hot">Happening now</p>' : (isRecurring(t) ? '<p class="eyebrow">Check-in</p>' : ''))+
     orbHTML(faceTask(t, sub))+
     '<p class="runway">'+esc(line)+'</p>'+
-    '<p class="dayline">'+p.count+' done · '+fmtDur(p.done)+' focused</p>';
+    '<p class="dayline">'+p.count+' done · '+fmtDur(p.done)+' on the clock</p>';
 }
 function viewTransit(choice){
   var t = choice.task, p = dayProgress(), rest = (choice.rest||[]).slice(0,4);
@@ -1368,7 +1397,7 @@ function viewDayClosed(){
   return ''+
     '<p class="eyebrow">Today</p>'+
     orbHTML('<div class="orb-count">'+d.length+'</div><div class="orb-sub">tasks destroyed</div>')+
-    '<p class="runway">'+fmtDur(mins)+' focused</p>'+
+    '<p class="runway">'+fmtDur(dayProgress().done)+' on the clock</p>'+
     '<div style="margin-top:16px">'+coachHTML(["You started today unable to decide what to work on.","You got "+d.length+" things done. That'll do."])+'</div>'+
     '<button class="btn wide" data-act="reopen" style="margin-top:12px">Actually, I\'m not finished</button>';
 }
@@ -1394,7 +1423,7 @@ function orbTap(){
     save(); renderNow(true); return;
   }
   if(!choice.task) return;
-  if(isTransit(s.location)){ settleTask(choice.task, choice.task.duration); renderNow(true); return; }
+  if(isTransit(s.location)){ settleTask(choice.task, 0); renderNow(true); return; }
   if(choice.fixed){ beginFocus(choice.task, Math.max(1, taskEndMins(choice.task) - minsOfDay())); return; }
   beginFocus(choice.task);
 }
@@ -1410,11 +1439,10 @@ function orbSwipe(dir){
   }
   var choice = chooseTask(), t = choice.task;
   if(!t) return;
-  if(dir === "r"){ settleTask(t, t.duration); renderNow(true); return; }
+  if(dir === "r"){ settleTask(t, 0); renderNow(true); return; }
   if(dir === "l"){
     if(choice.fixed){ toast("That one's happening whether you like it or not."); return; }
     t.postponedToday++; t.lastPostponedAt = Date.now();
-    if((t.priority === "must" || t.priority === "important") && t.postponedToday >= 3) S.ui.forcedId = t.id;
     unpin(); save();
     toast(t.postponedToday === 1 ? voice("dodge1")[0] : (t.postponedToday === 2 ? voice("dodge2")[0] : voice("dodge3")[0]));
     renderNow();
@@ -1470,7 +1498,6 @@ function tick(){
 }
 function beginFocus(t, forcedMins){
   S.focus = { taskId:t.id, startedAt:Date.now(), plannedMin:forcedMins || t.duration, addedMin:0, extensions:0, paused:false, pausedAt:null, rang:false };
-  S.ui.forcedId = null;
   save(); renderNow(true);
   toast(voice("start", { mins: forcedMins || t.duration })[0]);
 }
@@ -2254,10 +2281,12 @@ function renderList(){
 }
 function renderDone(){
   var d = doneToday();
-  var mins = d.reduce(function(a,t){ return a+(t.actualMinutes||t.duration); },0);
-  var est = d.reduce(function(a,t){ return a+t.duration; },0);
+  var mins = dayProgress().done;
+  var timed = d.filter(function(t){ return t.actualMinutes > 0; });
+  var est = timed.reduce(function(a,t){ return a+t.duration; },0);
+  var act = timed.reduce(function(a,t){ return a+t.actualMinutes; },0);
   var byType = {};
-  d.forEach(function(t){ byType[t.type] = (byType[t.type]||0) + (t.actualMinutes||t.duration); });
+  todayLog().forEach(function(l){ if(l.minutes) byType[l.type||"Other"] = (byType[l.type||"Other"]||0) + l.minutes; });
   var maxT = Math.max.apply(null, [1].concat(Object.keys(byType).map(function(k){ return byType[k]; })));
   var bars = Object.keys(byType).sort(function(a,b){ return byType[b]-byType[a]; }).map(function(k,i){
     return '<div class="bar-row"><span class="lab">'+esc(k)+'</span>'+
@@ -2268,13 +2297,14 @@ function renderDone(){
     '<p class="eyebrow left">Today</p>'+
     '<div class="slab"><div class="num">'+d.length+'</div><h2 class="sec">'+(d.length===1?"task destroyed":"tasks destroyed")+'</h2></div>'+
     '<div class="duo">'+
-      '<div class="slab"><div class="num cool">'+fmtDur(dayProgress().done)+'</div><p class="hint">focused</p></div>'+
-      '<div class="slab"><div class="num">'+dayProgress().checks+'</div><p class="hint">check-ins</p></div>'+
+      '<div class="slab"><div class="num cool">'+fmtDur(mins)+'</div><p class="hint">measured</p></div>'+
+      '<div class="slab"><div class="num">'+(est ? Math.round(act/est*100)+'%' : '—')+'</div><p class="hint">of estimate</p></div>'+
     '</div>'+
     (bars ? '<div class="group"><h2 class="sec">Where the time went</h2><div class="bars">'+bars+'</div></div>' : '')+
     (d.length ? '<div class="group"><h2 class="sec">Completed</h2>'+d.map(function(t){
       return '<div class="row done"><div class="row-main"><div class="row-title">✓ '+esc(t.name)+'</div>'+
-        '<div class="row-meta"><span class="mini good">'+(t.actualMinutes||t.duration)+'m</span><span class="mini">'+esc(t.type)+'</span></div></div></div>';
+        '<div class="row-meta">'+(t.actualMinutes ? '<span class="mini good">'+t.actualMinutes+'m on the clock</span>' : '<span class="mini">not timed</span>')+
+        '<span class="mini">'+esc(t.type)+'</span></div></div></div>';
     }).join("")+'</div>' : '<div class="empty">Nothing finished yet today.</div>')+
     '<button class="btn wide" data-act="close-day">Finish for the day</button>'+
   '</div>';
@@ -2377,12 +2407,13 @@ function renderChips(){
    16. ACTIONS
    ============================================================ */
 function unpin(){ S.ui.pinnedId = null; }
+/* mins is time actually measured on the timer. Ticking something off by hand
+   records the completion but claims no time — the day's totals stay honest. */
 function completeTask(t, mins){
   unpin();
   t.status = "done"; t.completedAt = Date.now();
-  t.actualMinutes = mins || t.actualMinutes || t.duration;
-  S.log.push({ date:todayKey(), taskId:t.id, name:t.name, type:t.type, minutes:t.actualMinutes, at:t.completedAt, kind:"done" });
-  S.ui.forcedId = null;
+  t.actualMinutes = (t.actualMinutes || 0) + (mins || 0);
+  S.log.push({ date:todayKey(), taskId:t.id, name:t.name, type:t.type, minutes:mins || 0, at:t.completedAt, kind:"done" });
   save();
 }
 document.addEventListener("click", function(e){
@@ -2394,7 +2425,7 @@ document.addEventListener("click", function(e){
     case "start-day": S.session.started = true; S.session.date = todayKey(); save(); render(); if(!S.profile.sawGestures) showGestures(); break;
     case "add-task": draft = draft || newDraft(); openSheet(sheetAddTask(), bindAddTask); break;
     case "add-timed": draft = newDraft(); draft.timed = true; draft.type = "Meeting"; openSheet(sheetAddTask(), bindAddTask); break;
-    case "tick": case "complete": if(t){ settleTask(t, t.duration); render(); } break;
+    case "tick": case "complete": if(t){ settleTask(t, 0); render(); } break;
     case "finish-recurring": if(t){ finishRecurring(t); closeSheet(); render(); toast("Closed off for today."); } break;
     case "undone": if(t){ t.status="open"; t.completedAt=null; save(); render(); } break;
     case "unblock": if(t){ t.status="open"; t.blockedReason=null; save(); render(); toast("Back in play."); } break;
@@ -2440,7 +2471,7 @@ document.addEventListener("click", function(e){
     case "cycle-mot": {
       var order = ["motivated","meh","unmotivated"];
       S.session.motivation = order[(order.indexOf(S.session.motivation)+1) % 3];
-      S.ui.forcedId = null; unpin(); save(); renderChips(); renderNow(true);
+      unpin(); save(); renderChips(); renderNow(true);
       toast("Motivation: "+S.session.motivation+".");
       break;
     }
@@ -2554,7 +2585,7 @@ setInterval(function(){
   checkWarnings();
   var moved = applySchedule();
   if(moved) applyHue();
-  if(S.ui.tab === "now" && !S.focus && !Orb.spinning && !Orb.dragging && !Orb.swipe) renderNow();
+  if(S.ui.tab === "now" && !S.focus && !Orb.spinning && !Orb.bezel && !Orb.swipe) renderNow();
   renderChips();
 }, 15000);
 
