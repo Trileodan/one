@@ -107,7 +107,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 main{flex:1;padding:6px 18px 150px;display:flex;flex-direction:column}
 .screen{display:none;flex-direction:column;gap:16px}
 .screen.is-on{display:flex;animation:rise .3s ease both}
-#scr-now.is-on{justify-content:center;min-height:calc(100vh - 240px);gap:0}
+#scr-now.is-on{justify-content:center;min-height:calc(100vh - 230px);gap:0}
 @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
 .eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin:0;text-align:center}
@@ -128,8 +128,8 @@ h2.sec{font-family:var(--display);font-variation-settings:'wdth' 88,'wght' 700;f
    THE ORB
    ============================================================ */
 .orb-stage{
-  --orb:min(66vw,262px);
-  position:relative;width:100%;height:calc(var(--orb) + 150px);
+  --orb:min(88vw, 52vh, 460px);
+  position:relative;width:calc(100% + 36px);margin:0 -18px;height:calc(var(--orb) + 128px);
   display:grid;place-items:center;touch-action:none;user-select:none;-webkit-user-select:none;
 }
 .orb-wrap{position:relative;width:var(--orb);height:var(--orb);display:grid;place-items:center;transform:translateY(-16px)}
@@ -221,7 +221,7 @@ h2.sec{font-family:var(--display);font-variation-settings:'wdth' 88,'wght' 700;f
 
 .orb-orbit{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
 .orb-orbit .path{fill:none;stroke:var(--line);stroke-width:1;stroke-dasharray:2 7;stroke-linecap:round}
-.dial-zone{position:absolute;left:0;right:0;bottom:0;height:96px;z-index:5;cursor:grab;touch-action:none}
+.dial-zone{position:absolute;left:0;right:0;bottom:0;height:88px;z-index:5;cursor:grab;touch-action:none}
 .dial-zone.grabbing{cursor:grabbing}
 .loc{
   position:absolute;left:50%;top:50%;z-index:6;
@@ -264,6 +264,14 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--hi)}
 .inline{display:flex;gap:10px;align-items:center}
 
+.mic{appearance:none;flex:none;width:50px;min-height:48px;border-radius:11px;border:1px solid var(--line);
+  background:var(--surface);color:var(--ink-2);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.mic:hover{border-color:var(--hi);color:var(--hi)}
+.mic svg{width:19px;height:19px;fill:currentColor}
+.mic.on{background:var(--hi);border-color:var(--hi);color:var(--hi-ink);animation:micpulse 1.5s ease-in-out infinite}
+@keyframes micpulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--hi) 45%,transparent)}70%{box-shadow:0 0 0 12px transparent}}
+.heard{font-size:13px;color:var(--cool);font-style:italic}
+.heard:empty{display:none}
 .stepper{display:flex;align-items:center;gap:8px}
 .stepper .step{appearance:none;cursor:pointer;flex:none;width:52px;min-height:48px;border-radius:11px;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);font-family:var(--mono);font-size:13px}
 .stepper .step:hover{border-color:var(--hi);color:var(--hi)}
@@ -277,7 +285,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--hi)}
 .slider-snap{position:absolute;top:50%;width:5px;height:5px;margin:-2.5px 0 0 -2.5px;border-radius:50%;background:var(--line)}
 .slider-orb{position:absolute;top:50%;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;background:radial-gradient(circle at 34% 28%, #FFD3A4, #FF8236 46%, #C33F04 100%);box-shadow:0 4px 14px -4px var(--orb-glow), 0 0 0 1px rgba(120,32,0,.25), 0 1px 0 rgba(255,255,255,.4) inset;transition:left .18s cubic-bezier(.3,.9,.4,1), transform .14s ease}
 .slider.grabbing .slider-orb{transform:scale(1.14)}
-.slider-labels{display:flex;justify-content:space-between;gap:4px;margin:-4px 2px 0}
+.slider-labels{display:flex;justify-content:space-between;gap:4px;margin:-6px 2px 2px}
 .slider-labels span{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:center;flex:1;transition:color .18s ease}
 .slider-labels span:first-child{text-align:left}
 .slider-labels span:last-child{text-align:right}
@@ -313,7 +321,9 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--hi)}
 .tl-body{position:relative;flex:1;min-width:0}
 .tl-hour{position:absolute;left:0;right:0;border-top:1px solid var(--line-2);font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:var(--muted);padding-left:2px}
 .tl-block{position:absolute;left:40px;right:0;border-radius:10px;padding:6px 10px;overflow:hidden;background:var(--surface);border:1px solid var(--line);font-size:13px;font-weight:600}
-.tl-block .t{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;color:var(--muted);display:block;text-transform:uppercase}
+.tl-block .t{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;color:var(--muted);display:block;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl-block.narrow{font-size:12px;padding:5px 7px;line-height:1.18}
+.tl-block.narrow .t{font-size:8.5px;letter-spacing:.04em}
 .tl-block.fixed{border-color:color-mix(in srgb,var(--hi) 45%,transparent);background:var(--hi-soft)}
 .tl-block.lunch{border-color:color-mix(in srgb,var(--cool) 45%,transparent);background:var(--cool-soft)}
 .tl-now{position:absolute;left:0;right:0;height:2px;background:var(--hi);z-index:3;border-radius:2px}
@@ -345,7 +355,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--hi)}
 
 .backdrop{position:fixed;inset:0;z-index:50;background:rgba(8,9,12,.55);opacity:0;pointer-events:none;transition:opacity .22s ease}
 .backdrop.is-on{opacity:1;pointer-events:auto}
-.sheet{position:fixed;z-index:60;left:0;right:0;bottom:0;max-width:540px;margin:0 auto;background:var(--surface);border:1px solid var(--line);border-bottom:0;border-radius:22px 22px 0 0;box-shadow:var(--shadow-lg);padding:14px 18px calc(22px + env(safe-area-inset-bottom));transform:translateY(102%);transition:transform .26s cubic-bezier(.2,.8,.25,1);max-height:90vh;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:14px}
+.sheet{position:fixed;z-index:60;left:0;right:0;bottom:0;max-width:540px;margin:0 auto;background:var(--surface);border:1px solid var(--line);border-bottom:0;border-radius:22px 22px 0 0;box-shadow:var(--shadow-lg);padding:14px 18px calc(22px + env(safe-area-inset-bottom));transform:translateY(102%);transition:transform .26s cubic-bezier(.2,.8,.25,1);max-height:90vh;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:19px}
 .sheet.is-on{transform:none}
 .sheet-head{display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:-14px;background:var(--surface);padding:6px 0 4px;margin-top:-6px;z-index:2}
 .grab{width:38px;height:4px;border-radius:99px;background:var(--line);margin:0 auto 4px}
@@ -444,7 +454,7 @@ var DEFAULTS = {
     lunchState:"pending", lunchEndsAt:null, workFinished:false, dayClosed:false, briefed:false, spun:false
   },
   tasks:[], focus:null,
-  ui:{ tab:"now", forcedId:null, arrival:null },
+  ui:{ tab:"now", forcedId:null, arrival:null, pinnedId:null },
   log:[]
 };
 
@@ -669,6 +679,7 @@ function overdueMins(t){
 }
 /* a check-in doesn't finish the task — it restarts its clock */
 function checkTask(t, mins){
+  unpin();
   t.checkCount = (t.checkCount||0) + 1;
   t.nextDueAt = Date.now() + t.repeatEvery*60000;
   t.actualMinutes = (t.actualMinutes||0) + (mins || t.duration);
@@ -694,14 +705,21 @@ function fixedToday(){
   return openTasks().filter(function(t){ return !!t.fixedStart; })
     .sort(function(a,b){ return hhmmToMins(a.fixedStart) - hhmmToMins(b.fixedStart); });
 }
+/* An appointment still belongs to wherever you said it happens. Pinned to
+   Work, it won't hijack the orb while you're at home — the topbar chip still
+   warns you about it. */
 function currentFixed(){
   var m = minsOfDay(), f = fixedToday();
-  for(var i=0;i<f.length;i++){ if(m >= hhmmToMins(f[i].fixedStart) && m < taskEndMins(f[i])) return f[i]; }
+  for(var i=0;i<f.length;i++){
+    if(m >= hhmmToMins(f[i].fixedStart) && m < taskEndMins(f[i]) && locationOK(f[i])) return f[i];
+  }
   return null;
 }
-function nextFixed(){
+function nextFixed(hereOnly){
   var m = minsOfDay(), f = fixedToday();
-  for(var i=0;i<f.length;i++){ if(hhmmToMins(f[i].fixedStart) > m) return f[i]; }
+  for(var i=0;i<f.length;i++){
+    if(hhmmToMins(f[i].fixedStart) > m && (!hereOnly || locationOK(f[i]))) return f[i];
+  }
   return null;
 }
 
@@ -720,7 +738,7 @@ function lunchInfo(){
 }
 /* the next wall you'll hit, and what it is */
 function runway(){
-  var m = minsOfDay(), L = lunchInfo(), end = hhmmToMins(S.settings.workUntil), nf = nextFixed(), walls = [];
+  var m = minsOfDay(), L = lunchInfo(), end = hhmmToMins(S.settings.workUntil), nf = nextFixed(true), walls = [];
   if(nf) walls.push({ mins:hhmmToMins(nf.fixedStart) - m, what:nf.name+" at "+nf.fixedStart, kind:"fixed" });
   if(L.pending) walls.push({ mins:Math.max(0, L.to - m), what:"lunch", kind:"lunch" });
   if(!S.session.workFinished && end != null && end > m) walls.push({ mins:end - m, what:"the end of the day", kind:"day" });
@@ -852,6 +870,20 @@ function chooseTask(){
     S.ui.forcedId = null;
   }
 
+  /* Once a task is on the orb it stays there until something actually changes.
+     Without this the random tie-breaker could swap it out mid-glance. */
+  if(S.ui.pinnedId){
+    for(var pi=0; pi<pool.length; pi++){
+      if(pool[pi].id === S.ui.pinnedId){
+        if(!transit && pool[pi].duration > ctx.runway.mins + 5) break;   /* wall moved — pick again */
+        var kept = scoreTask(pool[pi], ctx);
+        return { task:pool[pi], why:kept.why, pinned:true,
+                 rest: pool.filter(function(x){ return x.id !== S.ui.pinnedId; }) };
+      }
+    }
+    S.ui.pinnedId = null;
+  }
+
   var ranked = pool.map(function(t){
     var r = scoreTask(t, ctx);
     return { task:t, score:r.score + Math.random()*4, why:r.why };
@@ -861,6 +893,7 @@ function chooseTask(){
   if(!transit && best.score < -60 && L.pending && L.inWindow) return { lunch:true, early:true };
   if(!transit && best.score < -60) return { task:null, reason:"nofit", gap:ctx.runway };
   best.rest = ranked.slice(1).filter(function(r){ return r.score > -900; }).map(function(r){ return r.task; });
+  S.ui.pinnedId = best.task.id;
   return best;
 }
 
@@ -997,7 +1030,7 @@ function orbGeom(){
   var d = wrap ? wrap.offsetWidth : 240;
   var W = stage.offsetWidth || 360, widest = 0;
   Orb.labels.forEach(function(el){ widest = Math.max(widest, el.offsetWidth); });
-  var rx = Math.max(d*0.42, Math.min(d/2 + 58, W/2 - widest/2 - 6));
+  var rx = Math.max(72, Math.min(d/2 + 58, W/2 - widest/2 - 8));
   return { r:d/2, rx:rx, ry:20, yOff:d/2 + 22, w:W };
 }
 function orbLayout(){
@@ -1112,6 +1145,7 @@ function revealFace(){
   face.classList.add("surfacing");
 }
 function changeLocation(id){
+  unpin();
   var prev = S.session.location, prevPlace = S.session.lastPlace;
   S.session.location = id;
   S.ui.forcedId = null;
@@ -1123,7 +1157,7 @@ function changeLocation(id){
     }
     S.session.lastPlace = id; S.session.briefed = false;
   }
-  save(); applyHue(); renderNow(); renderChips();
+  save(); applyHue(); renderNow(true); renderChips();
 }
 
 /* ---------- swipes on the sphere ---------- */
@@ -1184,18 +1218,55 @@ function swipeUp(e){
 /* ============================================================
    11. DASHBOARD
    ============================================================ */
-function renderNow(){
-  var root = document.getElementById("nowRoot"), s = S.session;
-  applyHue();
-  if(s.dayClosed){ root.innerHTML = viewDayClosed(); orbMount(); revealFace(); return; }
-  if(!s.started){ root.innerHTML = viewStart(); return; }
-  if(S.focus){ root.innerHTML = viewFocus(); orbMount(); startTicker(); return; }
-  if(!isTransit(s.location) && s.lunchState === "active"){ root.innerHTML = viewLunchActive(); orbMount(); return; }
-  if(!openTasks().length){ root.innerHTML = viewEmpty(); orbMount(); return; }
+/* What the dashboard should be showing, worked out before anything is drawn.
+   If it matches what's already on screen the ink is left alone and only the
+   time-sensitive lines are refreshed. */
+function nowView(){
+  var s = S.session;
+  if(s.dayClosed) return { kind:"closed" };
+  if(!s.started) return { kind:"start" };
+  if(S.focus) return { kind:"focus", id:S.focus.taskId, paused:!!S.focus.paused, mins:S.focus.plannedMin + S.focus.addedMin };
+  if(!isTransit(s.location) && s.lunchState === "active") return { kind:"lunchOn" };
+  if(!openTasks().length) return { kind:"empty" };
   var choice = chooseTask();
-  if(choice.lunch){ root.innerHTML = viewLunchDue(choice.early); orbMount(); return; }
-  if(!choice.task){ root.innerHTML = viewNothing(choice); orbMount(); return; }
-  root.innerHTML = isTransit(s.location) ? viewTransit(choice) : viewOne(choice);
+  if(choice.lunch) return { kind:"lunchDue", early:!!choice.early, choice:choice };
+  if(!choice.task) return { kind:"nothing", choice:choice };
+  return { kind: isTransit(s.location) ? "transit" : "one", choice:choice, id:choice.task.id };
+}
+function viewSig(v){
+  return [v.kind, v.id||"", v.paused?1:0, v.mins||"", S.session.location,
+          v.choice && v.choice.rest ? v.choice.rest.length : 0].join("|");
+}
+var lastNowSig = null;
+function refreshNowLines(){
+  var rl = document.querySelector("#nowRoot .runway"), dl = document.querySelector("#nowRoot .dayline");
+  if(rl && !S.focus && !isTransit(S.session.location) && !S.session.dayClosed){
+    var w = runway();
+    if(w.kind !== "none") rl.textContent = fmtDur(w.mins)+" until "+w.what;
+  }
+  if(dl){
+    var p = dayProgress();
+    if(/done/.test(dl.textContent)) dl.textContent = p.count+" done · "+fmtDur(p.done)+" focused";
+  }
+  paintDayRing();
+}
+function renderNow(force){
+  var root = document.getElementById("nowRoot");
+  applyHue();
+  var v = nowView(), sig = viewSig(v);
+  if(!force && sig === lastNowSig && document.getElementById("orbStage")){
+    refreshNowLines();
+    return;
+  }
+  lastNowSig = sig;
+  if(v.kind === "closed"){ root.innerHTML = viewDayClosed(); orbMount(); revealFace(); return; }
+  if(v.kind === "start"){ root.innerHTML = viewStart(); return; }
+  if(v.kind === "focus"){ root.innerHTML = viewFocus(); orbMount(); startTicker(); return; }
+  if(v.kind === "lunchOn"){ root.innerHTML = viewLunchActive(); orbMount(); return; }
+  if(v.kind === "empty"){ root.innerHTML = viewEmpty(); orbMount(); return; }
+  if(v.kind === "lunchDue"){ root.innerHTML = viewLunchDue(v.early); orbMount(); return; }
+  if(v.kind === "nothing"){ root.innerHTML = viewNothing(v.choice); orbMount(); return; }
+  root.innerHTML = v.kind === "transit" ? viewTransit(v.choice) : viewOne(v.choice);
   orbMount(); revealFace(); paintDayRing();
 }
 function todayLog(){ var d = todayKey(); return S.log.filter(function(l){ return l.date === d; }); }
@@ -1229,7 +1300,8 @@ function viewStart(){
 }
 function viewEmpty(){
   return orbHTML('<div class="orb-task">Empty</div><div class="orb-sub">nothing in the ball</div>', { quiet:true })+
-    '<p class="runway">Swipe down on the orb to add something</p>';
+    '<p class="runway">Swipe down on the orb to add something</p>'+
+    (micSupported() ? '<p class="dayline">or hold the mic in Add Task and just say it</p>' : '');
 }
 function viewNothing(choice){
   var here = locLabel(S.session.location);
@@ -1309,20 +1381,20 @@ function orbTap(){
     var f = S.focus;
     if(f.paused){ f.startedAt += (Date.now() - f.pausedAt); f.paused = false; f.pausedAt = null; }
     else { f.paused = true; f.pausedAt = Date.now(); }
-    save(); renderNow();
+    save(); renderNow(true);
     return;
   }
   if(!isTransit(s.location) && s.lunchState === "active"){
-    S.session.lunchState = "done"; save(); renderNow(); toast("Right. Back to it."); return;
+    S.session.lunchState = "done"; save(); renderNow(true); toast("Right. Back to it."); return;
   }
   var choice = chooseTask();
   if(choice.lunch){
     S.session.lunchState = "active";
     S.session.lunchEndsAt = Date.now() + S.settings.lunchDuration*60000;
-    save(); renderNow(); return;
+    save(); renderNow(true); return;
   }
   if(!choice.task) return;
-  if(isTransit(s.location)){ settleTask(choice.task, choice.task.duration); renderNow(); return; }
+  if(isTransit(s.location)){ settleTask(choice.task, choice.task.duration); renderNow(true); return; }
   if(choice.fixed){ beginFocus(choice.task, Math.max(1, taskEndMins(choice.task) - minsOfDay())); return; }
   beginFocus(choice.task);
 }
@@ -1338,12 +1410,12 @@ function orbSwipe(dir){
   }
   var choice = chooseTask(), t = choice.task;
   if(!t) return;
-  if(dir === "r"){ settleTask(t, t.duration); renderNow(); return; }
+  if(dir === "r"){ settleTask(t, t.duration); renderNow(true); return; }
   if(dir === "l"){
     if(choice.fixed){ toast("That one's happening whether you like it or not."); return; }
     t.postponedToday++; t.lastPostponedAt = Date.now();
     if((t.priority === "must" || t.priority === "important") && t.postponedToday >= 3) S.ui.forcedId = t.id;
-    save();
+    unpin(); save();
     toast(t.postponedToday === 1 ? voice("dodge1")[0] : (t.postponedToday === 2 ? voice("dodge2")[0] : voice("dodge3")[0]));
     renderNow();
     return;
@@ -1399,7 +1471,7 @@ function tick(){
 function beginFocus(t, forcedMins){
   S.focus = { taskId:t.id, startedAt:Date.now(), plannedMin:forcedMins || t.duration, addedMin:0, extensions:0, paused:false, pausedAt:null, rang:false };
   S.ui.forcedId = null;
-  save(); renderNow();
+  save(); renderNow(true);
   toast(voice("start", { mins: forcedMins || t.duration })[0]);
 }
 function endFocus(){
@@ -1411,16 +1483,16 @@ function endFocus(){
 function finishFocus(){
   var t = byId(S.focus && S.focus.taskId), mins = endFocus();
   if(t) settleTask(t, mins);
-  closeSheet(); save(); renderNow();
+  closeSheet(); save(); renderNow(true);
 }
 function abandonFocus(block){
   var t = byId(S.focus && S.focus.taskId), mins = endFocus();
   if(t){
     t.actualMinutes = (t.actualMinutes||0) + mins;
-    if(block){ save(); closeSheet(); renderNow(); openSheet(sheetBlocked(t.id)); return; }
+    if(block){ save(); closeSheet(); renderNow(true); openSheet(sheetBlocked(t.id)); return; }
     t.postponedToday++; t.lastPostponedAt = Date.now();
   }
-  save(); closeSheet(); renderNow(); toast("Fine. Something else then.");
+  save(); closeSheet(); renderNow(true); toast("Fine. Something else then.");
 }
 
 /* ============================================================
@@ -1433,6 +1505,7 @@ function openSheet(html, bind){
   if(bind) bind();
 }
 function closeSheet(){
+  stopDictation();
   document.getElementById("sheet").classList.remove("is-on");
   document.getElementById("backdrop").classList.remove("is-on");
 }
@@ -1513,6 +1586,136 @@ var EFF_STEPS = EFFORT_ORDER.map(function(k){ return { value:k, label:EFFORT[k] 
 var CAT_STEPS = [{ value:"Work", label:"Work" }, { value:"Personal", label:"Personal" }];
 var REPEATS = [{v:0,l:"Never"},{v:30,l:"30m"},{v:60,l:"1h"},{v:120,l:"2h"},{v:180,l:"3h"},{v:240,l:"4h"}];
 
+var MIC_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"/><path d="M18 11a1 1 0 0 0-2 0 4 4 0 0 1-8 0 1 1 0 0 0-2 0 6 6 0 0 0 5 5.91V20H9a1 1 0 0 0 0 2h6a1 1 0 0 0 0-2h-2v-3.09A6 6 0 0 0 18 11z"/></svg>';
+
+/* Turn a spoken sentence into a task. Anything it recognises is stripped out
+   of the name, so "reply to Dave at work, 10 minutes, important" leaves
+   "Reply to Dave". Everything it sets is shown in the sheet before you save. */
+var NUM_WORDS = { one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,
+  eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,seventeen:17,eighteen:18,
+  nineteen:19,twenty:20,thirty:30,forty:40,fifty:50,sixty:60,ninety:90 };
+function wordNumbers(t){
+  t = t.replace(/\b(twenty|thirty|forty|fifty)[\s-](one|two|three|four|five|six|seven|eight|nine)\b/gi,
+      function(_,a,b){ return (NUM_WORDS[a.toLowerCase()]||0) + (NUM_WORDS[b.toLowerCase()]||0); });
+  t = t.replace(/\b([a-z]+)\s+(minutes?|mins?|min|hours?|hrs?)\b/gi,
+      function(all,w,u){ var n = NUM_WORDS[w.toLowerCase()]; return n ? n+" "+u : all; });
+  t = t.replace(/\b(at|from)\s+([a-z]+)\b/gi,
+      function(all,pre,w){ var n = NUM_WORDS[w.toLowerCase()]; return (n && n <= 12) ? pre+" "+n : all; });
+  return t;
+}
+function parseSpoken(raw){
+  var text = " " + wordNumbers(String(raw||"").trim()) + " ";
+  var d = {}, said = [], m;
+  function eat(re){ var mm = text.match(re); if(mm){ text = text.replace(mm[0], " "); return mm; } return null; }
+
+  /* repeats before durations - "every 30 minutes" contains a duration */
+  if((m = eat(/\bevery\s+(\d{1,3})\s*(minutes?|mins?|m)\b/i))) d.repeatEvery = +m[1];
+  else if((m = eat(/\bevery\s+(\d{1,2})\s*(hours?|hrs?|h)\b/i))) d.repeatEvery = (+m[1])*60;
+  else if(eat(/\bevery\s+half\s*(an\s*)?hour\b/i)) d.repeatEvery = 30;
+  else if(eat(/\bevery\s+hour\b/i)) d.repeatEvery = 60;
+  if(d.repeatEvery){ said.push(repeatLabel(d.repeatEvery)); d.effort = "easy"; }
+
+  /* a fixed time */
+  if((m = eat(/\b(?:at|from)\s+(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)?(?=\s|$)/i))){
+    var hh = +m[1], mm2 = m[2] ? +m[2] : 0, ap = (m[3]||"").toLowerCase();
+    if(/^p/.test(ap) && hh < 12) hh += 12;
+    if(/^a/.test(ap) && hh === 12) hh = 0;
+    if(!ap && hh >= 1 && hh <= 7) hh += 12;        /* "at 3" means this afternoon */
+    if(hh < 24 && mm2 < 60){
+      d.timed = true; d.fixedStart = pad(hh)+":"+pad(mm2);
+      d.priority = "must"; d.type = "Meeting";
+      said.push("at "+d.fixedStart);
+    }
+  }
+
+  /* how long */
+  var LEAD = "(?:for\\s+|about\\s+|around\\s+|roughly\\s+|lasting\\s+|takes\\s+)?";
+  if((m = eat(new RegExp("\\b"+LEAD+"(\\d{1,3})\\s*(?:minutes?|mins?|min)\\b","i")))) d.duration = +m[1];
+  else if((m = eat(new RegExp("\\b"+LEAD+"(\\d{1,2})\\s*(?:hours?|hrs?)\\b","i")))) d.duration = (+m[1])*60;
+  else if(eat(new RegExp("\\b"+LEAD+"(?:an?\\s+)?hour\\s+and\\s+a\\s+half\\b","i"))) d.duration = 90;
+  else if(eat(new RegExp("\\b"+LEAD+"half\\s+an\\s+hour\\b","i"))) d.duration = 30;
+  else if(eat(new RegExp("\\b"+LEAD+"quarter\\s+of\\s+an\\s+hour\\b","i"))) d.duration = 15;
+  else if(eat(new RegExp("\\b"+LEAD+"(?:an|one)\\s+hour\\b","i"))) d.duration = 60;
+  if(d.duration) said.push(d.duration+" min");
+
+  /* how much it matters */
+  if(eat(/\b(must do today|must be done today|urgent|urgently|top priority|first thing|asap)\b/i)) d.priority = "must";
+  else if(eat(/\bimportant\b/i)) d.priority = "important";
+  else if(eat(/\b(optional|if i (get|have) (the )?time|nice to have|whenever|no rush)\b/i)) d.priority = "optional";
+  if(d.priority && !d.timed) said.push(PRIORITY[d.priority]);
+
+  /* how heavy */
+  if(eat(/\b(deep work|proper(ly)? focus|head down|concentrate|focus session)\b/i)) d.effort = "deep";
+  else if(eat(/\b(quick|quickly|easy|small|two minute|five minute)\b/i)) d.effort = "easy";
+
+  /* where. "On the way home" is a journey, so transit phrases are read before
+     location names — otherwise the word "home" hijacks it. */
+  var here = null;
+  var transit = (transitLocs()[0]||{}).id;
+  var TRANSIT_PHRASE = /\b(?:(?:on|in)\s+(?:the|my)\s+way(?:\s+(?:home|back|in|out|there|to\s+\w+))?|while\s+i'?m\s+out|when\s+i'?m\s+out|out\s+and\s+about|in\s+town|at\s+the\s+shops?|on\s+the\s+road)\b/i;
+  if(transit && TRANSIT_PHRASE.test(text)){ here = transit; text = text.replace(TRANSIT_PHRASE, " "); }
+  if(!here) S.locations.forEach(function(l){
+    if(here) return;
+    var words = l.label.replace(/&/g," ").split(/\s+/).filter(function(w){ return w.length > 2; });
+    var re = new RegExp("\\b(?:at|in|from|when i'?m at|while i'?m at)?\\s*"+
+                        words.map(function(w){ return w.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"); }).join("\\s+(?:and\\s+)?")+"\\b","i");
+    if(re.test(text)){ here = l.id; text = text.replace(re, " "); }
+  });
+  if(!here && transit && ERRANDY.test(text)) here = transit;
+  if(!here && HOUSEHOLD.test(text)) here = locById("home") ? "home" : (places()[0]||{}).id;
+  if(here){
+    d.locations = [here];
+    said.push(locLabel(here));
+    if(isTransit(here)){ d.category = "Personal"; d.type = "Errand"; d.effort = d.effort || "easy"; }
+  }
+  if(!d.category && (HOUSEHOLD.test(text) || /\b(personal|for me|my own)\b/i.test(text))) d.category = "Personal";
+
+  /* what's left is the name */
+  var name = text.replace(/\b(add (a )?task|add|remind me to|remember to|i need to|i've got to|i have to|note to self|please|task)\b/ig," ")
+                 .replace(/[\s,;.]+/g," ")
+                 .replace(/^[\s,;.-]+|[\s,;.-]+$/g,"")
+                 .trim();
+  if(name) d.name = name.charAt(0).toUpperCase() + name.slice(1);
+  d._said = said;
+  return d;
+}
+
+/* ---------- dictation ---------- */
+var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+var rec = null, recBtn = null;
+function micSupported(){ return !!SR; }
+function stopDictation(){ try{ if(rec) rec.stop(); }catch(e){} }
+function dictate(btn, onInterim, onFinal){
+  if(!SR){ toast("This browser can't listen. Type it instead."); return; }
+  if(rec){ stopDictation(); return; }
+  var r = new SR(), finalText = "";
+  r.lang = (navigator.language && /^en/i.test(navigator.language)) ? navigator.language : "en-GB";
+  r.interimResults = true; r.continuous = false; r.maxAlternatives = 1;
+  r.onresult = function(e){
+    var interim = "";
+    for(var i = e.resultIndex; i < e.results.length; i++){
+      if(e.results[i].isFinal) finalText += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    onInterim(finalText + interim);
+  };
+  r.onerror = function(e){
+    var msg = { "not-allowed":"Microphone blocked. Allow it for this site — inside a preview frame it can't ask.",
+                "service-not-allowed":"Microphone blocked. Open ONE from its own web address and allow the mic.",
+                "no-speech":"Didn't catch that.",
+                "audio-capture":"No microphone found.",
+                "network":"Speech needs a connection." }[e.error] || "Couldn't listen just then.";
+    toast(msg);
+  };
+  r.onend = function(){
+    rec = null;
+    if(recBtn){ recBtn.classList.remove("on"); recBtn = null; }
+    if(finalText.trim()) onFinal(finalText.trim());
+  };
+  try{ r.start(); rec = r; recBtn = btn; btn.classList.add("on"); }
+  catch(err){ toast("Couldn't start listening."); }
+}
+
 var draft = null;
 function newDraft(){
   var here = S.session.location;
@@ -1534,7 +1737,11 @@ function sheetAddTask(){
   }).join("");
   return ''+
   '<div class="sheet-head"><h2 class="sec">Add a task</h2><button class="icon-btn" data-act="close-sheet" aria-label="Close">✕</button></div>'+
-  '<div class="field"><label>What is it?</label><input type="text" id="at-name" placeholder="Do the pay run" value="'+esc(draft.name)+'" autocomplete="off"></div>'+
+  '<div class="field"><label>What is it?</label>'+
+    '<div class="inline"><input type="text" id="at-name" placeholder="Do the pay run" value="'+esc(draft.name)+'" autocomplete="off">'+
+    (micSupported() ? '<button class="mic" id="at-mic" type="button" aria-label="Dictate the task">'+MIC_SVG+'</button>' : '')+'</div>'+
+    '<p class="hint heard" id="at-heard"></p>'+
+  '</div>'+
   '<div class="field"><label>How long</label><div class="stepper">'+
     '<button class="step" data-dur="-15">−15</button><button class="step" data-dur="-5">−5</button>'+
     '<div class="val" id="at-dur">'+draft.duration+'<small>minutes</small></div>'+
@@ -1559,8 +1766,49 @@ function sheetAddTask(){
   '</div>'+
   '<button class="btn go wide" data-act="save-task">Add it</button>';
 }
+/* after dictation, push the whole parsed draft back into the controls */
+function syncAddSheet(){
+  var root = document.getElementById("sheetRoot");
+  if(!root || !root.querySelector("#at-name")) return;
+  root.querySelector("#at-name").value = draft.name || "";
+  root.querySelector("#at-dur").innerHTML = draft.duration+"<small>minutes</small>";
+  var pri = document.getElementById("sl-pri"), eff = document.getElementById("sl-eff"), cat = document.getElementById("sl-cat");
+  if(pri && pri._setIndex) pri._setIndex(Math.max(0, PRIORITY_ORDER.indexOf(draft.priority)));
+  if(eff && eff._setIndex) eff._setIndex(Math.max(0, EFFORT_ORDER.indexOf(draft.effort)));
+  if(cat && cat._setIndex) cat._setIndex(draft.category === "Personal" ? 1 : 0);
+  root.querySelectorAll("[data-loc]").forEach(function(x){ x.setAttribute("aria-pressed", String(draft.locations.indexOf(x.dataset.loc) > -1)); });
+  root.querySelectorAll("[data-type]").forEach(function(x){ x.setAttribute("aria-pressed", String(x.dataset.type === draft.type)); });
+  root.querySelectorAll("[data-rep]").forEach(function(x){ x.setAttribute("aria-pressed", String(+x.dataset.rep === (draft.repeatEvery||0))); });
+  var rh = root.querySelector("#at-rephint"); if(rh) rh.style.display = draft.repeatEvery ? "" : "none";
+  var tb = root.querySelector("#at-timed"), ub = root.querySelector("#at-untimed");
+  if(tb && ub){
+    tb.setAttribute("aria-pressed", String(!!draft.timed));
+    ub.setAttribute("aria-pressed", String(!draft.timed));
+    root.querySelector("#at-times").style.display = draft.timed ? "" : "none";
+    root.querySelector("#at-timedhint").style.display = draft.timed ? "" : "none";
+    if(draft.timed){
+      root.querySelector("#at-start").value = draft.fixedStart;
+      root.querySelector("#at-end").value = minsToHHMM(hhmmToMins(draft.fixedStart) + draft.duration);
+    }
+  }
+}
+
 function bindAddTask(){
   var root = document.getElementById("sheetRoot");
+  var mic = root.querySelector("#at-mic"), heard = root.querySelector("#at-heard");
+  if(mic){
+    mic.addEventListener("click", function(){
+      heard.textContent = "Listening…";
+      dictate(mic, function(txt){ heard.textContent = "“"+txt+"”"; },
+        function(txt){
+          var got = parseSpoken(txt);
+          Object.keys(got).forEach(function(k){ if(k.charAt(0) !== "_") draft[k] = got[k]; });
+          if(draft.timed && !draft.fixedStart) draft.timed = false;
+          syncAddSheet();
+          heard.textContent = got._said && got._said.length ? "Heard: "+got._said.join(" · ") : "“"+txt+"”";
+        });
+    });
+  }
   var nameEl = root.querySelector("#at-name");
   if(nameEl){
     nameEl.focus();
@@ -1660,11 +1908,26 @@ function sheetBrainDump(){
   '<div class="sheet-head"><h2 class="sec">Brain dump</h2><button class="icon-btn" data-act="close-sheet" aria-label="Close">✕</button></div>'+
   '<p class="hint">One per line. Default '+S.settings.defaultDuration+' minutes — end with <b>20m</b> to set length, start with <b>!</b> for must-do-today, write <b>@11:00</b> to pin it to a time, or <b>every 1h</b> to make it a check-in. Household jobs stay out of work hours'+(out?', shop runs go to <b>'+esc(out.label)+'</b>':'')+'.</p>'+
   '<textarea id="bd-text" rows="8" placeholder="Do the pay run 45m&#10;Sales meeting @11:00 60m&#10;Check emails every 1h 10m&#10;Petrol&#10;Empty the bin"></textarea>'+
+  (micSupported() ? '<div class="inline"><button class="mic" id="bd-mic" type="button" aria-label="Dictate a line">'+MIC_SVG+'</button>'+
+    '<span class="hint" id="bd-heard">Speak one, it goes on its own line.</span></div>' : '')+
   '<button class="btn go wide" id="bd-save">Add them all</button>';
 }
 function bindBrainDump(){
   var root = document.getElementById("sheetRoot"), ta = root.querySelector("#bd-text");
   if(ta) ta.focus();
+  var mic = root.querySelector("#bd-mic"), heard = root.querySelector("#bd-heard");
+  if(mic){
+    mic.addEventListener("click", function(){
+      var base = ta.value;
+      heard.textContent = "Listening…";
+      dictate(mic, function(txt){ ta.value = (base ? base.replace(/\n$/,"")+"\n" : "") + txt; },
+        function(txt){
+          ta.value = (base ? base.replace(/\n$/,"")+"\n" : "") + txt + "\n";
+          heard.textContent = "Speak another, or add them all.";
+          ta.scrollTop = ta.scrollHeight;
+        });
+    });
+  }
   root.querySelector("#bd-save").addEventListener("click", function(){
     var lines = (ta.value||"").split("\n").map(function(l){ return l.trim(); }).filter(Boolean);
     if(!lines.length){ toast("Nothing to add yet."); return; }
@@ -1829,18 +2092,51 @@ function renderPlan(){
   }).join("");
   var hours = "";
   for(var h = 6; h <= 23; h++) hours += '<div class="tl-hour" style="top:'+y(h*60)+'px">'+pad(h)+':00</div>';
-  var blocks = fixedToday().map(function(t){
-    var f = hhmmToMins(t.fixedStart), e = taskEndMins(t);
-    if(e <= startM) return "";
-    return '<div class="tl-block fixed" style="top:'+y(f)+'px;height:'+Math.max(32,(e-f)*PX_PER_MIN)+'px">'+
-      '<span class="t">'+esc(t.fixedStart)+'–'+esc(minsToHHMM(e))+'</span>'+esc(t.name)+'</div>';
+  /* Anything that overlaps in time gets side-by-side lanes, so every block
+     keeps enough width to read. Lanes are worked out per cluster, so one busy
+     hour doesn't squeeze the rest of the day. */
+  var items = fixedToday().map(function(t){
+    return { from:hhmmToMins(t.fixedStart), to:taskEndMins(t), cls:"fixed",
+             time:t.fixedStart+"–"+minsToHHMM(taskEndMins(t)), label:t.name };
+  });
+  if(S.settings.lunchRequired){
+    items.push({ from:hhmmToMins(S.settings.lunchFrom), to:hhmmToMins(S.settings.lunchTo), cls:"lunch",
+                 time:S.settings.lunchFrom+"–"+S.settings.lunchTo+" window",
+                 label:"Lunch · "+S.settings.lunchDuration+" min" });
+  }
+  items = items.filter(function(it){ return it.to > startM; })
+               .sort(function(a,b){ return a.from - b.from || a.to - b.to; });
+
+  var clusterEnd = -1, cluster = [], laid = [];
+  function flush(){
+    if(!cluster.length) return;
+    var lanes = [];
+    cluster.forEach(function(it){
+      var li = 0;
+      while(lanes[li] != null && lanes[li] > it.from) li++;
+      lanes[li] = it.to; it.lane = li;
+    });
+    var total = lanes.length;
+    cluster.forEach(function(it){ it.lanes = total; });
+    laid = laid.concat(cluster);
+    cluster = [];
+  }
+  items.forEach(function(it){
+    if(cluster.length && it.from >= clusterEnd){ flush(); clusterEnd = -1; }
+    cluster.push(it);
+    clusterEnd = Math.max(clusterEnd, it.to);
+  });
+  flush();
+
+  var blocks = laid.map(function(it){
+    var span = 100 / it.lanes;
+    var left = "calc(40px + (100% - 40px) * "+(it.lane*span/100)+" + "+(it.lane?3:0)+"px)";
+    var width = "calc((100% - 40px) * "+(span/100)+" - "+(it.lanes>1?4:0)+"px)";
+    var h = Math.max(34, (it.to - Math.max(startM, it.from)) * PX_PER_MIN);
+    return '<div class="tl-block '+it.cls+(it.lanes>1?" narrow":"")+'" style="top:'+y(it.from)+'px;height:'+h+'px;left:'+left+';width:'+width+';right:auto">'+
+      '<span class="t">'+esc(it.time)+'</span>'+esc(it.label)+'</div>';
   }).join("");
   var lunchBlock = "";
-  if(S.settings.lunchRequired){
-    var lf = hhmmToMins(S.settings.lunchFrom), lt = hhmmToMins(S.settings.lunchTo);
-    lunchBlock = '<div class="tl-block lunch" style="top:'+y(lf)+'px;height:'+Math.max(32,(lt-lf)*PX_PER_MIN)+'px">'+
-      '<span class="t">'+esc(S.settings.lunchFrom)+'–'+esc(S.settings.lunchTo)+' window</span>Lunch · '+S.settings.lunchDuration+' min</div>';
-  }
   var nowLine = (minsOfDay() >= startM) ? '<div class="tl-now" style="top:'+y(minsOfDay())+'px"></div>' : "";
 
   var segRows = segs.map(function(s, i){
@@ -1894,7 +2190,7 @@ function renderPlan(){
       S.session.segIndex = -1;
       save();
       if(S.settings.autoLocation) applySchedule();
-      applyHue(); renderPlan(); renderNow();
+      applyHue(); renderPlan(); renderNow(true);
     });
   });
 }
@@ -2080,7 +2376,9 @@ function renderChips(){
 /* ============================================================
    16. ACTIONS
    ============================================================ */
+function unpin(){ S.ui.pinnedId = null; }
 function completeTask(t, mins){
+  unpin();
   t.status = "done"; t.completedAt = Date.now();
   t.actualMinutes = mins || t.actualMinutes || t.duration;
   S.log.push({ date:todayKey(), taskId:t.id, name:t.name, type:t.type, minutes:t.actualMinutes, at:t.completedAt, kind:"done" });
@@ -2101,7 +2399,7 @@ document.addEventListener("click", function(e){
     case "undone": if(t){ t.status="open"; t.completedAt=null; save(); render(); } break;
     case "unblock": if(t){ t.status="open"; t.blockedReason=null; save(); render(); toast("Back in play."); } break;
     case "block-reason":
-      if(t){ t.status="blocked"; t.blockedReason=b.dataset.reason; save(); }
+      if(t){ t.status="blocked"; t.blockedReason=b.dataset.reason; unpin(); save(); }
       closeSheet(); toast("Parked. I won't keep asking."); render();
       break;
     case "edit": openEditSheet(id); break;
@@ -2124,25 +2422,25 @@ document.addEventListener("click", function(e){
     case "tu-rabbit": {
       var rt = byId(S.focus && S.focus.taskId), rm = endFocus();
       if(rt){ rt.actualMinutes = (rt.actualMinutes||0)+rm; rt.lastPostponedAt = Date.now(); }
-      closeSheet(); save(); renderNow(); toast(voice("rabbit")[0]);
+      closeSheet(); save(); renderNow(true); toast(voice("rabbit")[0]);
       break;
     }
     case "extend": {
       var ef = S.focus; if(!ef) break;
       var add = +b.dataset.min;
       ef.addedMin += add; ef.extensions++; ef.rang = false;
-      save(); closeSheet(); renderNow();
+      save(); closeSheet(); renderNow(true);
       toast(ef.extensions === 1 ? voice("ext1",{add:add})[0] : voice("extN",{plan:ef.plannedMin,total:fmtDur(ef.plannedMin+ef.addedMin)})[0]);
       break;
     }
     case "finish-work": S.session.workFinished = true; save(); render(); toast(transitTasks().length ? "Work's done. Check the pickup list." : "Work's done. Leave it there."); break;
     case "resume-work": S.session.workFinished = false; save(); render(); break;
     case "close-day": S.session.dayClosed = true; save(); go("now"); break;
-    case "reopen": S.session.dayClosed = false; save(); renderNow(); break;
+    case "reopen": S.session.dayClosed = false; save(); renderNow(true); break;
     case "cycle-mot": {
       var order = ["motivated","meh","unmotivated"];
       S.session.motivation = order[(order.indexOf(S.session.motivation)+1) % 3];
-      S.ui.forcedId = null; save(); renderChips(); renderNow();
+      S.ui.forcedId = null; unpin(); save(); renderChips(); renderNow(true);
       toast("Motivation: "+S.session.motivation+".");
       break;
     }
@@ -2244,7 +2542,7 @@ function render(){
   var y = window.scrollY;
   renderChips();
   var tab = S.ui.tab || "now";
-  if(tab === "now") renderNow();
+  if(tab === "now") renderNow(true);
   if(tab === "plan") renderPlan();
   if(tab === "list") renderList();
   if(tab === "done") renderDone();
@@ -2264,7 +2562,7 @@ document.addEventListener("visibilitychange", function(){
   if(document.visibilityState !== "visible") return;
   checkWarnings();
   if(applySchedule()) applyHue();
-  if(S.focus) startTicker(); else if(S.ui.tab === "now") renderNow();
+  if(S.focus) startTicker(); else if(S.ui.tab === "now") renderNow(true);
   renderChips();
 });
 window.addEventListener("resize", orbLayout);
