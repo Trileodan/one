@@ -10,6 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="ONE">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="one-build" content="20260827-1114-449568">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png" sizes="192x192">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -1639,8 +1640,13 @@ function viewNothing(choice){
 }
 function viewOne(choice){
   var t = choice.task, p = dayProgress(), fixedNow = choice.fixed, w = runway();
+  var spentAlready = isRecurring(t) ? 0 : Math.round(t.actualMinutes || 0);
   var sub = fixedNow ? "until "+minsToHHMM(taskEndMins(t))
-          : (isRecurring(t) ? t.duration+" min · "+repeatLabel(t.repeatEvery) : t.duration+" min · "+t.type);
+          : (isRecurring(t) ? t.duration+" min · "+repeatLabel(t.repeatEvery)
+          : (spentAlready > 0
+              ? (timeLeftOn(t) > 0 ? timeLeftOn(t)+" min left · "+fmtDur(spentAlready)+" in"
+                                   : "over · "+fmtDur(spentAlready)+" in")
+              : t.duration+" min · "+t.type));
   var line = fixedNow
     ? "You're in this until "+minsToHHMM(taskEndMins(t))
     : (w.kind === "none" ? "Nothing in the way" : fmtDur(w.mins)+" until "+w.what);
@@ -1655,7 +1661,7 @@ function viewTransit(choice){
   return ''+
     '<p class="eyebrow cool">While you\'re out</p>'+
     orbHTML(faceTask(t, t.type))+
-    '<p class="runway">'+(rest.length ? (rest.length+1)+" to pick up" : "Last one")+'</p>'+
+    '<p class="runway">'+(rest.length ? (rest.length+1)+" errands" : "Last one")+'</p>'+
     (rest.length ? '<div class="pickup" style="margin-top:12px">'+rest.map(function(x){
       return '<button class="pick" data-act="tick" data-id="'+x.id+'"><span class="tick">✓</span>'+esc(x.name)+'</button>';
     }).join("")+'</div>' : '')+
@@ -1835,11 +1841,30 @@ function tick(){
     openSheet(committedTask() ? sheetCommitCheck() : sheetTimeUp());
   }
 }
+/* Minutes already spent on a task belong to that task. Come back to something
+   you parked and the clock carries on from where you left it, rather than
+   handing you the full estimate all over again. Check-ins are the exception:
+   every cycle is its own fresh session. */
+function timeLeftOn(t){
+  if(isRecurring(t)) return t.duration;
+  var spent = Math.round(t.actualMinutes || 0);
+  if(spent <= 0) return t.duration;
+  return t.duration - spent;
+}
 function beginFocus(t, forcedMins){
   if(!t.originalEstimate) t.originalEstimate = t.duration;
-  S.focus = { taskId:t.id, startedAt:Date.now(), plannedMin:forcedMins || t.duration, addedMin:0, extensions:0, paused:false, pausedAt:null, rang:false };
+  var spent = isRecurring(t) ? 0 : Math.round(t.actualMinutes || 0);
+  var left = timeLeftOn(t);
+  var planned = forcedMins || (spent > 0 ? Math.max(5, left) : t.duration);
+  S.focus = { taskId:t.id, startedAt:Date.now(), plannedMin:planned, addedMin:0, extensions:0,
+              paused:false, pausedAt:null, rang:false, resumedFrom: spent > 0 ? spent : 0 };
   save(); renderNow(true);
-  toast(voice("start", { mins: forcedMins || t.duration })[0]);
+  if(spent > 0 && !forcedMins){
+    toast(left > 0 ? "Picking up where you left off — "+fmtDur(spent)+" already in."
+                   : "You're already past the estimate. "+planned+" minutes to see it off.");
+  } else {
+    toast(voice("start", { mins: planned })[0]);
+  }
 }
 function endFocus(){
   var f = S.focus; if(!f) return 0;
@@ -2677,7 +2702,12 @@ function rowHTML(t){
   }
   if(isCommitted(t)) meta += '<span class="mini hot">Committed</span>';
   if(t.safeStopped) meta += '<span class="mini good">Left safe</span>';
-  if(t.originalEstimate && t.actualMinutes > t.originalEstimate)
+  if(t.status === "open" && !isRecurring(t) && t.actualMinutes > 0){
+    meta += timeLeftOn(t) > 0
+      ? '<span class="mini cool">'+fmtDur(t.actualMinutes)+' in · '+timeLeftOn(t)+'m left</span>'
+      : '<span class="mini hot">'+fmtDur(t.actualMinutes)+' in · over estimate</span>';
+  }
+  if(t.status === "done" && t.originalEstimate && t.actualMinutes > t.originalEstimate)
     meta += '<span class="mini">'+t.originalEstimate+'m est · '+fmtDur(t.actualMinutes)+' actual</span>';
   if(t.postponedToday) meta += '<span class="mini hot">Dodged '+t.postponedToday+'×</span>';
   if(t.status === "blocked" && t.blockedReason) meta += '<span class="mini">'+esc(t.blockedReason)+'</span>';
@@ -2828,6 +2858,7 @@ function renderYou(){
       '<button class="btn quiet wide" data-act="wipe">Clear everything and start again</button>'+
     '</div>'+
     '<p class="hint">Everything lives on this device. Nothing is sent anywhere.</p>'+
+    '<p class="hint" style="font-family:var(--mono);font-size:11px;letter-spacing:.08em">Build '+esc(buildId())+'</p>'+
   '</div>';
 
   var root = document.getElementById("youRoot");
@@ -2851,6 +2882,10 @@ function renderYou(){
     save(); renderChips(); toast("Saved.");
   });
 }
+function buildId(){
+  var m = document.querySelector('meta[name="one-build"]');
+  return (m && m.content) ? m.content : "dev";
+}
 function renderChips(){
   var s = S.session, L = lunchInfo();
   var motLabel = { motivated:"Motivated", meh:"Meh", unmotivated:"Unmotivated" }[s.motivation];
@@ -2861,7 +2896,10 @@ function renderChips(){
       extra = '<span class="statchip is-hi">'+esc(nf.name)+' '+esc(nf.fixedStart)+'</span>';
     } else if(L.active){ extra = '<span class="statchip is-cool">Lunch</span>'; }
     else if(L.pending && L.beforeWindow && L.minsToOpen <= 45){ extra = '<span class="statchip is-cool">Lunch in '+fmtDur(L.minsToOpen)+'</span>'; }
-    else if(departureImminent()){ extra = '<span class="statchip is-cool">'+transitTasks().length+' to pick up</span>'; }
+    else if(departureImminent()){
+      var n = transitTasks().length;
+      extra = '<span class="statchip is-cool">'+n+' errand'+(n === 1 ? '' : 's')+'</span>';
+    }
   }
   document.getElementById("statchips").innerHTML = chips + extra;
 }
@@ -3173,6 +3211,9 @@ if(!CAN_STORE){
   document.querySelector("main").prepend(warn);
 }
 
+/* the offline shell tells the page when a newer build is sitting ready */
+window.__oneToast = toast;
+
 applySchedule();
 applyHue();
 checkWarnings();
@@ -3183,12 +3224,32 @@ if(!S.profile.sawGestures && S.session.started) showGestures();
 </script>
 <script>
 /* Served over https (GitHub Pages), ONE installs to the home screen and keeps
-   working with no signal. Anywhere else this is a no-op. */
-if ('serviceWorker' in navigator && location.protocol === 'https:') {
+   working with no signal. Anywhere else this is a no-op.
+
+   The ?v= stamp changes on every build, so the browser can't quietly hand back
+   yesterday's worker - a new deploy is a new URL and always installs. When the
+   replacement is ready and waiting, say so rather than silently swapping the
+   app out from under a running timer. */
+(function () {
+  if (!('serviceWorker' in navigator) || location.protocol !== 'https:') return;
+  var BUILD = '20260827-1114-449568';
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('sw.js').catch(function () {});
+    navigator.serviceWorker.register('sw.js?v=' + BUILD).then(function (reg) {
+      function watch(sw) {
+        if (!sw) return;
+        sw.addEventListener('statechange', function () {
+          if (sw.state === 'installed' && navigator.serviceWorker.controller) {
+            var t = window.__oneToast;
+            if (t) t('New version ready', function () { location.reload(); }, 'update');
+          }
+        });
+      }
+      watch(reg.installing);
+      reg.addEventListener('updatefound', function () { watch(reg.installing); });
+      reg.update();
+    }).catch(function () {});
   });
-}
+})();
 </script>
 </body>
 </html>
