@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="ONE">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="one-build" content="20260827-1114-449568">
+<meta name="one-build" content="20260827-1155-b45cdb">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png" sizes="192x192">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -1373,7 +1373,9 @@ function openPicker(){
   if(!el){ el = document.createElement("div"); el.id = "orbPick"; el.className = "orb-pick"; orb.appendChild(el); }
   el.innerHTML = list.map(function(t,i){
     var note = t.duration+" min";
-    if(t.postponedToday >= 3) note += " · dodged "+t.postponedToday+"×";
+    if(S.focus && S.focus.taskId === t.id) note += " · paused";
+    else if(!isRecurring(t) && t.actualMinutes > 0) note += " · "+fmtDur(t.actualMinutes)+" in";
+    else if(t.postponedToday >= 3) note += " · dodged "+t.postponedToday+"×";
     else if(isRecurring(t)) note += " · "+repeatLabel(t.repeatEvery);
     return '<button class="pick-item" type="button" data-pi="'+i+'"><b>'+esc(t.name)+'</b><small>'+esc(note)+'</small></button>';
   }).join("");
@@ -1383,9 +1385,13 @@ function openPicker(){
       ev.stopPropagation();
       if(!Pick.armed) return;
       if(Pick.moved && performance.now() - Pick.movedAt < 320) return;
-      var i = +b.dataset.pi;
-      if(Math.abs(cyc(i - Pick.pos, Pick.list.length)) < 0.5) choosePicked(i);
-      else { Pick.settleTo = Pick.pos + cyc(i - Pick.pos, Pick.list.length); Pick.vel = 0; Pick.snapping = true; pickRun(); }
+      var i = +b.dataset.pi, off = cyc(i - Pick.pos, Pick.list.length);
+      /* You tapped a task by name — take it. Only the still-moving list gets the
+         old behaviour of scrolling your choice to the middle first, because a tap
+         landing mid-flick isn't really a choice. */
+      if(Math.abs(off) > 1.45) return;
+      if(!Pick.raf || Math.abs(off) < 0.5) choosePicked(i);
+      else { Pick.settleTo = Pick.pos + off; Pick.vel = 0; Pick.snapping = true; pickRun(); }
     });
   });
   layoutPicker();
@@ -1400,6 +1406,10 @@ function layoutPicker(){
   Pick.step = Math.max(48, R*0.29);
   Pick.els.forEach(function(el,i){
     var off = cyc(i - Pick.pos, n), ad = Math.abs(off);
+    /* Position everything, even what's out of sight - a hidden item that kept an
+       old transform comes back in the wrong place and, worse, in the wrong place
+       to tap. */
+    el.style.transform = "translate(-50%,-50%) translateY("+(off*Pick.step).toFixed(1)+"px) scale(0.84)";
     if(ad > 1.55){ el.style.opacity = "0"; el.style.visibility = "hidden"; return; }
     el.style.visibility = "visible";
     var op = Math.max(0, 1 - ad/1.45);
@@ -1459,10 +1469,24 @@ function choosePicked(i){
   var t = Pick.list[idx];
   closePicker();
   if(!t) return;
+  /* The picker is offered while a timer is paused, so nine times out of ten
+     there's a half-finished task still holding the screen. Park it properly —
+     minutes banked against it, no black mark for switching — or your choice
+     changes the pin and nothing else, and the orb carries on showing the task
+     you just walked away from. */
+  var parked = null;
+  if(S.focus && S.focus.taskId !== t.id){
+    var old = byId(S.focus.taskId), mins = endFocus();
+    if(old){
+      old.actualMinutes = (old.actualMinutes||0) + mins;
+      parked = { name:old.name, mins:mins };
+    }
+  }
   S.ui.pinnedId = t.id;
   if(t.lastPostponedAt) t.lastPostponedAt = null;      /* you chose it, so it isn't resting any more */
   save(); renderNow(true);
-  toast(voice("picked")[0]);
+  if(parked) toast(parked.name+" parked, "+fmtDur(parked.mins)+" banked. "+t.name+" it is.");
+  else toast(voice("picked")[0]);
 }
 function closePicker(){
   if(!Pick.on) return;
@@ -3232,7 +3256,7 @@ if(!S.profile.sawGestures && S.session.started) showGestures();
    app out from under a running timer. */
 (function () {
   if (!('serviceWorker' in navigator) || location.protocol !== 'https:') return;
-  var BUILD = '20260827-1114-449568';
+  var BUILD = '20260827-1155-b45cdb';
   window.addEventListener('load', function () {
     navigator.serviceWorker.register('sw.js?v=' + BUILD).then(function (reg) {
       function watch(sw) {
