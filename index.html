@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="ONE">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="one-build" content="20260827-1155-b45cdb">
+<meta name="one-build" content="20260901-0922-fb8837">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png" sizes="192x192">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -28,7 +28,8 @@
    everything away from the desk. Mint is done.
    ============================================================ */
 :root{
-  --loc-h:215;
+  --loc-h:22;
+  --orb-h:22;
   --bg:hsl(var(--loc-h) 18% 93%);
   --surface:hsl(var(--loc-h) 30% 98.5%);
   --raised:hsl(var(--loc-h) 20% 95.5%);
@@ -42,7 +43,7 @@
   --good:#0E8F60; --good-soft:rgba(14,143,96,.10);
   --shadow:0 1px 2px hsl(var(--loc-h) 30% 10% / .06), 0 8px 24px -12px hsl(var(--loc-h) 30% 10% / .18);
   --shadow-lg:0 2px 4px hsl(var(--loc-h) 30% 10% / .06), 0 24px 48px -20px hsl(var(--loc-h) 30% 10% / .28);
-  --orb-glow:rgba(236,84,6,.40);
+  --orb-glow:hsl(var(--orb-h) 96% 48% / .40);
   --r:14px; --r-lg:20px;
   --display:"Archivo","Helvetica Neue",Arial,sans-serif;
   --body:"Hanken Grotesk","Helvetica Neue",Arial,sans-serif;
@@ -63,7 +64,7 @@
     --good:#46D39B; --good-soft:rgba(70,211,155,.14);
     --shadow:0 1px 2px rgba(0,0,0,.5), 0 10px 30px -14px rgba(0,0,0,.8);
     --shadow-lg:0 2px 6px rgba(0,0,0,.5), 0 30px 60px -24px rgba(0,0,0,.9);
-    --orb-glow:rgba(255,107,31,.34);
+    --orb-glow:hsl(var(--orb-h) 100% 56% / .34);
   }
 }
 :root[data-theme="dark"]{
@@ -80,7 +81,7 @@
   --good:#46D39B; --good-soft:rgba(70,211,155,.14);
   --shadow:0 1px 2px rgba(0,0,0,.5), 0 10px 30px -14px rgba(0,0,0,.8);
   --shadow-lg:0 2px 6px rgba(0,0,0,.5), 0 30px 60px -24px rgba(0,0,0,.9);
-  --orb-glow:rgba(255,107,31,.34);
+  --orb-glow:hsl(var(--orb-h) 100% 56% / .34);
 }
 
 *{box-sizing:border-box}
@@ -136,11 +137,20 @@ h2.sec{font-family:var(--display);font-variation-settings:'wdth' 88,'wght' 700;f
 .orb-wrap{position:relative;width:var(--orb);height:var(--orb);display:grid;place-items:center;transform:translateY(-16px)}
 .orb-float{position:absolute;inset:0;animation:float 11s ease-in-out infinite;will-change:transform}
 @keyframes float{0%,100%{transform:translateY(-5px)}50%{transform:translateY(6px)}}
+/* One ramp, any colour. --orb-h comes from the location you're in, so the
+   sphere is the same object wherever you are, wearing that place's colour. */
 .orb{
   position:absolute;inset:0;border-radius:50%;display:grid;place-items:center;overflow:hidden;
-  background:radial-gradient(circle at 34% 24%, #FFDCB4 0%, #FFAE68 14%, #FF8236 34%, #F35D0C 58%, #B33403 84%, #7E2101 100%);
-  box-shadow:0 34px 74px -26px var(--orb-glow), 0 0 0 1px rgba(120,32,0,.30),
-             0 3px 1px rgba(255,255,255,.30) inset, 0 -30px 52px -24px rgba(84,18,0,.9) inset;
+  background:radial-gradient(circle at 34% 24%,
+    hsl(calc(var(--orb-h) + 10) 100% 86%) 0%,
+    hsl(calc(var(--orb-h) + 5)  100% 71%) 14%,
+    hsl(var(--orb-h) 96% 60%) 34%,
+    hsl(var(--orb-h) 88% 48%) 58%,
+    hsl(calc(var(--orb-h) - 4)  94% 34%) 84%,
+    hsl(calc(var(--orb-h) - 6)  96% 23%) 100%);
+  box-shadow:0 34px 74px -26px var(--orb-glow), 0 0 0 1px hsl(var(--orb-h) 90% 24% / .30),
+             0 3px 1px rgba(255,255,255,.30) inset,
+             0 -30px 52px -24px hsl(var(--orb-h) 96% 16% / .9) inset;
   transition:box-shadow .5s ease, background .6s ease;cursor:grab;touch-action:none;
 }
 .orb.grabbing{cursor:grabbing}
@@ -167,7 +177,7 @@ h2.sec{font-family:var(--display);font-variation-settings:'wdth' 88,'wght' 700;f
 .orb-pick{position:absolute;left:11%;right:11%;top:50%;height:0;z-index:6}
 .pick-item{
   position:absolute;left:50%;top:0;width:100%;
-  appearance:none;border:0;background:transparent;color:#2B0C00;cursor:pointer;
+  appearance:none;border:0;background:transparent;color:hsl(var(--orb-h) 92% 12%);cursor:pointer;
   display:flex;flex-direction:column;align-items:center;gap:3px;padding:2px;
   transform-origin:50% 50%;will-change:transform,opacity;
 }
@@ -186,8 +196,8 @@ h2.sec{font-family:var(--display);font-variation-settings:'wdth' 88,'wght' 700;f
 .orb-skin{
   position:absolute;inset:-14%;border-radius:50%;pointer-events:none;
   background-image:
-    radial-gradient(closest-side circle at 25% 42%, rgba(255,226,190,.85), rgba(255,226,190,0) 100%),
-    radial-gradient(closest-side circle at 72% 66%, rgba(158,44,0,.75), rgba(158,44,0,0) 100%);
+    radial-gradient(closest-side circle at 25% 42%, hsl(calc(var(--orb-h) + 12) 100% 88% / .85), hsl(calc(var(--orb-h) + 12) 100% 88% / 0) 100%),
+    radial-gradient(closest-side circle at 72% 66%, hsl(calc(var(--orb-h) - 4) 100% 31% / .75), hsl(calc(var(--orb-h) - 4) 100% 31% / 0) 100%);
   background-size:46% 46%, 38% 38%;
   background-repeat:repeat-x, repeat-x;
   background-position:calc(var(--spin,0) * 1px) 38%, calc(var(--spin,0) * -0.62px) 68%;
@@ -209,7 +219,7 @@ h2.sec{font-family:var(--display);font-variation-settings:'wdth' 88,'wght' 700;f
 .orb::after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;background:radial-gradient(58% 40% at 31% 17%, rgba(255,255,255,.55), transparent 72%)}
 
 .orb-face{
-  position:relative;z-index:3;width:74%;text-align:center;color:#2B0C00;
+  position:relative;z-index:3;width:74%;text-align:center;color:hsl(var(--orb-h) 92% 12%);
   display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;
   transition:opacity .26s ease, transform .34s cubic-bezier(.2,.8,.25,1), filter .26s ease;
 }
@@ -257,7 +267,7 @@ h2.sec{font-family:var(--display);font-variation-settings:'wdth' 88,'wght' 700;f
   position:absolute;left:50%;top:50%;
   font-family:var(--display);font-variation-settings:'wdth' 82,'wght' 800;
   font-size:12px;letter-spacing:.13em;text-transform:uppercase;
-  color:#2B0C00;white-space:nowrap;max-width:52%;overflow:hidden;text-overflow:ellipsis;
+  color:hsl(var(--orb-h) 92% 12%);white-space:nowrap;max-width:52%;overflow:hidden;text-overflow:ellipsis;
   padding:3px 6px;border:0;background:transparent;cursor:pointer;pointer-events:auto;
   will-change:transform,opacity;transform-origin:50% 50%;
 }
@@ -265,7 +275,7 @@ h2.sec{font-family:var(--display);font-variation-settings:'wdth' 88,'wght' 700;f
 .loc.sel{font-variation-settings:'wdth' 86,'wght' 900}
 .dial-mark{
   position:absolute;left:50%;top:3.2%;width:2px;height:11px;margin-left:-1px;border-radius:2px;
-  background:#2B0C00;opacity:.5;z-index:5;pointer-events:none;
+  background:hsl(var(--orb-h) 92% 12%);opacity:.5;z-index:5;pointer-events:none;
 }
 .orb.cool .dial-mark{background:#111436}
 
@@ -374,7 +384,21 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--hi)}
 .seg-row{display:flex;align-items:center;gap:6px}
 .seg-row input[type="time"]{min-height:44px;padding:8px 4px;text-align:center;flex:1;min-width:0}
 .seg-row select{min-height:44px;padding:8px 8px;flex:1.2;min-width:0}
-.swatch{width:14px;height:14px;border-radius:50%;flex:none;border:1px solid var(--line)}
+.swatch{width:14px;height:14px;border-radius:50%;flex:none;border:1px solid var(--line);display:inline-block;vertical-align:-2px;margin-right:8px}
+.bd-field{gap:6px}
+.bd-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.bd-head label{margin:0}
+.mic.sm{width:40px;min-height:38px;border-radius:9px}
+.mic.sm svg{width:17px;height:17px}
+/* the colour strip on each location in Setup */
+.hues{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;justify-items:center;padding:2px 0 4px}
+.hue-dot{appearance:none;cursor:pointer;width:30px;height:30px;border-radius:50%;border:2px solid transparent;padding:0;
+  box-shadow:0 0 0 1px var(--line) inset;transition:transform .12s ease,border-color .12s ease}
+.hue-dot[aria-pressed="true"]{border-color:var(--ink);transform:scale(1.12)}
+.more-toggle{background:none;border:0;color:var(--ink-2);font:inherit;font-weight:600;font-size:13px;letter-spacing:.04em;
+  cursor:pointer;padding:10px 0;display:flex;align-items:center;gap:8px;min-height:44px}
+.more-toggle::after{content:"▾";transition:transform .16s ease}
+.more-toggle[aria-expanded="true"]::after{transform:rotate(180deg)}
 
 .slab{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:20px;display:flex;flex-direction:column;gap:6px}
 .slab .num{font-family:var(--display);font-variation-settings:'wdth' 82,'wght' 900;font-size:clamp(3rem,17vw,4.6rem);line-height:.86;letter-spacing:-.03em;color:var(--hi);font-variant-numeric:tabular-nums}
@@ -387,7 +411,14 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--hi)}
 .bar-row .lab{width:78px;flex:none;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .bar-track{flex:1;height:8px;border-radius:99px;background:var(--raised);overflow:hidden;border:1px solid var(--line-2)}
 .bar-fill{display:block;height:100%;background:var(--hi);border-radius:99px}
-.bar-fill.cool{background:var(--cool)} .bar-fill.good{background:var(--good)}
+.bar-fill.cool{background:var(--cool)} .bar-fill.good{background:var(--good)} .bar-fill.hot{background:var(--hi)}
+/* one row per task in Progress: what it was, how long it really took */
+.tt-row{display:flex;flex-direction:column;gap:6px;padding:11px 0;border-bottom:1px solid var(--line-2)}
+.tt-row:last-child{border-bottom:0}
+.tt-row .bar-track{flex:none;height:9px}
+.tt-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.tt-name{font-weight:650;font-size:14.5px;color:var(--ink);line-height:1.25}
+.tt-val{flex:none;font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums;color:var(--ink)}
 .bar-val{width:44px;text-align:right;font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums}
 
 .tabbar{position:fixed;bottom:0;left:0;right:0;z-index:40;display:grid;grid-template-columns:repeat(5,1fr);max-width:540px;margin:0 auto;background:color-mix(in srgb,var(--bg) 90%,transparent);backdrop-filter:blur(16px);border-top:1px solid var(--line-2);padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
@@ -469,10 +500,12 @@ var load = function(){ try{ return JSON.parse(localStorage.getItem(KEY)||"null")
 function pad(n){ return (n<10?"0":"")+n; }
 var todayKey = function(d){ d = d || new Date(); return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); };
 
+/* The hue is the whole look of the app while you're there: the sphere, the
+   tints, the paper. Work keeps ONE's orange; the others take their own. */
 var DEFAULT_LOCATIONS = [
   { id:"home", label:"Home",        kind:"place",   hue:150 },
-  { id:"work", label:"Work",        kind:"place",   hue:215 },
-  { id:"out",  label:"Out & About", kind:"transit", hue:285 }
+  { id:"work", label:"Work",        kind:"place",   hue:22  },
+  { id:"out",  label:"Out & About", kind:"transit", hue:215 }
 ];
 var DEFAULT_SCHEDULE = [
   { from:"00:00", to:"08:00", loc:"home" },
@@ -482,9 +515,14 @@ var DEFAULT_SCHEDULE = [
   { from:"18:00", to:"23:59", loc:"home" }
 ];
 var HUE_POOL = [35, 190, 320, 95, 260, 10];
+/* the colours you can give a place, one per row of the wheel */
+var HUE_CHOICES = [8, 22, 45, 95, 150, 175, 195, 215, 260, 285, 320, 340];
+var HUE_NAMES = { 8:"Red", 22:"Orange", 45:"Amber", 95:"Green", 150:"Mint", 175:"Teal",
+                  195:"Sky", 215:"Blue", 260:"Violet", 285:"Purple", 320:"Magenta", 340:"Pink" };
+function hueName(h){ return HUE_NAMES[h] || ("Hue "+h); }
 
 var DEFAULTS = {
-  version:3,
+  version:4,
   profile:{ name:"", tone:"normal", sawGestures:false },
   settings:{
     lunchDuration:45, lunchFrom:"12:00", lunchTo:"13:00", lunchRequired:true,
@@ -511,12 +549,23 @@ var S = load() || JSON.parse(JSON.stringify(DEFAULTS));
 })();
 
 (function migrate(){
+  var was = +S.version || 0;
   if(!Array.isArray(S.locations) || !S.locations.length) S.locations = JSON.parse(JSON.stringify(DEFAULT_LOCATIONS));
   if(!Array.isArray(S.schedule) || !S.schedule.length) S.schedule = JSON.parse(JSON.stringify(DEFAULT_SCHEDULE));
-  var KNOWN_HUES = { home:150, work:215, out:285 };
+  var KNOWN_HUES = { home:150, work:22, out:215 };
   S.locations.forEach(function(l,i){
     if(typeof l.hue !== "number") l.hue = KNOWN_HUES[l.id] != null ? KNOWN_HUES[l.id] : HUE_POOL[i % HUE_POOL.length];
   });
+  /* Before v4 the hue only tinted the neutrals and the sphere was always
+     orange. Now it paints the sphere too, so anything still on an old default
+     moves to a colour that was picked to be looked at. Anything chosen by hand
+     is left exactly as it is. */
+  if(was && was < 4){
+    var OLD = { home:150, work:215, out:285 };
+    S.locations.forEach(function(l){
+      if(OLD[l.id] === l.hue && KNOWN_HUES[l.id] != null) l.hue = KNOWN_HUES[l.id];
+    });
+  }
 
   var legacy = { home:"home", work:"work", "else":"out", errand:"out" };
   if(legacy[S.session.location]) S.session.location = legacy[S.session.location];
@@ -545,8 +594,13 @@ var S = load() || JSON.parse(JSON.stringify(DEFAULTS));
     if(!("commit" in t)) t.commit = null;
     if(!("safeStopped" in t)) t.safeStopped = false;
     if(!("unblocks" in t)) t.unblocks = null;
+    /* the old "Deep Work" type carried two meanings; keep the one that matters */
+    if(t.type === "Deep Work"){
+      t.type = "Planning";
+      if(t.effort === "normal") t.effort = "deep";
+    }
   });
-  S.version = 3;
+  S.version = 4;
 })();
 
 (function rollover(){
@@ -628,7 +682,12 @@ function applySchedule(){
   }
   return false;
 }
-function applyHue(){ document.documentElement.style.setProperty("--loc-h", String(locHue(S.session.location))); }
+function applyHue(){
+  var h = locHue(S.session.location);
+  var r = document.documentElement.style;
+  r.setProperty("--loc-h", String(h));
+  r.setProperty("--orb-h", String(h));
+}
 
 /* ============================================================
    4. VOCABULARY
@@ -637,7 +696,9 @@ var PRIORITY_ORDER = ["optional","normal","important","must"];
 var PRIORITY = { must:"Must do today", important:"Important", normal:"Normal", optional:"Optional" };
 var EFFORT_ORDER = ["easy","normal","deep"];
 var EFFORT = { easy:"Easy win", normal:"Normal", deep:"Deep work" };
-var TYPES = ["Admin","Email","Physical","Planning","Creative","Deep Work","Errand","Meeting","Personal Project"];
+/* "Deep Work" isn't a kind of work, it's how heavy the work is — and mental
+   load already says that. One less near-duplicate to choose between. */
+var TYPES = ["Admin","Email","Physical","Planning","Creative","Errand","Meeting","Personal Project"];
 var BLOCK_REASONS = ["Waiting for someone","Need information","Need equipment/materials","Wrong location","Can't access it right now","Other"];
 var HOUSEHOLD = /\b(bin|bins|rubbish|recycling|washing|laundry|dishes|dishwasher|kitchen|tidy|hoover|vacuum|garage|ironing|beds?)\b/i;
 var ERRANDY = /\b(petrol|diesel|fuel|milk|bread|shop|shopping|groceries|chemist|pharmacy|post office|parcel|bank|collect|pick up|pickup|drop off|dry clean|car wash|cash)\b/i;
@@ -2139,14 +2200,35 @@ function newDraft(){
   return {
     name:"", category:"Work", priority:"normal", effort:"normal",
     duration:S.settings.defaultDuration,
-    locations: isTransit(here) ? [here] : ["anywhere"],
+    locations: isTransit(here) ? [here] : [],
+    setCat:false, setEff:false, setType:false,
     type:"Admin", timed:false, repeatEvery:0, unblocks:null,
     fixedStart:minsToHHMM(Math.ceil((minsOfDay()+30)/15)*15), fixedEnd:null
   };
 }
+/* Name, length, where, how much it matters — four answers and it's in. Anything
+   the app can work out for itself (category from the place, mental load from the
+   length) is worked out, and only argued with if you open "More". */
+function inferDraft(){
+  if(!draft.setCat){
+    /* Somewhere chosen, and none of it work? Then it's personal. Nothing chosen
+       means it follows you everywhere, which is the working day's problem. */
+    var here = draft.locations;
+    draft.category = (here.length && here.indexOf("work") < 0) ? "Personal" : "Work";
+  }
+  if(!draft.setEff){
+    draft.effort = draft.repeatEvery ? "easy" : (draft.duration <= 10 ? "easy" : (draft.duration >= 60 ? "deep" : "normal"));
+  }
+  if(!draft.setType){
+    draft.type = draft.timed ? "Meeting"
+      : (draft.locations.some(isTransit) ? "Errand"
+      : (draft.category === "Personal" ? "Personal Project" : "Admin"));
+  }
+}
 function sheetAddTask(){
   draft = draft || newDraft();
-  var locBtns = [{id:"anywhere",label:"Anywhere"}].concat(S.locations).map(function(l){
+  inferDraft();
+  var locBtns = S.locations.map(function(l){
     return '<button class="choice'+(l.kind==="transit"?" cool":"")+'" data-loc="'+esc(l.id)+'" aria-pressed="'+(draft.locations.indexOf(l.id)>-1)+'">'+esc(l.label)+'</button>';
   }).join("");
   var typeBtns = TYPES.map(function(x){
@@ -2164,22 +2246,26 @@ function sheetAddTask(){
     '<div class="val" id="at-dur">'+draft.duration+'<small>minutes</small></div>'+
     '<button class="step" data-dur="5">+5</button><button class="step" data-dur="15">+15</button>'+
   '</div></div>'+
+  '<div class="field"><label>Where can it be done?</label><div class="choices" id="at-locs">'+locBtns+'</div>'+
+    '<p class="hint">Tap none and it can be done anywhere.</p></div>'+
   '<div class="field"><label>Priority</label>'+sliderHTML("sl-pri", PRI_STEPS, draft.priority)+'</div>'+
-  '<div class="field"><label>Mental load</label>'+sliderHTML("sl-eff", EFF_STEPS, draft.effort)+'</div>'+
-  '<div class="field"><label>Category</label>'+sliderHTML("sl-cat", CAT_STEPS, draft.category)+'</div>'+
-  '<div class="field"><label>Where can it be done?</label><div class="choices" id="at-locs">'+locBtns+'</div></div>'+
-  '<div class="field"><label>Kind of work</label><div class="choices" id="at-types">'+typeBtns+'</div></div>'+
-  '<div class="field"><label>Comes back round</label><div class="choices" id="at-rep">'+
-    REPEATS.map(function(r){ return '<button class="choice'+(r.v?" cool":"")+'" data-rep="'+r.v+'" aria-pressed="'+(draft.repeatEvery===r.v)+'">'+r.l+'</button>'; }).join("")+
-  '</div><p class="hint" id="at-rephint" style="'+(draft.repeatEvery?"":"display:none")+'">Ticking it off restarts the countdown instead of finishing it. Close it off for the day from the toast, or from the list.</p></div>'+
-  '<div class="field"><label>At a set time?</label><div class="choices">'+
-      '<button class="choice grow" id="at-untimed" aria-pressed="'+(!draft.timed)+'">Whenever it fits</button>'+
-      '<button class="choice grow cool" id="at-timed" aria-pressed="'+(draft.timed)+'">Fixed time</button>'+
+  '<button class="more-toggle" id="at-more" type="button" aria-expanded="false" aria-controls="at-extra">More</button>'+
+  '<div id="at-extra" hidden>'+
+    '<div class="field"><label>Mental load</label>'+sliderHTML("sl-eff", EFF_STEPS, draft.effort)+'</div>'+
+    '<div class="field"><label>Category</label>'+sliderHTML("sl-cat", CAT_STEPS, draft.category)+'</div>'+
+    '<div class="field"><label>Kind of work</label><div class="choices" id="at-types">'+typeBtns+'</div></div>'+
+    '<div class="field"><label>Comes back round</label><div class="choices" id="at-rep">'+
+      REPEATS.map(function(r){ return '<button class="choice'+(r.v?" cool":"")+'" data-rep="'+r.v+'" aria-pressed="'+(draft.repeatEvery===r.v)+'">'+r.l+'</button>'; }).join("")+
+    '</div><p class="hint" id="at-rephint" style="'+(draft.repeatEvery?"":"display:none")+'">Ticking it off restarts the countdown instead of finishing it. Close it off for the day from the toast, or from the list.</p></div>'+
+    '<div class="field"><label>At a set time?</label><div class="choices">'+
+        '<button class="choice grow" id="at-untimed" aria-pressed="'+(!draft.timed)+'">Whenever it fits</button>'+
+        '<button class="choice grow cool" id="at-timed" aria-pressed="'+(draft.timed)+'">Fixed time</button>'+
+      '</div>'+
+      '<div class="inline" id="at-times" style="'+(draft.timed?"":"display:none")+'">'+
+        '<input type="time" id="at-start" value="'+esc(draft.fixedStart)+'"><span class="hint">to</span>'+
+        '<input type="time" id="at-end" value="'+esc(draft.fixedEnd || minsToHHMM(hhmmToMins(draft.fixedStart)+draft.duration))+'"></div>'+
+      '<p class="hint" id="at-timedhint" style="'+(draft.timed?"":"display:none")+'">I\'ll keep that window clear and warn you '+S.settings.warnMinutes+' minutes before.</p>'+
     '</div>'+
-    '<div class="inline" id="at-times" style="'+(draft.timed?"":"display:none")+'">'+
-      '<input type="time" id="at-start" value="'+esc(draft.fixedStart)+'"><span class="hint">to</span>'+
-      '<input type="time" id="at-end" value="'+esc(draft.fixedEnd || minsToHHMM(hhmmToMins(draft.fixedStart)+draft.duration))+'"></div>'+
-    '<p class="hint" id="at-timedhint" style="'+(draft.timed?"":"display:none")+'">I\'ll keep that window clear and warn you '+S.settings.warnMinutes+' minutes before.</p>'+
   '</div>'+
   '<button class="btn go wide" data-act="save-task">Add it</button>';
 }
@@ -2187,6 +2273,13 @@ function sheetAddTask(){
 function syncAddSheet(){
   var root = document.getElementById("sheetRoot");
   if(!root || !root.querySelector("#at-name")) return;
+  inferDraft();
+  /* if it heard something that lives under "More", open More so you can see it */
+  var extra = root.querySelector("#at-extra"), more = root.querySelector("#at-more");
+  if(extra && extra.hidden && (draft.timed || draft.repeatEvery || draft.setEff || draft.setCat || draft.setType)){
+    extra.hidden = false;
+    if(more){ more.setAttribute("aria-expanded","true"); more.firstChild.nodeValue = "Fewer"; }
+  }
   root.querySelector("#at-name").value = draft.name || "";
   root.querySelector("#at-dur").innerHTML = draft.duration+"<small>minutes</small>";
   var pri = document.getElementById("sl-pri"), eff = document.getElementById("sl-eff"), cat = document.getElementById("sl-cat");
@@ -2220,6 +2313,9 @@ function bindAddTask(){
         function(txt){
           var got = parseSpoken(txt);
           Object.keys(got).forEach(function(k){ if(k.charAt(0) !== "_") draft[k] = got[k]; });
+          if(got.category) draft.setCat = true;
+          if(got.effort) draft.setEff = true;
+          if(got.type) draft.setType = true;
           if(draft.timed && !draft.fixedStart) draft.timed = false;
           syncAddSheet();
           heard.textContent = got._said && got._said.length ? "Heard: "+got._said.join(" · ") : "“"+txt+"”";
@@ -2233,35 +2329,49 @@ function bindAddTask(){
     nameEl.addEventListener("keydown", function(e){ if(e.key === "Enter"){ e.preventDefault(); commitTask(); } });
   }
   /* every control mutates in place — the sheet never re-renders, so it never jumps */
+  /* whatever the app guessed gets quietly re-guessed until you say otherwise */
+  var reflect = function(){
+    inferDraft();
+    var eff = document.getElementById("sl-eff"), cat = document.getElementById("sl-cat");
+    if(eff && eff._setIndex) eff._setIndex(Math.max(0, EFFORT_ORDER.indexOf(draft.effort)));
+    if(cat && cat._setIndex) cat._setIndex(draft.category === "Personal" ? 1 : 0);
+    root.querySelectorAll("[data-type]").forEach(function(x){ x.setAttribute("aria-pressed", String(x.dataset.type === draft.type)); });
+  };
   root.querySelectorAll("[data-dur]").forEach(function(b){
     b.addEventListener("click", function(){
       draft.duration = Math.max(5, Math.min(480, draft.duration + (+b.dataset.dur)));
       root.querySelector("#at-dur").innerHTML = draft.duration+"<small>minutes</small>";
       var en = root.querySelector("#at-end"), st = root.querySelector("#at-start");
       if(en && st && draft.timed) en.value = minsToHHMM(hhmmToMins(st.value) + draft.duration);
+      reflect();
     });
   });
+  var more = root.querySelector("#at-more"), extra = root.querySelector("#at-extra");
+  if(more && extra){
+    more.addEventListener("click", function(){
+      var open = extra.hidden;
+      extra.hidden = !open;
+      more.setAttribute("aria-expanded", String(open));
+      more.firstChild.nodeValue = open ? "Fewer" : "More";
+    });
+  }
   bindSlider("sl-pri", PRI_STEPS, function(v){ draft.priority = v; });
-  bindSlider("sl-eff", EFF_STEPS, function(v){ draft.effort = v; });
-  bindSlider("sl-cat", CAT_STEPS, function(v){ draft.category = v; });
+  bindSlider("sl-eff", EFF_STEPS, function(v){ draft.effort = v; draft.setEff = true; });
+  bindSlider("sl-cat", CAT_STEPS, function(v){ draft.category = v; draft.setCat = true; });
   root.querySelectorAll("[data-loc]").forEach(function(b){
     b.addEventListener("click", function(){
-      var id = b.dataset.loc;
-      if(id === "anywhere") draft.locations = ["anywhere"];
-      else {
-        draft.locations = draft.locations.filter(function(x){ return x !== "anywhere"; });
-        var i = draft.locations.indexOf(id);
-        if(i > -1) draft.locations.splice(i,1); else draft.locations.push(id);
-        if(!draft.locations.length) draft.locations = ["anywhere"];
-      }
+      /* No "anywhere" button any more — nothing tapped means exactly that. */
+      var id = b.dataset.loc, i = draft.locations.indexOf(id);
+      if(i > -1) draft.locations.splice(i,1); else draft.locations.push(id);
       root.querySelectorAll("[data-loc]").forEach(function(x){
         x.setAttribute("aria-pressed", String(draft.locations.indexOf(x.dataset.loc) > -1));
       });
+      reflect();
     });
   });
   root.querySelectorAll("[data-type]").forEach(function(b){
     b.addEventListener("click", function(){
-      draft.type = b.dataset.type;
+      draft.type = b.dataset.type; draft.setType = true;
       root.querySelectorAll("[data-type]").forEach(function(x){ x.setAttribute("aria-pressed", String(x.dataset.type === draft.type)); });
     });
   });
@@ -2270,12 +2380,7 @@ function bindAddTask(){
       draft.repeatEvery = +b.dataset.rep;
       root.querySelectorAll("[data-rep]").forEach(function(x){ x.setAttribute("aria-pressed", String(+x.dataset.rep === draft.repeatEvery)); });
       root.querySelector("#at-rephint").style.display = draft.repeatEvery ? "" : "none";
-      /* a check-in belongs in the small-win bucket unless you say otherwise */
-      if(draft.repeatEvery && draft.effort === "normal"){
-        draft.effort = "easy";
-        var sl = document.getElementById("sl-eff");
-        if(sl && sl._setIndex) sl._setIndex(0);
-      }
+      reflect();      /* a check-in belongs in the small-win bucket unless you say otherwise */
     });
   });
   var timed = root.querySelector("#at-timed"), untimed = root.querySelector("#at-untimed");
@@ -2285,6 +2390,7 @@ function bindAddTask(){
     untimed.setAttribute("aria-pressed", String(!on));
     root.querySelector("#at-times").style.display = on ? "" : "none";
     root.querySelector("#at-timedhint").style.display = on ? "" : "none";
+    reflect();
   };
   timed.addEventListener("click", function(){ setTimed(true); });
   untimed.addEventListener("click", function(){ setTimed(false); });
@@ -2307,7 +2413,7 @@ function commitTask(){
   }
   var t = makeTask({
     name:draft.name, category:draft.category, priority:draft.priority, effort:draft.effort,
-    duration:draft.duration, locations:draft.locations, type:draft.type,
+    duration:draft.duration, locations:draft.locations.length ? draft.locations : ["anywhere"], type:draft.type,
     repeatEvery: draft.timed ? 0 : draft.repeatEvery,
     unblocks: draft.unblocks || null,
     fixedStart: draft.timed ? draft.fixedStart : null,
@@ -2320,22 +2426,73 @@ function commitTask(){
   toast(S.focus ? "Added. You're still on the current one." : "Added: "+t.name);
   render();
 }
+/* One box per place. Where a job can be done is the thing you always know
+   without thinking, so the box answers it and you never touch a location
+   button. Anything that could happen anywhere goes in the last box. */
+var BD_PLACEHOLDER = {
+  home: "Empty the bin&#10;Fix the shelf&#10;Ring the plumber",
+  work: "Do the pay run 45m&#10;Sales meeting @11:00 60m&#10;Check emails every 1h"
+};
+function bdBoxes(){
+  return S.locations.map(function(l){
+    return { id:l.id, label:l.label, transit:l.kind === "transit", hue:l.hue,
+             ph: BD_PLACEHOLDER[l.id] || (l.kind === "transit" ? "Petrol&#10;Milk and bread&#10;Post the parcel" : "") };
+  }).concat([{ id:"anywhere", label:"Anywhere", transit:false, hue:null, ph:"Book the dentist&#10;Sort the photos" }]);
+}
 function sheetBrainDump(){
-  var out = transitLocs()[0];
   return ''+
   '<div class="sheet-head"><h2 class="sec">Brain dump</h2><button class="icon-btn" data-act="close-sheet" aria-label="Close">✕</button></div>'+
-  '<p class="hint">One per line. Default '+S.settings.defaultDuration+' minutes — end with <b>20m</b> to set length, start with <b>!</b> for must-do-today, write <b>@11:00</b> to pin it to a time, or <b>every 1h</b> to make it a check-in. Household jobs stay out of work hours'+(out?', shop runs go to <b>'+esc(out.label)+'</b>':'')+'.</p>'+
-  '<textarea id="bd-text" rows="8" placeholder="Do the pay run 45m&#10;Sales meeting @11:00 60m&#10;Check emails every 1h 10m&#10;Petrol&#10;Empty the bin"></textarea>'+
-  (micSupported() ? '<div class="inline"><button class="mic" id="bd-mic" type="button" aria-label="Dictate a line">'+MIC_SVG+'</button>'+
-    '<span class="hint" id="bd-heard">Speak one, it goes on its own line.</span></div>' : '')+
+  '<p class="hint">One per line, in the box for where you can do it. '+S.settings.defaultDuration+' minutes each unless you end with <b>20m</b>. <b>!</b> = today, <b>@11:00</b> pins a time, <b>every 1h</b> makes it a check-in.</p>'+
+  bdBoxes().map(function(b){
+    return '<div class="field bd-field">'+
+      '<div class="bd-head"><label for="bd-'+esc(b.id)+'">'+
+        (b.hue == null ? '' : '<span class="swatch" style="background:hsl('+b.hue+' 55% 55%)"></span>')+
+        esc(b.label)+'</label>'+
+        (micSupported() ? '<button class="mic sm" data-bdmic="'+esc(b.id)+'" type="button" aria-label="Dictate into '+esc(b.label)+'">'+MIC_SVG+'</button>' : '')+
+      '</div>'+
+      '<textarea id="bd-'+esc(b.id)+'" data-bd="'+esc(b.id)+'" rows="3" placeholder="'+b.ph+'"></textarea>'+
+    '</div>';
+  }).join("")+
+  '<p class="hint" id="bd-heard"></p>'+
   '<button class="btn go wide" id="bd-save">Add them all</button>';
 }
+/* one dumped line -> one task, with the box it was typed in deciding where */
+function bdLineToTask(line, where){
+  var transit = where !== "anywhere" && isTransit(where);
+  var atHome = where !== "anywhere" && !transit && where !== "work";
+  var dur = S.settings.defaultDuration, eff = "normal", pri = "normal", at = null, l = line;
+  var mt = l.match(/@\s*(\d{1,2}[:.]\d{2})/);
+  if(mt){ at = mt[1].replace(".",":"); if(at.length === 4) at = "0"+at; l = l.replace(mt[0],"").trim(); }
+  var rep = 0;
+  var mr = l.match(/\bevery\s+(\d{1,3})\s*(m|min|mins|minutes|h|hr|hrs|hours?)\b/i);
+  if(mr){ rep = /^h/i.test(mr[2]) ? (+mr[1])*60 : +mr[1]; l = l.replace(mr[0], "").trim(); }
+  var m = l.match(/\s(\d{1,3})\s*(m|min|mins|minutes)$/i);
+  if(m){ dur = Math.min(480, +m[1]); l = l.slice(0, m.index).trim(); }
+  if(dur <= 10) eff = "easy";
+  if(dur >= 60) eff = "deep";
+  if(/^!/.test(l)){ pri = "must"; l = l.replace(/^!\s*/,""); }
+  if(!l) return null;
+  var house = atHome && HOUSEHOLD.test(l);
+  return makeTask({
+    name:l, duration: transit ? Math.min(dur,15) : dur,
+    effort:(rep || transit || (house && dur<=15)) ? "easy" : eff,
+    priority: at ? "must" : pri,
+    category: (transit || atHome) ? "Personal" : "Work",
+    locations:[where],
+    type: at ? "Meeting" : (transit ? "Errand" : (house ? "Physical" : "Admin")),
+    repeatEvery: at ? 0 : rep,
+    fixedStart: at, fixedEnd: at ? minsToHHMM(hhmmToMins(at)+dur) : null
+  });
+}
 function bindBrainDump(){
-  var root = document.getElementById("sheetRoot"), ta = root.querySelector("#bd-text");
-  if(ta) ta.focus();
-  var mic = root.querySelector("#bd-mic"), heard = root.querySelector("#bd-heard");
-  if(mic){
+  var root = document.getElementById("sheetRoot");
+  var boxes = [].slice.call(root.querySelectorAll("[data-bd]"));
+  if(boxes[0]) boxes[0].focus();
+  var heard = root.querySelector("#bd-heard");
+  root.querySelectorAll("[data-bdmic]").forEach(function(mic){
     mic.addEventListener("click", function(){
+      var ta = root.querySelector('[data-bd="'+mic.dataset.bdmic+'"]');
+      if(!ta) return;
       var base = ta.value;
       heard.textContent = "Listening…";
       dictate(mic, function(txt){ ta.value = (base ? base.replace(/\n$/,"")+"\n" : "") + txt; },
@@ -2345,38 +2502,19 @@ function bindBrainDump(){
           ta.scrollTop = ta.scrollHeight;
         });
     });
-  }
+  });
   root.querySelector("#bd-save").addEventListener("click", function(){
-    var lines = (ta.value||"").split("\n").map(function(l){ return l.trim(); }).filter(Boolean);
-    if(!lines.length){ toast("Nothing to add yet."); return; }
-    var outLoc = (transitLocs()[0]||{}).id;
-    var homeLoc = locById("home") ? "home" : (places()[0]||{}).id;
-    lines.forEach(function(l){
-      var dur = S.settings.defaultDuration, eff = "normal", pri = "normal", at = null;
-      var mt = l.match(/@\s*(\d{1,2}[:.]\d{2})/);
-      if(mt){ at = mt[1].replace(".",":"); if(at.length === 4) at = "0"+at; l = l.replace(mt[0],"").trim(); }
-      var rep = 0;
-      var mr = l.match(/\bevery\s+(\d{1,3})\s*(m|min|mins|minutes|h|hr|hrs|hours?)\b/i);
-      if(mr){ rep = /^h/i.test(mr[2]) ? (+mr[1])*60 : +mr[1]; l = l.replace(mr[0], "").trim(); }
-      var m = l.match(/\s(\d{1,3})\s*(m|min|mins|minutes)$/i);
-      if(m){ dur = Math.min(480, +m[1]); l = l.slice(0, m.index).trim(); }
-      if(dur <= 10) eff = "easy";
-      if(dur >= 60) eff = "deep";
-      if(/^!/.test(l)){ pri = "must"; l = l.replace(/^!\s*/,""); }
-      var errand = outLoc && ERRANDY.test(l), house = !errand && HOUSEHOLD.test(l);
-      S.tasks.push(makeTask({
-        name:l, duration: errand ? Math.min(dur,15) : dur,
-        effort:(rep || errand || (house && dur<=15)) ? "easy" : eff,
-        priority: at ? "must" : pri,
-        category:(errand||house) ? "Personal" : "Work",
-        locations:[ errand ? outLoc : (house ? homeLoc : "anywhere") ],
-        type: at ? "Meeting" : (errand ? "Errand" : (house ? "Physical" : "Admin")),
-        repeatEvery: at ? 0 : rep,
-        fixedStart: at, fixedEnd: at ? minsToHHMM(hhmmToMins(at)+dur) : null
-      }));
+    var added = 0;
+    boxes.forEach(function(ta){
+      var where = ta.dataset.bd;
+      (ta.value||"").split("\n").map(function(x){ return x.trim(); }).filter(Boolean).forEach(function(line){
+        var t = bdLineToTask(line, where);
+        if(t){ S.tasks.push(t); added++; }
+      });
     });
+    if(!added){ toast("Nothing to add yet."); return; }
     if(!S.session.started){ S.session.started = true; S.session.date = todayKey(); }
-    save(); closeSheet(); toast(lines.length+" added"); render();
+    save(); closeSheet(); toast(added+" added"); render();
     if(!S.profile.sawGestures) showGestures();
   });
 }
@@ -2465,8 +2603,8 @@ function sheetBlocked(id){
 }
 function sheetEdit(id){
   var t = byId(id); if(!t) return "";
-  var locBtns = [{id:"anywhere",label:"Anywhere"}].concat(S.locations).map(function(l){
-    return '<button class="choice" data-eloc="'+esc(l.id)+'" aria-pressed="'+(t.locations.indexOf(l.id)>-1)+'">'+esc(l.label)+'</button>';
+  var locBtns = S.locations.map(function(l){
+    return '<button class="choice'+(l.kind==="transit"?" cool":"")+'" data-eloc="'+esc(l.id)+'" aria-pressed="'+(t.locations.indexOf(l.id)>-1)+'">'+esc(l.label)+'</button>';
   }).join("");
   return ''+
   '<div class="sheet-head"><h2 class="sec">Edit</h2><button class="icon-btn" data-act="close-sheet" aria-label="Close">✕</button></div>'+
@@ -2479,7 +2617,8 @@ function sheetEdit(id){
   '<div class="field"><label>Priority</label>'+sliderHTML("ed-pri", PRI_STEPS, t.priority)+'</div>'+
   '<div class="field"><label>Mental load</label>'+sliderHTML("ed-eff", EFF_STEPS, t.effort)+'</div>'+
   '<div class="field"><label>Category</label>'+sliderHTML("ed-cat", CAT_STEPS, t.category)+'</div>'+
-  '<div class="field"><label>Where</label><div class="choices">'+locBtns+'</div></div>'+
+  '<div class="field"><label>Where</label><div class="choices">'+locBtns+'</div>'+
+    '<p class="hint">Nothing tapped = anywhere.</p></div>'+
   '<div class="field"><label>Comes back round</label><div class="choices">'+
     REPEATS.map(function(r){ return '<button class="choice'+(r.v?" cool":"")+'" data-erep="'+r.v+'" aria-pressed="'+((t.repeatEvery||0)===r.v)+'">'+r.l+'</button>'; }).join("")+
   '</div>'+(isRecurring(t) ? '<p class="hint">Checked '+(t.checkCount||0)+'× today'+(isCooling(t)?' · next in '+coolMins(t)+'m':' · due now')+'.</p>' : '')+'</div>'+
@@ -2518,14 +2657,12 @@ function openEditSheet(id){
     r.querySelectorAll("[data-eloc]").forEach(function(b){
       b.addEventListener("click", function(){
         var id2 = b.dataset.eloc;
-        if(id2 === "anywhere") t.locations = ["anywhere"];
-        else {
-          t.locations = t.locations.filter(function(x){ return x !== "anywhere"; });
-          var i = t.locations.indexOf(id2);
-          if(i>-1) t.locations.splice(i,1); else t.locations.push(id2);
-          if(!t.locations.length) t.locations = ["anywhere"];
-        }
-        r.querySelectorAll("[data-eloc]").forEach(function(x){ x.setAttribute("aria-pressed", String(t.locations.indexOf(x.dataset.eloc) > -1)); });
+        t.locations = t.locations.filter(function(x){ return x !== "anywhere"; });
+        var i = t.locations.indexOf(id2);
+        if(i>-1) t.locations.splice(i,1); else t.locations.push(id2);
+        var chosen = t.locations.slice();
+        if(!t.locations.length) t.locations = ["anywhere"];   /* none tapped means exactly that */
+        r.querySelectorAll("[data-eloc]").forEach(function(x){ x.setAttribute("aria-pressed", String(chosen.indexOf(x.dataset.eloc) > -1)); });
         save();
       });
     });
@@ -2794,15 +2931,37 @@ function renderDone(){
       '<div class="slab"><div class="num cool">'+fmtDur(mins)+'</div><p class="hint">measured</p></div>'+
       '<div class="slab"><div class="num">'+(est ? Math.round(act/est*100)+'%' : '—')+'</div><p class="hint">of estimate</p></div>'+
     '</div>'+
+    perTaskHTML()+
     (bars ? '<div class="group"><h2 class="sec">Where the time went</h2><div class="bars">'+bars+'</div></div>' : '')+
     runsHTML()+
-    (d.length ? '<div class="group"><h2 class="sec">Completed</h2>'+d.map(function(t){
-      return '<div class="row done"><div class="row-main"><div class="row-title">✓ '+esc(t.name)+'</div>'+
-        '<div class="row-meta">'+(t.actualMinutes ? '<span class="mini good">'+t.actualMinutes+'m on the clock</span>' : '<span class="mini">not timed</span>')+
-        '<span class="mini">'+esc(t.type)+'</span></div></div></div>';
-    }).join("")+'</div>' : '<div class="empty">Nothing finished yet today.</div>')+
     '<button class="btn wide" data-act="close-day">Finish for the day</button>'+
   '</div>';
+}
+/* Every task the clock actually ran on, longest first — finished or not. This is
+   the honest answer to "where did today go", because a job you put forty minutes
+   into and parked cost you forty minutes whether or not it's ticked off. */
+function perTaskHTML(){
+  var rows = S.tasks.filter(function(t){ return !t.archived && (t.actualMinutes||0) > 0; })
+    .sort(function(a,b){ return b.actualMinutes - a.actualMinutes; });
+  if(!rows.length) return '<div class="empty">Nothing on the clock yet today.</div>';
+  var top = rows[0].actualMinutes;
+  return '<div class="group"><div class="group-head"><h2 class="sec">Time on each task</h2>'+
+    '<span class="count">'+rows.length+'</span></div>'+
+    rows.map(function(t){
+      var est = t.originalEstimate || t.duration;
+      var state = t.status === "done" ? '<span class="mini good">Done</span>'
+                : (t.status === "blocked" ? '<span class="mini">Blocked</span>'
+                : (isRecurring(t) ? '<span class="mini cool">'+(t.checkCount||0)+' check-in'+((t.checkCount||0)===1?'':'s')+'</span>'
+                : '<span class="mini">'+(timeLeftOn(t) > 0 ? fmtDur(timeLeftOn(t))+' left' : 'over estimate')+'</span>'));
+      var over = !isRecurring(t) && t.actualMinutes > est;
+      return '<div class="tt-row">'+
+        '<div class="tt-top"><span class="tt-name">'+(t.status==="done"?"✓ ":"")+esc(t.name)+'</span>'+
+        '<span class="tt-val">'+fmtDur(t.actualMinutes)+'</span></div>'+
+        '<span class="bar-track"><span class="bar-fill'+(t.status==="done"?" good":(over?" hot":" cool"))+
+          '" style="width:'+Math.round(t.actualMinutes/top*100)+'%"></span></span>'+
+        '<div class="row-meta">'+state+(isRecurring(t) ? '' : '<span class="mini'+(over?' hot':'')+'">'+est+'m estimated</span>')+'</div>'+
+      '</div>';
+    }).join("")+'</div>';
 }
 /* estimate against reality — the raw material for better guesses later */
 function runsHTML(){
@@ -2829,14 +2988,23 @@ function runsHTML(){
 function renderYou(){
   var p = S.profile, st = S.settings;
   var tn = function(v,l){ return '<button class="choice grow" data-tone="'+v+'" aria-pressed="'+(p.tone===v)+'">'+l+'</button>'; };
+  /* A colour per place. Pick one and the whole app — orb, tints, everything —
+     wears it the moment you're there, so you know where you are without reading. */
   var locRows = S.locations.map(function(l){
-    return '<div class="row"><div class="row-main"><div class="row-title">'+
-      '<span class="swatch" style="display:inline-block;vertical-align:-2px;margin-right:8px;background:hsl('+l.hue+' 45% 55%)"></span>'+esc(l.label)+'</div>'+
-      '<div class="row-meta"><span class="mini'+(l.kind==="transit"?" cool":"")+'">'+(l.kind==="transit"?"On the move":"A place")+'</span>'+
-      '<span class="mini">'+openTasks().filter(function(x){ return x.locations.indexOf(l.id)>-1; }).length+' waiting</span></div></div>'+
-      '<div class="row-actions"><button class="icon-btn" data-act="loc-hue" data-id="'+esc(l.id)+'" aria-label="Change colour">◐</button>'+
-      (S.locations.length > 1 ? '<button class="icon-btn" data-act="loc-del" data-id="'+esc(l.id)+'" aria-label="Remove">✕</button>' : '')+
-      '</div></div>';
+    var dots = HUE_CHOICES.map(function(h){
+      return '<button class="hue-dot" data-hue="'+h+'" data-id="'+esc(l.id)+'" aria-pressed="'+(l.hue===h)+'" '+
+             'style="background:hsl('+h+' 62% 55%)" aria-label="'+esc(hueName(h))+'"></button>';
+    }).join("");
+    return '<div class="row" style="flex-direction:column;align-items:stretch;gap:8px">'+
+      '<div style="display:flex;align-items:center;gap:10px">'+
+        '<div class="row-main"><div class="row-title">'+
+        '<span class="swatch" style="background:hsl('+l.hue+' 62% 55%)"></span>'+esc(l.label)+'</div>'+
+        '<div class="row-meta"><span class="mini'+(l.kind==="transit"?" cool":"")+'">'+(l.kind==="transit"?"On the move":"A place")+'</span>'+
+        '<span class="mini">'+openTasks().filter(function(x){ return x.locations.indexOf(l.id)>-1; }).length+' waiting</span></div></div>'+
+        (S.locations.length > 1 ? '<div class="row-actions"><button class="icon-btn" data-act="loc-del" data-id="'+esc(l.id)+'" aria-label="Remove">✕</button></div>' : '')+
+      '</div>'+
+      '<div class="hues">'+dots+'</div>'+
+    '</div>';
   }).join("");
 
   document.getElementById("youRoot").innerHTML = ''+
@@ -2871,7 +3039,7 @@ function renderYou(){
     '<div class="group"><div class="group-head"><h2 class="sec">Locations</h2><span class="count">'+S.locations.length+'</span></div>'+
       locRows+
       '<button class="btn wide" data-act="loc-add">+ Add a location</button>'+
-      '<p class="hint">Each one tints the whole app so you can tell where you are at a glance. "On the move" locations hold errands and never interrupt you at a desk.</p>'+
+      '<p class="hint">Pick a colour and the sphere and everything around it wears it while you\'re there — you know where you are before you\'ve read a word. "On the move" locations hold errands and never interrupt you at a desk.</p>'+
     '</div>'+
     '<hr class="divider">'+
     '<div class="stack">'+
@@ -2886,6 +3054,14 @@ function renderYou(){
   '</div>';
 
   var root = document.getElementById("youRoot");
+  root.querySelectorAll("[data-hue]").forEach(function(b){
+    b.addEventListener("click", function(){
+      var l = locById(b.dataset.id); if(!l) return;
+      l.hue = +b.dataset.hue;
+      save(); applyHue(); renderYou(); renderNow(true);
+      toast(l.label+" is "+hueName(l.hue).toLowerCase()+" now.");
+    });
+  });
   root.querySelectorAll("[data-tone]").forEach(function(b){ b.addEventListener("click", function(){ S.profile.tone = b.dataset.tone; save(); renderYou(); }); });
   root.querySelectorAll("[data-lunchreq]").forEach(function(b){ b.addEventListener("click", function(){ S.settings.lunchRequired = b.dataset.lunchreq === "1"; save(); renderYou(); renderChips(); }); });
   root.querySelectorAll("[data-warn]").forEach(function(b){ b.addEventListener("click", function(){ S.settings.warnMinutes = +b.dataset.warn; save(); renderYou(); }); });
@@ -3094,7 +3270,6 @@ document.addEventListener("click", function(e){
       break;
     }
     case "loc-add": openSheet(sheetAddLocation(), bindAddLocation); break;
-    case "loc-hue": { var lh = locById(id); if(lh){ lh.hue = (lh.hue + 40) % 360; save(); applyHue(); renderYou(); } break; }
     case "loc-del": {
       var ld = locById(id); if(!ld) break;
       if(S.locations.length <= 1){ toast("You need somewhere to be."); break; }
@@ -3256,7 +3431,7 @@ if(!S.profile.sawGestures && S.session.started) showGestures();
    app out from under a running timer. */
 (function () {
   if (!('serviceWorker' in navigator) || location.protocol !== 'https:') return;
-  var BUILD = '20260827-1155-b45cdb';
+  var BUILD = '20260901-0922-fb8837';
   window.addEventListener('load', function () {
     navigator.serviceWorker.register('sw.js?v=' + BUILD).then(function (reg) {
       function watch(sw) {
