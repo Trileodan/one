@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="ONE">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="one-build" content="20260902-0953-8c53fd">
+<meta name="one-build" content="20260902-1035-8acde3">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png" sizes="192x192">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -44,6 +44,7 @@
   --shadow:0 1px 2px hsl(var(--loc-h) 30% 10% / .06), 0 8px 24px -12px hsl(var(--loc-h) 30% 10% / .18);
   --shadow-lg:0 2px 4px hsl(var(--loc-h) 30% 10% / .06), 0 24px 48px -20px hsl(var(--loc-h) 30% 10% / .28);
   --orb-glow:hsl(var(--orb-h) 96% 48% / .40);
+  --sky-1:hsl(var(--loc-h) 26% 88%); --sky-2:hsl(var(--loc-h) 20% 91%); --star:hsl(var(--loc-h) 40% 34%);
   --r:14px; --r-lg:20px;
   --display:"Archivo","Helvetica Neue",Arial,sans-serif;
   --body:"Hanken Grotesk","Helvetica Neue",Arial,sans-serif;
@@ -65,6 +66,7 @@
     --shadow:0 1px 2px rgba(0,0,0,.5), 0 10px 30px -14px rgba(0,0,0,.8);
     --shadow-lg:0 2px 6px rgba(0,0,0,.5), 0 30px 60px -24px rgba(0,0,0,.9);
     --orb-glow:hsl(var(--orb-h) 100% 56% / .34);
+  --sky-1:hsl(232 42% 11%); --sky-2:hsl(230 40% 7%); --star:#EAF0FF;
   }
 }
 :root[data-theme="dark"]{
@@ -82,6 +84,7 @@
   --shadow:0 1px 2px rgba(0,0,0,.5), 0 10px 30px -14px rgba(0,0,0,.8);
   --shadow-lg:0 2px 6px rgba(0,0,0,.5), 0 30px 60px -24px rgba(0,0,0,.9);
   --orb-glow:hsl(var(--orb-h) 100% 56% / .34);
+  --sky-1:hsl(232 42% 11%); --sky-2:hsl(230 40% 7%); --star:#EAF0FF;
 }
 
 *{box-sizing:border-box}
@@ -261,96 +264,336 @@ h2.sec{font-family:var(--display);font-variation-settings:'wdth' 88,'wght' 700;f
 .swipe-hint.d{bottom:4px;left:50%;transform:translateX(-50%)}
 
 /* ---------- the solar system ----------
-   Your life as separate worlds. Static positions, slow individual drift: it
-   should feel like somewhere, not like a screensaver. */
-.sys{
-  position:relative;width:min(94vw,440px);aspect-ratio:1;margin:0 auto;
-  transition:transform .38s cubic-bezier(.4,0,.2,1), opacity .38s ease;
+   A place, not a menu. Everything here turns: the whole field makes one
+   revolution a day, so the sky you see at four in the afternoon isn't the sky
+   you saw at nine. Nothing moves fast enough to distract you. */
+.sky{
+  position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;
+  background:radial-gradient(circle at 50% 38%, var(--sky-1), var(--sky-2) 62%, transparent 78%);
+  opacity:0;animation:skyin 1.1s ease forwards;
 }
-.sys.leaving{transform:scale(1.6);opacity:0}
+@keyframes skyin{to{opacity:1}}
+.star{
+  position:absolute;border-radius:50%;background:var(--star);
+  animation:twinkle var(--tw,4s) ease-in-out infinite;animation-delay:var(--td,0s);
+}
+@keyframes twinkle{0%,100%{opacity:var(--o,.5);transform:scale(1)}50%{opacity:calc(var(--o,.5) * .25);transform:scale(.72)}}
+/* the occasional visitor: a head, a tail, and a long wait in between */
+.shooter{
+  position:absolute;width:2px;height:2px;border-radius:50%;background:var(--star);
+  box-shadow:0 0 6px 2px var(--star);
+  opacity:0;animation:shoot var(--dur,26s) linear infinite;animation-delay:var(--sd,0s);
+}
+.shooter::after{
+  content:"";position:absolute;right:1px;top:50%;width:130px;height:1.5px;transform:translateY(-50%);
+  background:linear-gradient(270deg, var(--star), transparent);border-radius:2px;
+}
+@keyframes shoot{
+  0%{opacity:0;transform:translate(0,0)}
+  1%{opacity:.9}
+  9%{opacity:.9;transform:translate(var(--sx,-70vw), var(--sy,42vh))}
+  10%,100%{opacity:0;transform:translate(var(--sx,-70vw), var(--sy,42vh))}
+}
+
+.sys{
+  position:relative;width:min(94vw,420px);aspect-ratio:1;margin:2vh auto 0;z-index:1;
+  transform-origin:50% 50%;
+}
+/* nothing behind the sky, everything else in front of it — and while you're out
+   in the system the app column goes transparent so the sky is the background */
+#sky{z-index:0}
+.app{position:relative;z-index:1}
+body.in-space .app{background:transparent}
+.sysview{display:flex;flex-direction:column;justify-content:center;min-height:calc(100vh - 210px)}
+.sys.arriving{animation:sysin .85s cubic-bezier(.16,.9,.3,1) both}
+@keyframes sysin{from{transform:scale(2.4);opacity:0}to{transform:scale(1);opacity:1}}
+/* The flight: the camera pulls back for a beat, then runs at the world you
+   picked — which slides to the middle of the screen as you close on it. */
+.sys.leaving{animation:sysfly 2.35s cubic-bezier(.6,0,.85,.42) both}
+@keyframes sysfly{
+  0%{transform:translate(0,0) scale(1)}
+  9%{transform:translate(calc(var(--fx) * .03), calc(var(--fy) * .03)) scale(.93)}
+  100%{transform:translate(var(--fx), var(--fy)) scale(14)}
+}
+.sys.leaving .body:not(.chosen){opacity:0;transition:opacity .5s ease}
+.sys.leaving .orbit{opacity:0;transition:opacity .6s ease}
+.sys.leaving .body-name{opacity:0;transition:opacity .35s ease}
+.sysview.leaving .eyebrow,.sysview.leaving .runway{opacity:0;transition:opacity .5s ease}
+.sky.warp .star{animation:none;opacity:.9;transition:transform 2.2s cubic-bezier(.6,0,.9,.4), opacity 2.2s ease}
+.sky.warp .shooter{opacity:0}
+
 .orbit{
   position:absolute;left:50%;top:50%;border-radius:50%;pointer-events:none;
   border:1px solid var(--line-2);transform:translate(-50%,-50%);
 }
-.orbit.o1{width:66%;height:62%}
-.orbit.o2{width:92%;height:88%;border-style:dashed;opacity:.6}
+.orbit.o1{width:64%;height:64%}
+.orbit.o2{width:80%;height:80%;border-style:dashed;opacity:.55}
+
+/* One field, one revolution a day. It isn't animated — the angle is read off
+   the clock and nudged every few seconds, so the sky is genuinely where the
+   time of day says it should be and nothing burns battery drawing it. */
+.orbit-field{position:absolute;inset:0;transform:rotate(0deg);transition:transform 1.2s linear}
+/* each slot is a full-size rotating frame, so it must not swallow taps meant
+   for the world underneath it */
+.slot{position:absolute;inset:0;transform:rotate(var(--a));pointer-events:none}
+.slot > .body{pointer-events:auto}
 .body{
-  position:absolute;transform:translate(-50%,-50%);
+  position:absolute;left:50%;top:calc(50% - var(--r));width:var(--sz);
+  transform:translate(-50%,-50%) rotate(calc(-1 * var(--a)));
   appearance:none;background:none;border:0;padding:0;cursor:pointer;
-  display:flex;flex-direction:column;align-items:center;gap:7px;
-  width:var(--sz);transition:transform .38s cubic-bezier(.4,0,.2,1), opacity .3s ease;
-  animation:bodydrift var(--drift,11s) ease-in-out infinite;
 }
-@keyframes bodydrift{0%,100%{margin-top:-4px}50%{margin-top:5px}}
-.body:active{filter:brightness(1.08)}
-.body .body-orb{
+.upright{
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  transform:rotate(0deg);transition:transform 1.2s linear;
+}
+.body-orb{
   position:relative;width:100%;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;
-  background:radial-gradient(circle at 34% 26%,
-    hsl(calc(var(--orb-h) + 10) 100% 84%) 0%,
-    hsl(var(--orb-h) 96% 60%) 34%,
-    hsl(var(--orb-h) 88% 46%) 64%,
-    hsl(calc(var(--orb-h) - 6) 96% 24%) 100%);
-  box-shadow:0 14px 34px -14px hsl(var(--orb-h) 96% 50% / .5),
-             0 2px 1px rgba(255,255,255,.28) inset,
-             0 -14px 26px -14px hsl(var(--orb-h) 96% 14% / .85) inset;
+  overflow:hidden;isolation:isolate;
+  background:radial-gradient(circle at 50% 50%, hsl(var(--orb-h) 70% 42%), hsl(calc(var(--orb-h) - 8) 80% 20%));
+  box-shadow:0 16px 40px -16px hsl(var(--orb-h) 96% 50% / .55);
 }
-.body .body-name{
+/* the light: one sun, so one highlight and one terminator on every world */
+.body-orb::after{
+  content:"";position:absolute;inset:0;border-radius:50%;z-index:3;pointer-events:none;
+  background:
+    radial-gradient(circle at 30% 24%, rgba(255,255,255,.42), rgba(255,255,255,0) 46%),
+    radial-gradient(circle at 74% 78%, rgba(2,2,10,.72), rgba(2,2,10,0) 58%);
+  box-shadow:inset -6px -8px 22px -8px rgba(0,0,6,.75), inset 2px 3px 10px -6px rgba(255,255,255,.5);
+}
+.tex{position:absolute;inset:0;border-radius:50%;z-index:1;overflow:hidden}
+.body:active .upright{transform:scale(.96)}
+.body-name{
   font-family:var(--display);font-variation-settings:'wdth' 84,'wght' 800;
   font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2);white-space:nowrap;
 }
-.sys .body.chosen{transform:translate(-50%,-50%) translate(var(--dx,0),var(--dy,0)) scale(3.4);opacity:.9;z-index:5}
-.sys.leaving .body:not(.chosen){opacity:0;transform:translate(-50%,-50%) scale(.7)}
-/* the sun is today, not a category: what you have done, not what is left */
+.sys .body.chosen{z-index:5}
+.sys .body.chosen .body-orb{box-shadow:0 0 60px 10px hsl(var(--orb-h) 96% 55% / .5)}
+
+/* ---------- the sun ----------
+   Granulation, a couple of spots and a corona that breathes. */
+.body.sun{cursor:pointer}
 .body.sun .body-orb{
-  background:radial-gradient(circle at 40% 34%, #FFF6E2 0%, #FFD98A 26%, #FFA92E 58%, #E2760A 84%, #A63F02 100%);
-  box-shadow:0 0 44px 6px rgba(255,169,46,.32), 0 2px 2px rgba(255,255,255,.4) inset;
-  animation:sunpulse 7s ease-in-out infinite;flex-direction:column;gap:0;
+  background:radial-gradient(circle at 50% 50%, #FFF8E6 0%, #FFE9A8 22%, #FFC24A 46%, #FF8A12 72%, #E85D02 89%, #B93C00 100%);
+  box-shadow:0 0 40px 6px rgba(255,168,40,.35), 0 0 110px 26px rgba(255,120,10,.16);
+  animation:corona 9s ease-in-out infinite;overflow:visible;
 }
-@keyframes sunpulse{0%,100%{box-shadow:0 0 40px 4px rgba(255,169,46,.26), 0 2px 2px rgba(255,255,255,.4) inset}
-                    50%{box-shadow:0 0 62px 10px rgba(255,169,46,.4), 0 2px 2px rgba(255,255,255,.4) inset}}
-.sun-num{font-family:var(--display);font-variation-settings:'wdth' 80,'wght' 900;font-size:clamp(1.7rem,8vw,2.4rem);
-  line-height:.9;color:#5B2600;font-variant-numeric:tabular-nums}
-.sun-sub{font-family:var(--mono);font-size:8.5px;letter-spacing:.18em;text-transform:uppercase;color:#7A3703}
-/* errands travel: a comet, not a place you live */
-.body.comet .body-orb{border-radius:50%}
-.comet-tail{
-  position:absolute;left:46%;top:50%;width:165%;height:32%;transform:translateY(-50%) rotate(-14deg);
-  border-radius:50%;pointer-events:none;z-index:-1;
-  background:linear-gradient(90deg, hsl(var(--orb-h) 96% 62% / .5), hsl(var(--orb-h) 96% 62% / 0) 70%);
-  filter:blur(5px);
+@keyframes corona{
+  0%,100%{box-shadow:0 0 38px 5px rgba(255,168,40,.32), 0 0 100px 22px rgba(255,120,10,.14)}
+  50%{box-shadow:0 0 58px 12px rgba(255,190,70,.46), 0 0 140px 38px rgba(255,120,10,.22)}
 }
-/* projects are chosen, not owed: a little belt of your own things */
-.body.belt .body-orb{background:none;box-shadow:none;position:relative}
+.body.sun .body-orb::after{
+  background:radial-gradient(circle at 50% 50%, rgba(255,255,255,0) 62%, rgba(180,60,0,.35) 100%);
+  box-shadow:none;
+}
+.sun-tex{
+  position:absolute;inset:-6%;border-radius:50%;z-index:1;
+  background:
+    radial-gradient(closest-side circle at 32% 38%, rgba(120,30,0,.55), transparent 100%),
+    radial-gradient(closest-side circle at 66% 60%, rgba(140,40,0,.45), transparent 100%),
+    radial-gradient(closest-side circle at 54% 24%, rgba(255,255,220,.55), transparent 100%),
+    radial-gradient(closest-side circle at 24% 68%, rgba(255,240,180,.4), transparent 100%);
+  background-size:26% 18%, 18% 13%, 30% 22%, 24% 16%;
+  background-repeat:no-repeat;
+  filter:blur(2px);opacity:.85;
+  animation:granul 34s ease-in-out infinite alternate;
+}
+@keyframes granul{
+  0%{background-position:30% 40%, 64% 58%, 52% 22%, 22% 66%}
+  100%{background-position:38% 46%, 58% 52%, 60% 30%, 30% 60%}
+}
+/* a flare licking off the limb */
+.sun-flare{
+  position:absolute;inset:-26%;border-radius:50%;z-index:0;pointer-events:none;
+  background:conic-gradient(from 0deg, transparent 0deg, rgba(255,170,50,.34) 14deg, transparent 34deg,
+             transparent 180deg, rgba(255,140,30,.26) 196deg, transparent 220deg);
+  filter:blur(9px);
+  animation:flare 46s linear infinite;
+}
+@keyframes flare{to{transform:rotate(360deg)}}
+.sun-num{font-family:var(--display);font-variation-settings:'wdth' 80,'wght' 900;font-size:clamp(1.6rem,7.6vw,2.3rem);
+  line-height:.9;color:#5B2600;font-variant-numeric:tabular-nums;position:relative;z-index:4}
+.sun-sub{font-family:var(--mono);font-size:8.5px;letter-spacing:.18em;text-transform:uppercase;color:#7A3703;position:relative;z-index:4}
+
+/* ---------- Work: a banded gas giant ---------- */
+.body.gas .tex{
+  background:
+    repeating-linear-gradient(178deg,
+      hsl(calc(var(--orb-h) + 14) 92% 68%) 0%, hsl(calc(var(--orb-h) + 14) 92% 68%) 3%,
+      hsl(var(--orb-h) 88% 54%) 3%,          hsl(var(--orb-h) 88% 54%) 7%,
+      hsl(calc(var(--orb-h) - 6) 84% 38%) 7%, hsl(calc(var(--orb-h) - 6) 84% 38%) 10%,
+      hsl(calc(var(--orb-h) + 8) 90% 60%) 10%, hsl(calc(var(--orb-h) + 8) 90% 60%) 15%,
+      hsl(calc(var(--orb-h) - 2) 86% 46%) 15%, hsl(calc(var(--orb-h) - 2) 86% 46%) 19%);
+  background-size:260% 100%;
+  filter:blur(.4px);
+  animation:bands 240s linear infinite;
+}
+@keyframes bands{to{background-position:-260% 0}}
+.body.gas .spot{
+  position:absolute;left:26%;top:56%;width:26%;height:15%;border-radius:50%;z-index:2;
+  background:radial-gradient(circle at 40% 40%, hsl(calc(var(--orb-h) - 14) 96% 62%), hsl(calc(var(--orb-h) - 18) 92% 34%) 75%);
+  box-shadow:0 0 6px 1px hsl(calc(var(--orb-h) - 16) 96% 30% / .6) inset;
+  filter:blur(.3px);animation:spotdrift 240s linear infinite;
+}
+@keyframes spotdrift{0%{left:-30%}100%{left:110%}}
+
+/* ---------- Home: a lived-on world ---------- */
+.body.world .tex{
+  background:
+    radial-gradient(closest-side ellipse at 30% 34%, hsl(var(--orb-h) 54% 42%) 0%, hsl(var(--orb-h) 54% 42%) 60%, transparent 100%),
+    radial-gradient(closest-side ellipse at 66% 62%, hsl(calc(var(--orb-h) + 14) 48% 34%) 0%, hsl(calc(var(--orb-h) + 14) 48% 34%) 56%, transparent 100%),
+    radial-gradient(closest-side ellipse at 52% 10%, rgba(240,248,255,.92) 0%, transparent 100%),
+    radial-gradient(closest-side ellipse at 48% 94%, rgba(235,246,255,.9) 0%, transparent 100%),
+    linear-gradient(#1E5FA8, #0E3568);
+  background-size:46% 34%, 38% 26%, 40% 14%, 44% 12%, 100% 100%;
+  background-repeat:no-repeat;
+  background-position:26% 34%, 64% 62%, 50% 4%, 50% 96%, 0 0;
+  animation:worldturn 180s linear infinite;
+}
+@keyframes worldturn{
+  0%{background-position:-40% 34%, 10% 62%, 50% 4%, 50% 96%, 0 0}
+  100%{background-position:120% 34%, 170% 62%, 50% 4%, 50% 96%, 0 0}
+}
+.body.world .clouds{
+  position:absolute;inset:0;border-radius:50%;z-index:2;
+  background:
+    radial-gradient(closest-side ellipse at 20% 40%, rgba(255,255,255,.62), transparent 100%),
+    radial-gradient(closest-side ellipse at 60% 26%, rgba(255,255,255,.5), transparent 100%),
+    radial-gradient(closest-side ellipse at 78% 66%, rgba(255,255,255,.45), transparent 100%);
+  background-size:42% 16%, 34% 12%, 38% 14%;background-repeat:no-repeat;
+  filter:blur(1.5px);opacity:.75;
+  animation:cloudturn 130s linear infinite;
+}
+@keyframes cloudturn{
+  0%{background-position:-40% 40%, 20% 24%, 60% 68%}
+  100%{background-position:140% 40%, 200% 24%, 240% 68%}
+}
+/* the night side has the lights on */
+.body.world .lights{
+  position:absolute;inset:0;border-radius:50%;z-index:2;pointer-events:none;
+  background:
+    radial-gradient(circle at 78% 70%, rgba(255,214,140,.9) 0.7px, transparent 1.4px),
+    radial-gradient(circle at 84% 62%, rgba(255,206,130,.8) 0.6px, transparent 1.3px),
+    radial-gradient(circle at 72% 80%, rgba(255,220,150,.75) 0.6px, transparent 1.2px),
+    radial-gradient(circle at 88% 74%, rgba(255,200,120,.7) 0.5px, transparent 1.1px);
+  animation:citypulse 6s ease-in-out infinite;
+}
+@keyframes citypulse{0%,100%{opacity:.75}50%{opacity:1}}
+
+/* ---------- Projects: a little belt of your own things ---------- */
+.body.belt .body-orb{background:none;box-shadow:none;overflow:visible;animation:beltturn 300s linear infinite}
+.body.belt .body-orb::after{display:none}
+@keyframes beltturn{to{transform:rotate(360deg)}}
 .belt-rock{
   position:absolute;border-radius:50%;
-  background:radial-gradient(circle at 34% 30%, hsl(calc(var(--orb-h) + 12) 96% 76%), hsl(var(--orb-h) 92% 40%) 70%, hsl(var(--orb-h) 96% 22%));
-  box-shadow:0 6px 16px -8px hsl(var(--orb-h) 96% 46% / .7);
+  background:radial-gradient(circle at 34% 28%, hsl(calc(var(--orb-h) + 16) 42% 62%), hsl(var(--orb-h) 34% 38%) 56%, hsl(calc(var(--orb-h) - 10) 40% 16%));
+  box-shadow:0 4px 12px -6px hsl(var(--orb-h) 60% 30% / .8), inset -3px -4px 8px -3px rgba(0,0,8,.85);
 }
-.belt-rock.r1{width:52%;height:52%;left:2%;top:26%}
-.belt-rock.r2{width:38%;height:38%;left:52%;top:6%}
-.belt-rock.r3{width:30%;height:30%;left:62%;top:60%}
-/* leaving a world: it launches away and the system comes back */
-.orb-stage.launch{transition:transform .34s cubic-bezier(.5,0,.9,.4), opacity .34s ease;transform:translateY(-62vh) scale(.34);opacity:0}
-.pull{transition:none}
-.place-row{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-top:2px}
-.place-chip{
-  appearance:none;cursor:pointer;border-radius:99px;border:1px solid var(--line);background:var(--surface);
-  color:var(--muted);padding:7px 13px;min-height:38px;
-  font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;
+.belt-rock::after{
+  content:"";position:absolute;left:52%;top:26%;width:22%;height:22%;border-radius:50%;
+  background:hsl(calc(var(--orb-h) - 10) 30% 22% / .6);box-shadow:inset 1px 1px 2px rgba(0,0,0,.5);
 }
-.place-chip[aria-pressed="true"]{color:var(--ink);border-color:color-mix(in srgb,var(--hi) 50%,transparent);background:var(--hi-soft)}
+.belt-rock.r1{width:54%;height:54%;left:0;top:24%}
+.belt-rock.r2{width:38%;height:38%;left:50%;top:2%}
+.belt-rock.r3{width:28%;height:28%;left:62%;top:58%}
+
+/* ---------- Errands: a comet, always on its way somewhere ---------- */
+.body.comet .body-orb{
+  overflow:visible;
+  background:radial-gradient(circle at 38% 32%, #FFFFFF 0%, hsl(var(--orb-h) 92% 78%) 26%, hsl(var(--orb-h) 88% 56%) 60%, hsl(calc(var(--orb-h) - 6) 86% 34%) 100%);
+  box-shadow:0 0 18px 4px hsl(var(--orb-h) 96% 62% / .5);
+  animation:cometpulse 5s ease-in-out infinite;
+}
+@keyframes cometpulse{0%,100%{box-shadow:0 0 16px 3px hsl(var(--orb-h) 96% 62% / .45)}50%{box-shadow:0 0 26px 7px hsl(var(--orb-h) 96% 70% / .6)}}
+/* the tail streams away from the sun, which means it follows the slot's angle
+   rather than staying upright with the label */
+.tail-wrap{position:absolute;left:50%;top:50%;width:100%;height:100%;pointer-events:none;z-index:-1;
+  transform:translate(-50%,-50%) rotate(calc(var(--a) - 90deg))}
+.comet-tail{
+  position:absolute;left:46%;top:50%;width:230%;height:58%;transform:translateY(-50%);
+  border-radius:50%;
+  background:linear-gradient(90deg, hsl(var(--orb-h) 96% 70% / .5), hsl(var(--orb-h) 96% 66% / .14) 44%, transparent 80%);
+  filter:blur(7px);
+}
+.comet-tail.t2{height:20%;opacity:.75;filter:blur(3px);width:180%}
+
+/* Standing on a world, you can still see what it's made of — turned right down
+   so the task on top of it stays the thing you read. */
+.orb.skin-gas .orb-skin{
+  background-image:repeating-linear-gradient(179deg,
+    hsl(calc(var(--orb-h) + 14) 92% 72%) 0 2.4%,
+    hsl(var(--orb-h) 88% 52%) 2.4% 5.6%,
+    hsl(calc(var(--orb-h) - 8) 84% 34%) 5.6% 8%,
+    hsl(calc(var(--orb-h) + 8) 90% 62%) 8% 12%);
+  background-size:100% 100%;background-position:0 0;background-repeat:no-repeat;
+  filter:blur(3px);opacity:.62;mix-blend-mode:overlay;animation:orbbands 190s linear infinite;
+}
+@keyframes orbbands{0%{background-position:0 0}100%{background-position:0 -100%}}
+.orb.skin-world .orb-skin{
+  background-image:
+    radial-gradient(closest-side ellipse at 30% 32%, hsl(calc(var(--orb-h) + 6) 70% 26%), transparent 100%),
+    radial-gradient(closest-side ellipse at 70% 66%, hsl(calc(var(--orb-h) + 16) 66% 22%), transparent 100%),
+    radial-gradient(closest-side ellipse at 22% 74%, hsl(calc(var(--orb-h) + 2) 70% 28%), transparent 100%),
+    radial-gradient(closest-side ellipse at 50% 4%, rgba(255,255,255,.85), transparent 100%),
+    radial-gradient(closest-side ellipse at 50% 98%, rgba(255,255,255,.8), transparent 100%);
+  background-size:50% 38%, 40% 30%, 30% 22%, 44% 10%, 40% 9%;background-repeat:no-repeat;
+  background-position:26% 30%, 70% 66%, 20% 76%, 50% 2%, 50% 99%;
+  filter:blur(7px);opacity:.9;mix-blend-mode:multiply;
+  animation:orbworld 220s linear infinite;
+}
+@keyframes orbworld{
+  0%{background-position:-30% 30%, 14% 66%, -36% 76%, 50% 2%, 50% 99%}
+  100%{background-position:130% 30%, 174% 66%, 124% 76%, 50% 2%, 50% 99%}
+}
+
+/* ---------- leaving a world: wind up, then catapult ---------- */
+.orb-stage.launch{animation:catapult 1s cubic-bezier(.5,0,.75,.35) both}
+@keyframes catapult{
+  0%{transform:translateY(0) scale(1) rotate(0)}
+  16%{transform:translateY(46px) scale(1.03) rotate(-3deg)}
+  100%{transform:translateY(-142vh) scale(.1) rotate(26deg);opacity:.15}
+}
+.orb-stage.pulling .orb-float{transition:none}
+.pull-note{
+  position:absolute;left:50%;bottom:-26px;transform:translateX(-50%) translateY(6px);
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--hi);
+  opacity:0;transition:opacity .18s ease,transform .18s ease;pointer-events:none;white-space:nowrap;
+}
+.orb-stage.armed .pull-note{opacity:1;transform:translateX(-50%) translateY(0)}
+.orb-stage.armed .swipe-hint{opacity:0}
+/* everything on the page leaves with the world, not after it */
+#nowRoot.launching .why,#nowRoot.launching .runway,#nowRoot.launching .dayline,
+#nowRoot.launching .eyebrow,#nowRoot.launching .pickup,#nowRoot.launching .committed-note{
+  opacity:0;transition:opacity .3s ease;
+}
+/* arriving on a world */
+.orb-stage.arriving{animation:landing .75s cubic-bezier(.16,.9,.3,1) both}
+@keyframes landing{from{transform:scale(1.5);opacity:0;filter:blur(6px)}to{transform:scale(1);opacity:1;filter:blur(0)}}
+
+@media (prefers-reduced-motion:reduce){
+  .sys.leaving,.sys.arriving,.orb-stage.launch,.orb-stage.arriving{animation-duration:.001s}
+  .tex,.clouds,.sun-tex,.sun-flare,.star,.shooter{animation:none}
+  .orbit-field,.upright{transition:none}
+}
 
 /* quick capture: one field and a row of optional afterthoughts */
-.qc-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:-6px}
+.qc-chips{display:flex;gap:9px;flex-wrap:wrap}
 .qc-chip{
   appearance:none;cursor:pointer;border-radius:99px;border:1px solid var(--line);background:var(--surface);
-  color:var(--ink-2);padding:9px 15px;min-height:42px;font-weight:650;font-size:13.5px;
+  color:var(--ink-2);padding:11px 17px;min-height:46px;font-weight:650;font-size:14px;
   transition:border-color .14s ease,color .14s ease,background .14s ease;
 }
 .qc-chip[aria-pressed="true"]{color:var(--hi);border-color:color-mix(in srgb,var(--hi) 55%,transparent);background:var(--hi-soft)}
 .qc-chip.ghost{color:var(--muted);border-style:dashed}
-.qc-drawer{display:flex;flex-direction:column;gap:8px;margin-top:-8px}
+.qc-drawer{display:flex;flex-direction:column;gap:12px;padding:15px 0 3px;border-top:1px solid var(--line-2)}
 .qc-drawer[hidden]{display:none}
+.qc-drawer .choices{gap:9px}
+/* capture is the one sheet that should never feel cramped */
+#sheetRoot .qc-chips + .qc-drawer{margin-top:2px}
+#sheetRoot{display:flex;flex-direction:column;gap:19px}
+.sheet.capture #sheetRoot{gap:22px}
+.sheet.capture .field{gap:11px}
+.sheet.capture #qc-name{min-height:56px;font-size:16.5px}
+.sheet.capture .hint{line-height:1.5}
 
 .committed-note{
   margin:14px auto 0;max-width:34ch;text-align:center;
@@ -578,10 +821,11 @@ var todayKey = function(d){ d = d || new Date(); return d.getFullYear()+"-"+pad(
 
 /* The hue is the whole look of the app while you're there: the sphere, the
    tints, the paper. Work keeps ONE's orange; the others take their own. */
+/* Where your body can be. Being out and about used to live here; it's a world
+   of its own now, so this list is only about what a job physically needs. */
 var DEFAULT_LOCATIONS = [
-  { id:"home", label:"Home",        kind:"place",   hue:150 },
-  { id:"work", label:"Work",        kind:"place",   hue:22  },
-  { id:"out",  label:"Out & About", kind:"transit", hue:215 }
+  { id:"home", label:"Home",      kind:"place", hue:150 },
+  { id:"work", label:"Workplace", kind:"place", hue:22  }
 ];
 var DEFAULT_SCHEDULE = [
   { from:"00:00", to:"08:00", loc:"home" },
@@ -608,7 +852,7 @@ var DEFAULT_PLANETS = [
 ];
 
 var DEFAULTS = {
-  version:5,
+  version:6,
   profile:{ name:"", tone:"normal", sawGestures:false },
   settings:{
     lunchDuration:45, lunchFrom:"12:00", lunchTo:"13:00", lunchRequired:true,
@@ -721,7 +965,28 @@ var S = load() || JSON.parse(JSON.stringify(DEFAULTS));
   });
   S.planets.forEach(function(p){ if(typeof p.hue !== "number") p.hue = 215; });
   if(S.session.planet && !planetById(S.session.planet)) S.session.planet = null;
-  S.version = 5;
+
+  /* v6: transit places retire into the Errands planet. Anything that pointed at
+     one - the schedule, where you are, a task's requirement - is mended here. */
+  var gone = S.locations.filter(function(l){ return l.kind === "transit"; }).map(function(l){ return l.id; });
+  if(gone.length){
+    S.locations = S.locations.filter(function(l){ return l.kind !== "transit"; });
+    if(!S.locations.length) S.locations = JSON.parse(JSON.stringify(DEFAULT_LOCATIONS));
+    var home = (S.locations[0]||{}).id;
+    S.schedule.forEach(function(sg){ if(gone.indexOf(sg.loc) > -1) sg.loc = home; });
+    if(gone.indexOf(S.session.location) > -1) S.session.location = home;
+    if(gone.indexOf(S.session.lastPlace) > -1) S.session.lastPlace = home;
+    S.tasks.forEach(function(t){
+      if(!Array.isArray(t.locations)) return;
+      t.locations = t.locations.filter(function(x){ return gone.indexOf(x) < 0; });
+      if(!t.locations.length) t.locations = ["anywhere"];
+      if(t.needsPlace && gone.indexOf(t.needsPlace) > -1) t.needsPlace = null;
+    });
+  }
+  if(locById("work") && S.locations.filter(function(l){ return l.id === "work"; })[0].label === "Work"){
+    S.locations.filter(function(l){ return l.id === "work"; })[0].label = "Workplace";
+  }
+  S.version = 6;
 })();
 
 (function rollover(){
@@ -1362,7 +1627,7 @@ function orbHTML(inner, opts){
           '<circle class="t-track" cx="60" cy="60" r="56"></circle>'+
           '<circle class="t-prog" id="tprog" cx="60" cy="60" r="56" stroke-dasharray="351.9" stroke-dashoffset="351.9"></circle>'+
         '</svg>'+
-        '<div class="orb'+(opts.cool?" cool":"")+(opts.clear?" clear":"")+'" id="orb">'+
+        '<div class="orb'+(opts.cool?" cool":"")+(opts.clear?" clear":"")+' '+esc(orbSkinClass())+'" id="orb">'+
           '<div class="orb-turn" id="orbTurn"><div class="orb-skin" id="orbSkin"></div></div>'+
           '<div class="orb-face" id="orbFace">'+inner+'</div>'+
         '</div>'+
@@ -1372,7 +1637,14 @@ function orbHTML(inner, opts){
     '<span class="swipe-hint l" id="hint-l">'+esc(lab("l","Not now"))+'</span>'+
     '<span class="swipe-hint r" id="hint-r">'+esc(lab("r","Add"))+'</span>'+
     '<span class="swipe-hint d" id="hint-d">'+esc(lab("d","Leave"))+'</span>'+
+    '<span class="pull-note">Let go to launch</span>'+
   '</div>';
+}
+/* the sphere you're standing on wears the same face it had from a distance */
+function orbSkinClass(){
+  var p = planetById(S.session.planet);
+  if(!p) return "";
+  return p.kind === "planet" ? (p.id === "home" ? "skin-world" : "skin-gas") : "";
 }
 function faceTask(t, sub){
   return '<div class="orb-task">'+esc(t.name)+'</div><div class="orb-sub">'+esc(sub || (t.duration+" min · "+t.type))+'</div>';
@@ -1404,40 +1676,113 @@ function revealFace(){
    planets are the parts of life that own your tasks. Nothing
    here counts your backlog at you.
    ============================================================ */
+/* Fixed angles on one slowly turning field: 120 degrees apart on the inner ring
+   means Work and Home can never eclipse each other, and the whole sky still
+   turns once a day. */
 var SYS_LAYOUT = [
-  { id:"work",     x:20, y:24, size:25 },
-  { id:"home",     x:80, y:37, size:23 },
-  { id:"projects", x:22, y:76, size:17 },
-  { id:"errands",  x:70, y:76, size:14 }
+  { id:"work",     a:-62,  r:32, size:25, tex:"gas" },
+  { id:"home",     a:58,   r:32, size:23, tex:"world" },
+  { id:"projects", a:196,  r:41, size:16, tex:"belt" },
+  { id:"errands",  a:122,  r:41, size:13, tex:"comet" }
 ];
+function reduceMotion(){
+  return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+/* Seconds since midnight -> where the whole system sits. One revolution a day,
+   so the sky at nine in the morning is not the sky at four in the afternoon. */
+function dayPhase(){
+  var d = new Date();
+  return d.getHours()*3600 + d.getMinutes()*60 + d.getSeconds();
+}
+function orbitAngle(){ return dayPhase() / 86400 * 360; }
+function paintOrbits(){
+  var field = document.getElementById("orbitField");
+  if(!field) return;
+  var a = orbitAngle();
+  field.style.transform = "rotate("+a.toFixed(3)+"deg)";
+  field.parentNode.querySelectorAll(".upright").forEach(function(u){
+    u.style.transform = "rotate("+(-a).toFixed(3)+"deg)";
+  });
+}
 function sysBodyHTML(b){
   var p = planetById(b.id);
   if(!p) return "";
-  var cls = "body " + (p.kind === "comet" ? "comet" : (p.kind === "belt" ? "belt" : "planet"));
-  var inner = p.kind === "belt"
-    ? '<span class="belt-rock r1"></span><span class="belt-rock r2"></span><span class="belt-rock r3"></span>'
-    : (p.kind === "comet" ? '<span class="comet-tail"></span>' : '');
-  return '<button class="'+cls+'" type="button" data-planet="'+esc(p.id)+'" '+
-         'style="left:'+b.x+'%;top:'+b.y+'%;--sz:'+b.size+'%;--orb-h:'+p.hue+';--drift:'+(9 + (b.size % 5))+'s">'+
-         '<span class="body-orb">'+inner+'</span>'+
-         '<span class="body-name">'+esc(p.label)+'</span>'+
-         '</button>';
+  var inner = "";
+  if(b.tex === "belt") inner = '<span class="belt-rock r1"></span><span class="belt-rock r2"></span><span class="belt-rock r3"></span>';
+  else if(b.tex === "comet") inner = "";
+  else if(b.tex === "world") inner = '<span class="tex"></span><span class="clouds"></span><span class="lights"></span>';
+  else inner = '<span class="tex"></span><span class="spot"></span>';
+  return '<div class="slot" style="--a:'+b.a+'deg">'+
+    '<button class="body '+b.tex+'" type="button" data-planet="'+esc(p.id)+'" '+
+      'style="--r:'+b.r+'%;--sz:'+b.size+'%;--orb-h:'+p.hue+';--a:'+b.a+'deg">'+
+      (b.tex === "comet" ? '<span class="tail-wrap"><span class="comet-tail"></span><span class="comet-tail t2"></span></span>' : '')+
+      '<span class="upright">'+
+        '<span class="body-orb">'+inner+'</span>'+
+        '<span class="body-name">'+esc(p.label)+'</span>'+
+      '</span>'+
+    '</button>'+
+  '</div>';
+}
+/* A sky worth looking at: fixed stars that breathe, and the odd visitor that
+   crosses once every half-minute or so and is gone. */
+function skyHTML(){
+  if(reduceMotion()) return '<div class="sky" id="sky"></div>';
+  var out = "", i, seed = 0;
+  var rnd = function(){ seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+  seed = 12345;
+  for(i=0;i<74;i++){
+    var sz = (rnd()*1.7 + 0.7).toFixed(2);
+    out += '<span class="star" style="left:'+(rnd()*100).toFixed(1)+'%;top:'+(rnd()*100).toFixed(1)+'%;'+
+           'width:'+sz+'px;height:'+sz+'px;--o:'+(0.25 + rnd()*0.6).toFixed(2)+';'+
+           '--tw:'+(2.6 + rnd()*5).toFixed(1)+'s;--td:-'+(rnd()*8).toFixed(1)+'s"></span>';
+  }
+  var comets = [
+    { x:112, y:8,  sx:-124, sy:52, dur:29, d:3 },
+    { x:96,  y:-6, sx:-108, sy:78, dur:43, d:19 },
+    { x:118, y:44, sx:-130, sy:26, dur:37, d:31 }
+  ];
+  comets.forEach(function(c){
+    out += '<span class="shooter" style="left:'+c.x+'vw;top:'+c.y+'vh;'+
+           '--sx:'+c.sx+'vw;--sy:'+c.sy+'vh;--dur:'+c.dur+'s;--sd:-'+c.d+'s"></span>';
+  });
+  return '<div class="sky" id="sky">'+out+'</div>';
 }
 function sysHTML(){
   var p = dayProgress();
-  var sun = '<button class="body sun" type="button" data-planet="__sun" style="left:50%;top:50%;--sz:29%">'+
-      '<span class="body-orb"><span class="sun-num">'+p.count+'</span>'+
-      '<span class="sun-sub">'+(p.count === 1 ? "done" : "done")+'</span></span>'+
-      '<span class="body-name">'+(p.done ? fmtDur(p.done)+" focused" : "Today")+'</span></button>';
+  var sun = '<button class="body sun" type="button" data-planet="__sun" style="--r:0%;--sz:27%;--a:0deg">'+
+      '<span class="upright"><span class="body-orb">'+
+        '<span class="sun-flare"></span><span class="sun-tex"></span>'+
+        '<span class="sun-num">'+p.count+'</span>'+
+        '<span class="sun-sub">'+(p.done ? fmtDur(p.done) : "today")+'</span>'+
+      '</span></span></button>';
   return '<div class="sys" id="sysStage">'+
       '<span class="orbit o1" aria-hidden="true"></span>'+
       '<span class="orbit o2" aria-hidden="true"></span>'+
-      sun + SYS_LAYOUT.map(sysBodyHTML).join("")+
+      '<div class="orbit-field" id="orbitField">'+
+        '<div class="slot" style="--a:0deg">'+sun+'</div>'+
+        SYS_LAYOUT.map(sysBodyHTML).join("")+
+      '</div>'+
     '</div>';
+}
+/* the sky is hung on the document, not inside the app column, or it gets
+   clipped to a neat little rectangle and stops being a sky */
+function mountSky(){
+  unmountSky();
+  var d = document.createElement("div");
+  d.innerHTML = skyHTML();
+  document.body.insertBefore(d.firstChild, document.body.firstChild);
+  document.body.classList.add("in-space");
+}
+function unmountSky(){
+  var old = document.getElementById("sky");
+  if(old) old.remove();
+  document.body.classList.remove("in-space");
 }
 function sysMount(){
   var stage = document.getElementById("sysStage");
   if(!stage) return;
+  mountSky();
+  paintOrbits();
   stage.querySelectorAll("[data-planet]").forEach(function(b){
     b.addEventListener("click", function(){
       var id = b.dataset.planet;
@@ -1446,22 +1791,51 @@ function sysMount(){
     });
   });
 }
-/* the camera travels to the world you picked, then that world becomes the orb */
+
+/* ---------- the flight in ----------
+   Tapping a world starts a journey: the camera pulls back for a beat, then
+   accelerates until that world fills everything. Roughly three seconds, and a
+   second tap anywhere cuts it short for anyone in a hurry. */
+var Flight = null;
 function enterPlanet(id, el){
-  if(!planetById(id)) return;
-  var stage = document.getElementById("sysStage");
-  if(stage && el){
-    var sr = stage.getBoundingClientRect(), br = el.getBoundingClientRect();
-    var dx = (sr.left + sr.width/2) - (br.left + br.width/2);
-    var dy = (sr.top + sr.height/2) - (br.top + br.height/2);
-    el.style.setProperty("--dx", dx.toFixed(1)+"px");
-    el.style.setProperty("--dy", dy.toFixed(1)+"px");
-    el.classList.add("chosen");
-    stage.classList.add("leaving");
-    setTimeout(function(){ landOn(id); }, 360);
-    return;
+  if(!planetById(id) || Flight) return;
+  var stage = document.getElementById("sysStage"), sky = document.getElementById("sky");
+  if(!stage || !el || reduceMotion()){ landOn(id); return; }
+
+  /* fly towards the world you picked, not the middle of the screen */
+  var sr = stage.getBoundingClientRect(), br = el.getBoundingClientRect();
+  var tx = br.left + br.width/2, ty = br.top + br.height/2;
+  var ox = (tx - sr.left) / sr.width * 100;
+  var oy = (ty - sr.top) / sr.height * 100;
+  stage.style.transformOrigin = ox.toFixed(1)+"% "+oy.toFixed(1)+"%";
+  /* everything grows around the target, and the target itself slides to the
+     middle of the windscreen as you close on it */
+  stage.style.setProperty("--fx", (window.innerWidth/2 - tx).toFixed(1)+"px");
+  stage.style.setProperty("--fy", (window.innerHeight*0.46 - ty).toFixed(1)+"px");
+  el.classList.add("chosen");
+  stage.classList.add("leaving");
+  var view = stage.closest(".sysview");
+  if(view) view.classList.add("leaving");
+
+  if(sky){
+    sky.classList.add("warp");
+    /* stars stream past the cockpit */
+    sky.querySelectorAll(".star").forEach(function(st){
+      var dx = (parseFloat(st.style.left) - ox) * 9, dy = (parseFloat(st.style.top) - oy) * 9;
+      st.style.transform = "translate("+dx.toFixed(0)+"vw,"+dy.toFixed(0)+"vh)";
+      st.style.opacity = "0";
+    });
   }
-  landOn(id);
+  var land = function(){
+    if(!Flight) return;
+    clearTimeout(Flight.t);
+    document.removeEventListener("pointerdown", Flight.skip, true);
+    Flight = null;
+    landOn(id);
+  };
+  Flight = { skip:function(e){ e.preventDefault(); e.stopPropagation(); land(); } };
+  Flight.t = setTimeout(land, 2350);
+  setTimeout(function(){ if(Flight) document.addEventListener("pointerdown", Flight.skip, true); }, 420);
 }
 function landOn(id){
   S.session.planet = id;
@@ -1471,10 +1845,14 @@ function landOn(id){
   S.ui.arrival = null;
   unpin(); save();
   applyHue(); renderNow(true); renderChips(); renderList();
+  var stage = document.getElementById("orbStage");
+  if(stage && !reduceMotion()) stage.classList.add("arriving");
   var open = planetOpen(id).filter(function(t){ return !isCooling(t); });
   if(open.length) toast(voice("enter", { where: planetLabel(id) })[0]);
 }
-/* leaving is a decision too: the world you were in launches away */
+/* ---------- the catapult out ----------
+   Pull the world down against its own weight; let go past the line and it
+   slings back into the sky, and the system opens up around you again. */
 function leavePlanet(){
   if(S.focus && !S.focus.paused){ toast("Clock's running. Finish it or park it first."); return; }
   var stage = document.getElementById("orbStage");
@@ -1484,10 +1862,21 @@ function leavePlanet(){
     S.ui.arrival = null;
     unpin(); save();
     applyHue(); renderNow(true); renderChips(); renderList();
+    var sys = document.getElementById("sysStage");
+    if(sys && !reduceMotion()) sys.classList.add("arriving");
   };
-  if(stage){ stage.classList.add("launch"); setTimeout(done, 340); }
+  if(stage && !reduceMotion()){
+    var f = document.getElementById("orbFloat");
+    if(f){ f.style.animation = "none"; f.style.transform = ""; }
+    stage.classList.remove("pulling", "armed");
+    stage.classList.add("launch");
+    var root = document.getElementById("nowRoot");
+    if(root) root.classList.add("launching");
+    setTimeout(done, 900);
+  }
   else done();
 }
+
 /* where your body is — separate from which world you're working in */
 function setPlace(id){
   if(!locById(id)) return;
@@ -1703,11 +2092,25 @@ function swipeMove(e){
   var s = Orb.swipe; if(!s) return;
   if(Orb.twoFinger){ cancelSwipe(); return; }
   var dx = e.clientX - s.x, dy = e.clientY - s.y, dist = Math.sqrt(dx*dx + dy*dy);
-  var float = document.getElementById("orbFloat");
-  var damp = Math.min(46, dist * 0.55), ang = Math.atan2(dy, dx);
+  var float = document.getElementById("orbFloat"), stage = Orb.stage;
+  var down = dy > 0 && Math.abs(dy) > Math.abs(dx) * 1.2;
+  var ang = Math.atan2(dy, dx);
   if(float){
     float.style.animation = "none";
-    float.style.transform = "translate("+(Math.cos(ang)*damp).toFixed(1)+"px,"+(Math.sin(ang)*damp).toFixed(1)+"px)";
+    if(down && S.session.planet){
+      /* Pulling a world out of orbit takes real effort: the further it comes,
+         the harder it pulls back. Past the line it's ready to be let go. */
+      var pull = PULL_MAX * (1 - Math.exp(-dy / 120));
+      float.style.transform = "translateY("+pull.toFixed(1)+"px) scale("+(1 - pull/1600).toFixed(4)+")";
+      if(stage){
+        stage.classList.add("pulling");
+        stage.classList.toggle("armed", pull > PULL_ARM);
+      }
+    } else {
+      var damp = Math.min(46, dist * 0.55);
+      float.style.transform = "translate("+(Math.cos(ang)*damp).toFixed(1)+"px,"+(Math.sin(ang)*damp).toFixed(1)+"px)";
+      if(stage) stage.classList.remove("pulling", "armed");
+    }
   }
   if(dist > 10) clearTimeout(Orb.holdT);
   var dir = dist > 18 ? swipeDir(dx, dy) : null;
@@ -1719,9 +2122,11 @@ function swipeMove(e){
     s.dir = dir;
   }
 }
+var PULL_MAX = 150, PULL_ARM = 74;
 function clearSwipeVisuals(){
   var f = document.getElementById("orbFloat");
   if(f){ f.style.transform = ""; f.style.animation = ""; }
+  if(Orb.stage) Orb.stage.classList.remove("pulling", "armed");
   ["l","r","u","d"].forEach(function(k){ var h = document.getElementById("hint-"+k); if(h) h.classList.remove("on"); });
   var o = document.getElementById("orb"); if(o) o.classList.remove("grabbing");
 }
@@ -1737,10 +2142,13 @@ function swipeUp(e){
   var s = Orb.swipe; if(!s) return;
   var dx = e.clientX - s.x, dy = e.clientY - s.y;
   var dist = Math.sqrt(dx*dx + dy*dy), dt = performance.now() - s.t;
+  var dir = swipeDir(dx, dy);
+  var pulled = dy > 0 && dir === "d" ? PULL_MAX * (1 - Math.exp(-dy / 120)) : 0;
   cancelSwipe();
   if(dist < 14 && dt < 500){ orbTap(); return; }
+  if(dir === "d"){ if(pulled > PULL_ARM) orbSwipe("d"); return; }   /* let go short and it springs back */
   if(dist < 44) return;
-  orbSwipe(swipeDir(dx, dy));
+  orbSwipe(dir);
 }
 
 /* ============================================================
@@ -1791,6 +2199,7 @@ function renderNow(force){
     return;
   }
   lastNowSig = sig;
+  if(v.kind !== "system") unmountSky();
   if(v.kind === "closed"){ root.innerHTML = viewDayClosed(); orbMount(); revealFace(); return; }
   if(v.kind === "start"){ root.innerHTML = viewStart(); return; }
   if(v.kind === "system"){ root.innerHTML = viewSystem(); sysMount(); return; }
@@ -1854,15 +2263,11 @@ function viewStart(){
 function viewSystem(){
   var p = dayProgress(), hour = new Date().getHours();
   var greet = hour < 12 ? "Morning" : (hour < 18 ? "Afternoon" : "Evening");
-  var placeChips = S.locations.map(function(l){
-    return '<button class="place-chip" data-act="setplace" data-place="'+esc(l.id)+'" aria-pressed="'+(S.session.location === l.id)+'">'+esc(l.label)+'</button>';
-  }).join("");
-  return ''+
+  return '<div class="sysview">'+
     '<p class="eyebrow left">'+esc(greet)+(who() ? ", "+esc(S.profile.name) : "")+' · '+minsToHHMM(minsOfDay())+'</p>'+
     sysHTML()+
-    '<p class="runway">Pick a world. The rest disappears.</p>'+
-    '<div class="place-row">'+placeChips+'</div>'+
-    '<p class="dayline">Tap a world to go in · nothing else follows you</p>';
+    '<p class="runway">Pick a world · the rest disappears</p>'+
+  '</div>';
 }
 /* stopping is a result, not a failure to continue */
 function viewSessionDone(){
@@ -2154,10 +2559,12 @@ function abandonFocus(block){
 /* ============================================================
    13. SHEETS
    ============================================================ */
-function openSheet(html, bind){
+function openSheet(html, bind, cls){
   hideToast();     /* a sheet is the message now */
   document.getElementById("sheetRoot").innerHTML = '<div class="grab"></div>'+html;
-  document.getElementById("sheet").classList.add("is-on");
+  var sh = document.getElementById("sheet");
+  sh.className = "sheet" + (cls ? " "+cls : "");
+  sh.classList.add("is-on");
   document.getElementById("backdrop").classList.add("is-on");
   if(bind) bind();
 }
@@ -2308,7 +2715,7 @@ function parseSpoken(raw){
   /* where. "On the way home" is a journey, so transit phrases are read before
      location names — otherwise the word "home" hijacks it. */
   var here = null;
-  var transit = (transitLocs()[0]||{}).id;
+  var transit = null;
   var TRANSIT_PHRASE = /\b(?:(?:on|in)\s+(?:the|my)\s+way(?:\s+(?:home|back|in|out|there|to\s+\w+))?|while\s+i'?m\s+out|when\s+i'?m\s+out|out\s+and\s+about|in\s+town|at\s+the\s+shops?|on\s+the\s+road)\b/i;
   if(transit && TRANSIT_PHRASE.test(text)){ here = transit; text = text.replace(TRANSIT_PHRASE, " "); }
   if(!here) S.locations.forEach(function(l){
@@ -2486,7 +2893,7 @@ function guessType(name, planet, timed){
 function openCapture(prefill){
   cap = newCapture();
   if(prefill) for(var k in prefill) cap[k] = prefill[k];
-  openSheet(sheetCapture(), bindCapture);
+  openSheet(sheetCapture(), bindCapture, "capture");
 }
 function capWhenLabel(){
   if(cap.fixedStart) return cap.fixedStart;
@@ -2994,13 +3401,10 @@ function openEditSheet(id){
 }
 function sheetAddLocation(){
   return ''+
-  '<div class="sheet-head"><h2 class="sec">New location</h2><button class="icon-btn" data-act="close-sheet" aria-label="Close">✕</button></div>'+
+  '<div class="sheet-head"><h2 class="sec">New place</h2><button class="icon-btn" data-act="close-sheet" aria-label="Close">✕</button></div>'+
   '<div class="field"><label>Call it</label><input type="text" id="nl-name" placeholder="The workshop" autocomplete="off"></div>'+
-  '<div class="field"><label>What kind?</label><div class="choices">'+
-    '<button class="choice grow" id="nl-place" aria-pressed="true">A place<small>You go there and work</small></button>'+
-    '<button class="choice grow cool" id="nl-transit" aria-pressed="false">On the move<small>Errands while you\'re out</small></button>'+
-  '</div></div>'+
-  '<button class="btn go wide" id="nl-save">Add it to the dial</button>';
+  '<p class="hint">Somewhere you physically have to be for certain jobs. It doesn\'t change which world a task lives in.</p>'+
+  '<button class="btn go wide" id="nl-save">Add it</button>';
 }
 function bindCommitMinutes(){
   var r = document.getElementById("sheetRoot");
@@ -3034,17 +3438,14 @@ function commitTo(mins){
 }
 
 function bindAddLocation(){
-  var r = document.getElementById("sheetRoot"), kind = "place";
-  var a = r.querySelector("#nl-place"), b = r.querySelector("#nl-transit");
-  a.addEventListener("click", function(){ kind="place"; a.setAttribute("aria-pressed","true"); b.setAttribute("aria-pressed","false"); });
-  b.addEventListener("click", function(){ kind="transit"; b.setAttribute("aria-pressed","true"); a.setAttribute("aria-pressed","false"); });
+  var r = document.getElementById("sheetRoot");
   var n = r.querySelector("#nl-name"); if(n) n.focus();
   r.querySelector("#nl-save").addEventListener("click", function(){
     var label = (n.value||"").trim();
     if(!label){ toast("Give it a name first."); n.focus(); return; }
-    if(S.locations.length >= 7){ toast("Seven is plenty for one dial."); return; }
-    S.locations.push({ id:slug(label), label:label, kind:kind, hue:HUE_POOL[S.locations.length % HUE_POOL.length] });
-    save(); closeSheet(); render(); toast(label+" added to the dial.");
+    if(S.locations.length >= 6){ toast("Six places is plenty."); return; }
+    S.locations.push({ id:slug(label), label:label, kind:"place", hue:HUE_POOL[S.locations.length % HUE_POOL.length] });
+    save(); closeSheet(); render(); toast(label+" added.");
   });
 }
 
@@ -3718,6 +4119,7 @@ function showGestures(){
    19. NAV + BOOT
    ============================================================ */
 function go(tab){
+  if(tab !== "now") unmountSky();
   S.ui.tab = tab; save();
   ["now","plan","list","done","you"].forEach(function(t){
     document.getElementById("scr-"+t).classList.toggle("is-on", t === tab);
@@ -3750,9 +4152,12 @@ setInterval(function(){
   if(S.ui.tab === "now" && !S.focus && !Orb.swipe && !Pick.on) renderNow();
   renderChips();
 }, 15000);
+/* the sky keeps time even while you're looking at it */
+setInterval(function(){ if(!Flight) paintOrbits(); }, 20000);
 
 document.addEventListener("visibilitychange", function(){
   if(document.visibilityState !== "visible") return;
+  paintOrbits();
   checkWarnings();
   if(applySchedule()) applyHue();
   if(S.focus) startTicker(); else if(S.ui.tab === "now") renderNow(true);
@@ -3793,7 +4198,7 @@ if(!S.profile.sawGestures && S.session.started) showGestures();
    app out from under a running timer. */
 (function () {
   if (!('serviceWorker' in navigator) || location.protocol !== 'https:') return;
-  var BUILD = '20260902-0953-8c53fd';
+  var BUILD = '20260902-1035-8acde3';
   window.addEventListener('load', function () {
     navigator.serviceWorker.register('sw.js?v=' + BUILD).then(function (reg) {
       function watch(sw) {

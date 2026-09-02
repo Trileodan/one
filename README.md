@@ -16,9 +16,12 @@ done. Around it sit the parts of your life that own your tasks:
 | **Errands** | A comet — the things that only make sense while you're out |
 | **Projects** | A little belt of the things you chose rather than owe |
 
-Tap one and the camera flies into it. **While you're inside a world, nothing
-from any other world exists** — no counts, no badges, no "up next" from the
-kitchen. Pull the sphere down to launch back out.
+The whole system makes one revolution a day, so the sky at nine in the morning
+isn't the sky at four in the afternoon. Tap a world and the camera travels to
+it — a few seconds through the stars, and you're standing on it. **While you're
+inside a world, nothing from any other world exists** — no counts, no badges,
+no "up next" from the kitchen. Pull the sphere down against its own weight and
+let go, and it catapults back into orbit.
 
 On the sphere: **swipe up** to finish, **left** for not right now (it asks why,
 and treats a bad time differently from not fancying it), **right** to throw
