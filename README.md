@@ -7,14 +7,25 @@ A productivity coach that hides your list and gives you one task at a time.
 ## How it works
 
 Your life is a small solar system. The Sun is today — what you have actually
-done. Around it sit the parts of your life that own your tasks:
+done. Everything orbiting it is a **planet**: a part of your life that owns
+tasks. That is the whole rule. There is no special Work object, no protected
+Home, nothing ONE insists on keeping.
 
-| World | What lives there |
-| --- | --- |
-| **Work** | Everything the job asks of you |
-| **Home** | The house and the people in it |
-| **Errands** | A comet — the things that only make sense while you're out |
-| **Projects** | A little belt of the things you chose rather than owe |
+A fresh install suggests four — Work, Home, Errands, Projects — and from the
+moment it starts they have exactly the same standing as one you made five
+minutes ago. Rename them, recolour them, change how they look, reorder them,
+archive them, delete them. Delete *all* of them: a Sun on its own is a valid,
+intentional state, and it stays that way through a reload. Your worlds might be
+Business, Family, University, Fitness and Money. They might just be Stuff.
+
+Any planet can hold **projects** — an optional layer of grouping inside it, for
+when one world would otherwise sprout six over-specific planets of its own. A
+task always belongs to a planet and *never* has to belong to a project:
+
+    Planet → Task              for simple things
+    Planet → Project → Task    when it helps
+
+and never anything deeper than that.
 
 The whole system makes one revolution a day, so the sky at nine in the morning
 isn't the sky at four in the afternoon. Tap a world and the camera travels to
@@ -81,8 +92,11 @@ project. That contrast is the whole personality.
 
 Adding a task needs one thing: what it is. ONE reads the sentence — *"Call
 Harrogate today 20m"*, *"Team meeting tomorrow 11am 1h"* — guesses the length
-when you don't say, files it in the world you're standing in, and puts you
-straight back on what you were doing.
+when you don't say, files it in the world (and project) you're standing in, and
+puts you straight back on what you were doing. It matches against the worlds
+*you* made, by their names, so nothing here is hard-coded to mean anything. With
+no planets at all it asks for the one thing it genuinely needs — somewhere for
+the task to live — and saves it the moment you've said.
 
 ## Put it online
 
