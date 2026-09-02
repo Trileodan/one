@@ -39,7 +39,45 @@ hold and this world's tasks come round on a rolodex of moons.
 
 If there's a meeting in the diary and nothing sensible fits in the gap before
 it, ONE puts the meeting up early rather than showing you an empty screen — tap
-it and you start it there and then.
+it and you start it there and then. A commitment can carry get-ready time, and
+nothing unrelated gets started inside it.
+
+**Important**, **due today** and **urgent** are three different claims. Important
+says this matters. Due today says there's a deadline. Urgent says *do this next*
+— it jumps the queue once and then stops shouting, so one panic on Tuesday can't
+quietly bend the rest of your week.
+
+Work doesn't only end by being finished. Something you've done your part on and
+are waiting to hear about goes to **waiting** — out of the running order, keeping
+everything it knows, and it can come back as done or reopened. Something that has
+simply stopped being necessary is **no longer needed**: kept in the history, not
+counted as productivity, and you never have to pretend you did it. And when you
+give up on a problem, ONE asks the useful question first — is there something to
+make safe, work around, or follow up before you walk away?
+
+Your finishing time isn't a setting you filled in once. Change it from the
+solar system or from the orb and everything moves with it: what fits, what's
+worth opening, and whether stopping is now the right answer. Because it can be.
+ONE is allowed to recommend nothing — *"You've cleared the important stuff.
+Nothing worth opening for twenty minutes. You're done at 4:30."*
+
+## The voice
+
+There's one ONE, and no dial to set. Every line it says goes through the same
+three questions — what actually happened, what's worth saying, and how to say it
+— so the response fits the day you've had rather than being drawn at random from
+a bag of quips.
+
+Most of the time that means something short and plain and then getting out of
+the way. Choosing a different task yourself isn't treated as suspicious; it's
+usually just a good decision. Stopping a job that's gone nowhere is damage
+limitation, not quitting. Finishing something is a good event, not an opening
+for a dig.
+
+The teasing is rare on purpose, and it has to be earned by something you
+actually did — the same job dodged for the third time, half an hour that became
+two hours, a five-minute errand you're clearly about to turn into a research
+project. That contrast is the whole personality.
 
 Adding a task needs one thing: what it is. ONE reads the sentence — *"Call
 Harrogate today 20m"*, *"Team meeting tomorrow 11am 1h"* — guesses the length

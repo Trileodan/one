@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="ONE">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="one-build" content="20260902-1525-2e0d3d">
+<meta name="one-build" content="20260902-1559-542bdc">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png" sizes="192x192">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -647,6 +647,11 @@ body.in-space .app{background:transparent}
 
 .field{display:flex;flex-direction:column;gap:9px}
 .field > label{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.finish-line{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-2);opacity:.8;text-align:center;margin-top:10px}
+.finish-line b{font-weight:700;opacity:1}
+.linky{appearance:none;background:none;border:0;padding:2px 4px;cursor:pointer;font:inherit;
+  color:hsl(var(--orb-h) 80% 62%);text-decoration:underline;text-underline-offset:3px}
 .choices{display:flex;gap:8px;flex-wrap:wrap}
 .choice{appearance:none;cursor:pointer;border-radius:11px;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);padding:11px 13px;font-weight:600;font-size:14px;min-height:44px;transition:border-color .14s ease,color .14s ease,background .14s ease}
 .choice:hover{border-color:var(--ink-2)}
@@ -950,6 +955,11 @@ var S = load() || JSON.parse(JSON.stringify(DEFAULTS));
     if(!("safeStopped" in t)) t.safeStopped = false;
     if(!("unblocks" in t)) t.unblocks = null;
     if(!("wakeAt" in t)) t.wakeAt = null;      /* v7: asleep until you asked to see it again */
+    if(!("urgent" in t)) t.urgent = false;     /* v7: do this next, whatever else is true */
+    if(!("prepMins" in t)) t.prepMins = 0;     /* v7: get-ready time before a fixed commitment */
+    if(!("waitingOn" in t)) t.waitingOn = null;
+    if(!("cancelledAt" in t)) t.cancelledAt = null;
+    if(!("reopened" in t)) t.reopened = 0;
     /* the old "Deep Work" type carried two meanings; keep the one that matters */
     if(t.type === "Deep Work"){
       t.type = "Planning";
@@ -1148,98 +1158,308 @@ var ERRANDY = /\b(petrol|diesel|fuel|milk|bread|shop|shopping|groceries|chemist|
 /* ============================================================
    5. COACH
    ============================================================ */
-function who(){ return (S.profile.name||"").trim().toUpperCase(); }
-function tone(){ return S.profile.tone || "normal"; }
-function pickOne(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
-var VOICE = {
-  gentle:{
-    done:[["Lovely. That's one less."],["Done — nice work."],["That's gone. Well done you."]],
-    start:[["Just this for the next {mins} minutes."],["Nothing else matters for {mins} minutes."]],
-    picked:[["Fair enough — your call."],["Righto, that one it is."]],
-    dodge1:[["No bother, I'll find you something else."]],
-    dodge2:[["That's twice. No judgement."]],
-    dodge3:[["Fine. It'll be first up after your next one, mind."]],
-    rabbit:[["Let's leave that one there for now."]],
-    ext1:[["Of course. +{add} minutes."]],
-    extN:[["That's grown a bit. Still worth it?"]],
-    out:[["Grab these while you're out."]],
-    commitOn:[["Understood. {mins} minutes to see it through."]],
-    commitAgain:[["Another {mins}. Take your time."]],
-    safestop:[["Left somewhere sensible. That's the right call."]],
-    clear:[["Nothing waiting in {where}. Enjoy it."]],
-    enter:[["{where} it is. Everything else can wait."]],
-    sessionDone:[["That's {where} done for now. You're allowed to stop."]],
-    clearOut:[["Nothing to collect. Straight home."]],
-    empty:[["Give me something to work with."]],
-    nofit:[["Not enough runway. Have a breather."]],
-    endday:[["That's a good day's work."]]
-  },
-  normal:{
-    done:[["Get in. That's another one gone."],["Done. Don't stop now."],["Gone. Next."],
-          ["Well look at that — an actual finished thing."],["One down. The pile notices."]],
-    start:[["Right. {mins} minutes. Phone down."],["That's your whole world for {mins} minutes."],
-           ["{mins} minutes. Off you go."],["Nothing else exists for {mins} minutes."]],
-    picked:[["Your call. Don't make me regret it."],["Fine, we'll do it your way."],
-            ["Alright, boss. That one."],["Noted. Hope that was a decision and not a dodge."]],
-    dodge1:[["Fine. Something else then."],["Sure. Filed under 'later'."],["Alright. Not that one."]],
-    dodge2:[["That's twice. I'm noticing."],["Twice now. Just putting that out there."]],
-    dodge3:[["Third time. Fine — but it's first up the second you finish something."],
-            ["Dodged three times. I'll just keep putting it back at the front."],
-            ["Away it goes. Straight back to the top of the queue, though."]],
-    rabbit:[["PUT. IT. DOWN. That was a task, not an archaeological dig."],
-            ["Right, out. You've been in there far too long."]],
-    ext1:[["Fair enough. +{add} minutes. Make them count."],["Go on then. +{add}."]],
-    extN:[["Started at {plan} minutes. We're at {total}. Still important, or have we lost the plot?"],
-          ["{plan} became {total}. I'm not angry, I'm just keeping score."]],
-    out:[["You're out. Do the lot — I'm not doing this dance twice."],["All of it, one trip. Go on."]],
-    commitOn:[["Right — that's a proper job, not a wander. {mins} minutes. Finish it."],
-              ["Fair enough, you're in it now. {mins} minutes to a finish or a safe stop."],
-              ["Understood. No nagging from me. {mins} minutes."]],
-    commitAgain:[["Another {mins}. Deliberate, not drifting — I'll take it."],
-                 ["{mins} more then. Same deal: finish or find a safe place to stop."]],
-    safestop:[["Left somewhere sensible. That's a proper decision, that."],
-              ["Parked safe. It'll keep till you can do it properly."],
-              ["Good call. Half a job done well beats a mess."]],
-    enter:[["{where}. Nothing else exists for a bit."],["Right — {where}. The rest of your life is on mute."],["Welcome to {where}. Mind the mess."]],
-    sessionDone:[["{where}'s done. Nothing left worth starting. Go and be a person."],["That's the useful stuff cleared. Stopping is the correct answer here."],["You've done {where}. Genuinely — leave it."]],
-    clear:[["{where}'s clear. Genuinely nothing. Go and enjoy that."],
-           ["Nothing waiting at {where}. Feels weird, doesn't it."],
-           ["All done at {where}. Have a cup of tea about it."]],
-    clearOut:[["Nothing to pick up. Drive home smug."],["Nothing on the list. Just go home."]],
-    empty:[["Completely empty. Suspiciously empty."],["Nothing in here. Either you're on top of it or you're in denial."]],
-    nofit:[["Not enough time for anything useful. Have five minutes."],["Too tight. Don't start something you can't finish."]],
-    endday:[["You started today not knowing where to begin."],["Not bad at all, that."]]
-  },
-  ruthless:{
-    done:[["Finally. Next."],["Done. Keep going."],["About time. Move."]],
-    start:[["{mins} minutes. No tabs, no phone, no excuses."],["This. Only this. {mins} minutes."]],
-    picked:[["Your choice. Own it."],["Fine. But that's on you now."],["Chosen, not dodged. Prove it."]],
-    dodge1:[["Noted. Coward."],["Running away. Fine."]],
-    dodge2:[["Twice. I'm keeping score and so are you."]],
-    dodge3:[["Three times. It's front of the queue now until you deal with it."],
-            ["Third dodge. Do it or delete it — it's back the moment you finish anything."]],
-    rabbit:[["PUT IT DOWN. You've been excavating, not working."]],
-    ext1:[["+{add}. That's your lot."]],
-    extN:[["{plan} minutes became {total}. Explain yourself."]],
-    out:[["All of it. One trip. I won't ask again."]],
-    commitOn:[["{mins} minutes. You said it, now do it."]],
-    commitAgain:[["{mins} more. That estimate had better be honest."]],
-    safestop:[["Safe and stopped. Fine."]],
-    enter:[["{where}. Head down."],["{where} it is. No wandering off."]],
-    sessionDone:[["{where} is cleared. Take the win and stop."],["Nothing left worth starting. That's a finish, not a break."]],
-    clear:[["{where} is clear. Don't get comfortable."],["Nothing left here. Find something or finish."]],
-    clearOut:[["Nothing to collect. Go home."]],
-    empty:[["An empty list isn't an achievement. Fill it."]],
-    nofit:[["Nothing fits. Sit still for once."]],
-    endday:[["That'll do. Barely."]]
+/* ============================================================
+   5. THE VOICE
+   One personality, and every line is built rather than drawn out
+   of a hat. Three questions, always in the same order:
+
+     what actually happened  →  what is worth saying  →  how to say it
+
+   The point is not to sound clever. It is to demonstrate that ONE
+   understood the situation. Most of the time that means saying
+   something short and plain and getting out of the way; the humour
+   only means anything because it is rare, and because it is earned
+   by something you actually did.
+   ============================================================ */
+function who(){ return (S.profile.name || "").trim(); }
+
+/* ---------- what ONE knows about today ----------
+   Not "the last event" — the shape of the whole day, because a
+   completion at half nine means something different to the same
+   completion twenty minutes before you finish. */
+function coachCtx(){
+  var log = todayLog(), since = S.session.enteredAt || 0;
+  var sess = log.filter(function(l){ return l.at >= since; });
+  var live = liveTasks();
+  var end = hhmmToMins(S.settings.workUntil);
+  var minsLeft = S.session.workFinished ? 0 : Math.max(0, end - minsOfDay());
+  var mins = function(a){ return a.reduce(function(x,l){ return x + (l.minutes||0); }, 0); };
+  var last = log.length ? log[log.length-1] : null;
+  /* a run is completions close enough together to feel like a run */
+  var streak = 0;
+  for(var i = log.length - 1; i > 0; i--){
+    if(log[i].at - log[i-1].at <= 25*60000) streak++; else break;
   }
-};
-function voice(key, vars){
-  var pack = VOICE[tone()] || VOICE.normal;
-  var lines = (pack[key] || VOICE.normal[key] || [[""]]);
-  var chosen = pickOne(lines).slice();
-  if(who() && (key === "extN" || key === "dodge3" || key === "rabbit") && tone() !== "gentle") chosen[0] = who()+". "+chosen[0];
-  return chosen.map(function(l){ return l.replace(/\{(\w+)\}/g, function(_,k){ return vars && vars[k]!=null ? vars[k] : ""; }); });
+  var w = S.session.planet && !isErrandPlanet(S.session.planet) ? runway() : { mins:600, kind:"none", what:"" };
+  var doneMins = mins(log);
+  return {
+    doneToday: log.length, doneSession: sess.length,
+    minsToday: doneMins, minsSession: mins(sess),
+    importantDone: doneToday().filter(function(t){ return t.priority === "important"; }).length,
+    urgentDone: doneToday().filter(function(t){ return t.wasUrgent; }).length,
+    recentTypes: log.slice(-3).map(function(l){ return l.type; }),
+    streak: streak + (log.length ? 1 : 0),
+    sinceLast: last ? Math.round((Date.now() - last.at)/60000) : null,
+    minsLeft: minsLeft, finishAt: S.settings.workUntil, runway: w,
+    nextFixed: nextFixed(true),
+    waiting: live.filter(isWaiting).length,
+    blocked: live.filter(function(t){ return t.status === "blocked"; }).length,
+    asleep: live.filter(isAsleep).length,
+    left: openTasks().filter(function(t){ return !isResting(t); }).length,
+    worstDodge: live.reduce(function(a,t){ return Math.max(a, t.postponedToday||0); }, 0),
+    lightHead: !!(S.session.lightUntil && Date.now() < S.session.lightUntil),
+    motivation: S.session.motivation,
+    productive: log.length >= 2 || doneMins >= 45,
+    where: S.session.planet ? planetLabel(S.session.planet) : ""
+  };
+}
+function productiveToday(){ var c = coachCtx(); return c.productive; }
+
+/* ---------- what an event means ----------
+   The same button press means different things on different days.
+   Naming the meaning before choosing the words is the whole trick:
+   it is why ONE can tell a sensible decision from a dodge. */
+function interpret(ev, f, c){
+  var t = f.task;
+  switch(ev){
+    case "done":
+      if(f.urgent) return "URGENT_WIN";
+      if(t && t.priority === "important") return "IMPORTANT_WIN";
+      if(c.streak >= 3) return "MOMENTUM";
+      return "ROUTINE_COMPLETION";
+    case "picked":
+      /* Choosing something yourself is not evidence of anything except that
+         you have eyes. It only reads as avoidance when the thing you keep
+         stepping over is the same thing every time. */
+      return (f.skipped && f.skipped.postponedToday >= 3) ? "GENUINE_AVOIDANCE" : "SENSIBLE_OVERRIDE";
+    case "dodge":
+      if(t && (t.avoidCount||0) >= 3) return "GENUINE_AVOIDANCE";
+      return "LEGITIMATE_POSTPONEMENT";
+    case "blocked":  return "BLOCKED_EXTERNAL";
+    case "waiting":  return "AWAITING_CONFIRMATION";
+    case "confirmed":return "IMPORTANT_WIN";
+    case "reopened": return "WORKAROUND_REQUIRED";
+    case "cancelled":return "CONTEXT_CHANGED";
+    case "snoozed":  return "LEGITIMATE_POSTPONEMENT";
+    case "extend":
+      return (f.extensions >= 3 || (f.total||0) >= (f.plan||1) * 2) ? "POSSIBLE_SCOPE_CREEP" : "LEGITIMATE_OVERRUN";
+    case "rabbit":   return "RABBIT_HOLE";
+    case "safestop": return "SENSIBLE_STOPPING_POINT";
+    case "workaround": return "WORKAROUND_REQUIRED";
+    case "sessionDone": return "SESSION_COMPLETE";
+    case "nothingFits": return c.productive ? "USER_HAS_DONE_ENOUGH" : "SESSION_NEAR_END";
+    case "finishMoved": return "CONTEXT_CHANGED";
+    case "finishNow":   return c.productive ? "USER_HAS_DONE_ENOUGH" : "CONTEXT_CHANGED";
+    case "added":    return f.urgent ? "URGENT_WIN" : "ROUTINE_COMPLETION";
+    case "start":    return f.resumed ? "RETURN_TO_INTERRUPTED_TASK" : "MAINTAIN_FOCUS";
+    case "prep":     return "SESSION_NEAR_END";
+    default:         return "ROUTINE_COMPLETION";
+  }
+}
+/* ---------- what the response is for ----------
+   Firmness and chastisement have to be earned by the reading above.
+   Nothing here reaches for them on its own. */
+function intentFor(read, ev, f, c){
+  switch(read){
+    case "GENUINE_AVOIDANCE":     return "CHALLENGE";
+    case "RABBIT_HOLE":           return "REDIRECT";
+    case "POSSIBLE_SCOPE_CREEP":  return "CHALLENGE";
+    case "LEGITIMATE_OVERRUN":    return "REASSURE";
+    case "SENSIBLE_STOPPING_POINT":
+    case "SENSIBLE_OVERRIDE":
+    case "CONTEXT_CHANGED":
+    case "AWAITING_CONFIRMATION":
+    case "BLOCKED_EXTERNAL":
+    case "WORKAROUND_REQUIRED":
+    case "LEGITIMATE_POSTPONEMENT": return "ACCEPT_AND_REPLAN";
+    case "USER_HAS_DONE_ENOUGH":
+    case "SESSION_COMPLETE":      return "RECOMMEND_STOPPING";
+    case "IMPORTANT_WIN":
+    case "URGENT_WIN":
+    case "MOMENTUM":              return "CELEBRATE";
+    case "RETURN_TO_INTERRUPTED_TASK": return "RETURN_TO_INTERRUPTED_TASK";
+    case "MAINTAIN_FOCUS":        return "MAINTAIN_FOCUS";
+    default:                      return "ACKNOWLEDGE";
+  }
+}
+
+/* ---------- the humour budget ----------
+   Roughly seven lines in ten are plain, two are lightly playful and
+   one pushes back — and the last two are only available when
+   something in the day actually warrants them. A joke after every
+   interaction stops being a joke and becomes a tic. */
+function witBudget(){
+  if(!S.session.wit) S.session.wit = { n:0, lastLight:-99, lastPush:-99, light:0, push:0 };
+  return S.session.wit;
+}
+function humour(level, warrant){
+  var b = witBudget();
+  if(!warrant) return false;
+  if(level === 2) return b.n - b.lastPush >= 4;      /* earned, but not twice running */
+  return b.n - b.lastLight >= 2 && Math.random() < 0.78;
+}
+function spend(level){
+  var b = witBudget();
+  if(level === 2){ b.lastPush = b.n; b.push = (b.push||0) + 1; }
+  else if(level === 1){ b.lastLight = b.n; b.light = (b.light||0) + 1; }
+}
+
+/* ---------- saying it ----------
+   1–2 sentences. Acknowledgement, decision, next action. No speeches,
+   and no explaining the algorithm unless you asked "why this?". */
+function fmtLeft(c){ return c.minsLeft > 0 ? fmtDur(c.minsLeft)+" left" : "past your finish"; }
+function phrase(read, intent, ev, f, c){
+  var t = f.task, name = t ? t.name : "that";
+  var L = 0, out = "";
+  switch(read){
+
+    case "ROUTINE_COMPLETION":
+      if(ev === "added"){
+        if(f.mins && f.mins <= 5 && humour(1, true)){ L=1; out = "Added. "+f.mins+" minutes. Don't make a project of it."; }
+        else out = "Added"+(f.where ? " to "+f.where : "")+". Back to what you were doing.";
+        break;
+      }
+      out = (c.left === 0 && c.where) ? "Done. That's "+c.where+" clear."
+          : c.left === 0 ? "Done. That's the lot."
+          : (c.doneToday === 1 ? "Done. That's you off the mark."
+          : (humour(1, c.sinceLast !== null && c.sinceLast <= 4) ? (L=1, "That's cleared. You're not hanging about.")
+          : humour(1, c.doneToday >= 5) ? (L=1, "Another one. The pile has noticed.")
+          : pickPlain(["Done.", "That's cleared.", "Done. Next."], c)));
+      break;
+
+    case "IMPORTANT_WIN":
+      out = ev === "confirmed"
+        ? "Confirmed working. "+name+" is properly done."
+        : "Good. That's an important one gone.";
+      if(c.left === 0) out += " Nothing left in "+c.where+".";
+      break;
+
+    case "URGENT_WIN":
+      if(ev === "added"){
+        if(f.mins && f.mins <= 10 && humour(1, true)){ L=1; out = "Urgent and "+f.mins+" minutes. Do not somehow turn that into an afternoon."; }
+        else out = "Urgent — it's next up.";
+        break;
+      }
+      out = "Done. That's the urgent one cleared.";
+      break;
+
+    case "MOMENTUM":
+      out = humour(1, c.streak >= 4) ? (L=1, "Nice. You're moving now.")
+          : c.streak+" in a row. "+(c.minsLeft > 60 ? "Keep going." : fmtLeft(c)+".");
+      break;
+
+    /* -------- decisions ONE should recognise, not question -------- */
+    case "SENSIBLE_OVERRIDE":
+      out = f.parked
+        ? f.parked.name+" parked with "+fmtDur(f.parked.mins)+" banked. "+name+" it is."
+        : (c.nextFixed ? "Yep. Makes sense with "+c.nextFixed.name+" coming up." : "Fair enough. "+name+" it is.");
+      break;
+
+    case "LEGITIMATE_POSTPONEMENT":
+      if(ev === "snoozed"){ out = "Back with you "+f.when+"."; break; }
+      out = f.reason === "Bad time" ? "Fine. Not now, then."
+          : (t && (t.postponedToday||0) >= 3 ? "Away it goes — but it's first up the moment you finish something."
+          : humour(1, c.minsLeft > 0 && c.minsLeft < 45) ? (L=1, "Fine. Not much left of today to hide in, mind.")
+          : "Noted. Something else, then.");
+      break;
+
+    case "GENUINE_AVOIDANCE":
+      if(humour(2, true)){
+        L=2;
+        out = who() ? who()+". "+((t&&t.avoidCount)||3)+" times. We're doing it."
+                    : "That's "+((t&&t.avoidCount)||3)+" times now. We're doing it.";
+      } else {
+        out = "That's "+((t&&t.avoidCount)||3)+" passes on the same job. It stays at the front until it's gone.";
+      }
+      break;
+
+    case "BLOCKED_EXTERNAL":
+      out = "Can't do much about that. Parked until you hear back.";
+      break;
+
+    case "AWAITING_CONFIRMATION":
+      out = f.on ? "Parked. Waiting on "+f.on+"." : "Parked. You've done your bit.";
+      break;
+
+    case "WORKAROUND_REQUIRED":
+      if(ev === "reopened") out = "Right — still not fixed. It's back on the list.";
+      else out = "Good. Deal with the symptom now, leave the problem parked.";
+      break;
+
+    case "CONTEXT_CHANGED":
+      if(ev === "cancelled") out = "Fine — that one's gone. It stays in the history, not the count.";
+      else if(ev === "finishMoved") out = "Finishing at "+f.at+". "+(f.left > 0 ? fmtDur(f.left)+" — I'll only offer what fits." : "That's now, then.");
+      else out = "Understood. Replanning round that.";
+      break;
+
+    /* -------- the clock -------- */
+    case "LEGITIMATE_OVERRUN":
+      out = "Fair enough — bigger than it looked. Another "+f.add+" and stay with it.";
+      break;
+
+    case "POSSIBLE_SCOPE_CREEP":
+      out = humour(2, true)
+        ? (L=2, (who()?who()+". ":"")+f.plan+" minutes became "+f.total+". What are we actually doing here?")
+        : f.plan+" minutes has become "+f.total+". Worth finishing, or worth stopping somewhere sensible?";
+      break;
+
+    case "RABBIT_HOLE":
+      out = humour(2, true)
+        ? (L=2, "Out. That was a task, not an archaeological dig.")
+        : "Right — out of there. Leave it somewhere you can pick it up.";
+      break;
+
+    case "SENSIBLE_STOPPING_POINT":
+      out = "Fair. We've given it a proper go. Left somewhere sensible — that's the right call.";
+      break;
+
+    /* -------- stopping is allowed to be the answer -------- */
+    case "USER_HAS_DONE_ENOUGH":
+      out = "You've cleared the important stuff. Nothing worth opening for "+fmtDur(Math.max(1,c.minsLeft))+
+            ". You're done at "+c.finishAt+".";
+      break;
+
+    case "SESSION_COMPLETE":
+      out = "Nothing left in "+c.where+" worth starting. "+
+            (c.doneToday ? c.doneToday+" done and "+fmtDur(c.minsToday)+" on the clock. " : "")+"Stopping is the right answer here.";
+      break;
+
+    case "SESSION_NEAR_END":
+      if(ev === "prep") out = f.at ? "Getting ready for "+name+" at "+f.at+". Nothing else starts now." : "Nothing else starts now.";
+      else out = "Only "+fmtDur(Math.max(1,c.minsLeft))+" left. Not enough for anything that matters.";
+      break;
+
+    case "MAINTAIN_FOCUS":
+      out = f.mins ? "Right. "+f.mins+" minutes. Just this." : "Just this.";
+      break;
+
+    case "RETURN_TO_INTERRUPTED_TASK":
+      out = f.left > 0
+        ? "Picking it up — "+fmtDur(f.spent)+" already in, "+f.left+" to go."
+        : "You're past the estimate on this. "+f.mins+" minutes to see it off.";
+      break;
+  }
+  if(L) spend(L);
+  witBudget().n++;
+  return out;
+}
+/* rotate through the plain forms so the commonest line isn't a chant */
+function pickPlain(arr, c){ return arr[(c.doneToday + witBudget().n) % arr.length]; }
+
+/* the two ways to use it: a line on screen, or a line said out loud */
+function line(ev, f){
+  f = f || {};
+  var c = coachCtx();
+  var read = interpret(ev, f, c);
+  return phrase(read, intentFor(read, ev, f, c), ev, f, c);
+}
+window.ONEsay = function(ev, f){ return line(ev, f); };
+window.ONEwit = function(){ return witBudget(); };
+window.ONEctx = function(){ return coachCtx(); };
+function say(ev, f, undo, undoLabel){
+  var msg = line(ev, f);
+  if(msg) toast(msg, undo, undo ? (undoLabel || "undo") : null);
+  return msg;
 }
 
 /* ============================================================
@@ -1261,6 +1481,7 @@ function makeTask(o){
     fixedStart:o.fixedStart||null, fixedEnd:o.fixedEnd||null, warned:false,
     unblocks:o.unblocks||null,
     repeatEvery:o.repeatEvery||0, nextDueAt:null, checkCount:0, wakeAt:null,
+    urgent:!!o.urgent, prepMins:o.prepMins||0, waitingOn:null, cancelledAt:null, reopened:0,
     status:"open", blockedReason:null, postponedToday:0, lastPostponedAt:null,
     avoidCount:0, needsPlace:null,
     actualMinutes:0, createdAt:Date.now(), completedAt:null, archived:false
@@ -1340,6 +1561,21 @@ function isCooling(t){ return isRecurring(t) && t.nextDueAt && Date.now() < t.ne
    hidden away in a list somewhere being forgotten — it's asleep, and it will
    wake itself up. */
 function isAsleep(t){ return !!(t.wakeAt && Date.now() < t.wakeAt); }
+/* ---------- urgent is not the same as important ----------
+   Important says this matters. Due today says there's a deadline. Urgent says
+   do it next — it jumps the queue once, and then stops shouting, so it can't
+   quietly bend every decision you make for the rest of the week. */
+function isUrgent(t){ return !!t.urgent && t.status === "open"; }
+/* ---------- waiting on the world ----------
+   You've done your part and you're waiting to find out whether it worked. That
+   is not finished, not blocked before you could start, and certainly not a
+   dodge. It leaves the running order and keeps everything it knows. */
+function isWaiting(t){ return t.status === "waiting"; }
+function isCancelled(t){ return t.status === "cancelled"; }
+/* Getting ready counts. A commitment at 11:30 that takes ten minutes to set up
+   really starts at 11:20, and nothing unrelated should be running into it. */
+function prepOf(t){ return Math.max(0, t.prepMins || 0); }
+function startsEffectively(t){ return hhmmToMins(t.fixedStart) - prepOf(t); }
 function isResting(t){ return isCooling(t) || isAsleep(t); }
 function justWoke(t){ return !!(t.wakeAt && Date.now() >= t.wakeAt && Date.now() - t.wakeAt < 3*3600000); }
 function wakeLabel(t){
@@ -1400,7 +1636,16 @@ function currentFixed(){
 function nextFixed(hereOnly){
   var m = minsOfDay(), f = fixedToday();
   for(var i=0;i<f.length;i++){
-    if(hhmmToMins(f[i].fixedStart) > m && (!hereOnly || locationOK(f[i]))) return f[i];
+    if(startsEffectively(f[i]) > m && (!hereOnly || locationOK(f[i]))) return f[i];
+  }
+  return null;
+}
+/* Inside the run-up to a commitment there's nothing to start — this is the
+   getting-ready time you asked for. */
+function inPrepFor(){
+  var m = minsOfDay(), f = fixedToday();
+  for(var i=0;i<f.length;i++){
+    if(prepOf(f[i]) && m >= startsEffectively(f[i]) && m < hhmmToMins(f[i].fixedStart) && locationOK(f[i])) return f[i];
   }
   return null;
 }
@@ -1421,7 +1666,8 @@ function lunchInfo(){
 /* the next wall you'll hit, and what it is */
 function runway(){
   var m = minsOfDay(), L = lunchInfo(), end = hhmmToMins(S.settings.workUntil), nf = nextFixed(true), walls = [];
-  if(nf) walls.push({ mins:hhmmToMins(nf.fixedStart) - m, what:nf.name+" at "+nf.fixedStart, kind:"fixed" });
+  if(nf) walls.push({ mins:startsEffectively(nf) - m, what:nf.name+" at "+nf.fixedStart, kind:"fixed",
+                      prep:prepOf(nf), task:nf });
   if(L.pending) walls.push({ mins:Math.max(0, L.to - m), what:"lunch", kind:"lunch" });
   if(!S.session.workFinished && end != null && end > m) walls.push({ mins:end - m, what:"the end of the day", kind:"day" });
   if(!walls.length) return { mins:600, what:"", kind:"none" };
@@ -1551,12 +1797,27 @@ function chooseTask(){
   if(!S.session.planet) return { task:null, reason:"nowhere" };
   var fx = currentFixed();
   if(fx) return { task:fx, fixed:true, why:[] };
+  /* The run-up to a commitment belongs to that commitment. */
+  var pr = inPrepFor();
+  if(pr) return { task:pr, fixed:true, prep:true, why:["It starts at "+pr.fixedStart+". This is the getting-ready time you asked for."] };
 
   var L = lunchInfo(), transit = isErrandPlanet(S.session.planet);
   if(!transit && (L.overdue || S.session.lunchState === "active")) return { lunch:true };
 
   var pool = planetPool().filter(function(t){ return !t.fixedStart && !isResting(t); }).filter(locationOK);
   if(!pool.length) return { task:null, reason:"none" };
+
+  /* You said one of these was next. That isn't a scoring hint, it's an
+     instruction — it goes to the front, and it stops shouting once you've
+     started it, so a single urgent job can't bend the rest of your week. */
+  var urgent = pool.filter(isUrgent);
+  if(urgent.length){
+    urgent.sort(function(a,b){ return (a.createdAt||0) - (b.createdAt||0); });
+    S.ui.pinnedId = urgent[0].id;
+    S.ui.lastServedId = urgent[0].id;
+    return { task:urgent[0], urgent:true, why:["You said this one was next."],
+             rest: pool.filter(function(x){ return x.id !== urgent[0].id; }) };
+  }
 
   /* You can always pass on something, whatever it is. A dodged task steps out
      of the queue for a while — briefly if it matters, ages if it doesn't — and
@@ -1614,6 +1875,7 @@ function chooseTask(){
   }
   best.rest = ranked.slice(1).filter(function(r){ return r.score > -900; }).map(function(r){ return r.task; });
   S.ui.pinnedId = best.task.id;
+  S.ui.lastServedId = best.task.id;
   return best;
 }
 
@@ -2005,7 +2267,6 @@ function enterPlanet(id, el){
     revealFace();
     moonArrive();
     var open = planetOpen(id).filter(function(t){ return !isResting(t); });
-    if(open.length) toast(voice("enter", { where: planetLabel(id) })[0]);
   };
   Flight = { skip:function(e){
     e.preventDefault(); e.stopPropagation();
@@ -2031,7 +2292,7 @@ function landOn(id, quiet){
   applyHue(); renderNow(true); renderChips(); renderList();
   if(quiet) return;
   var open = planetOpen(id).filter(function(t){ return !isResting(t); });
-  if(open.length) toast(voice("enter", { where: planetLabel(id) })[0]);
+  if(open.length) toast(planetLabel(id)+". Nothing else exists for a bit.");
 }
 
 /* ---------- inward: sling it away, then fall back into the system ---------- */
@@ -2277,8 +2538,7 @@ function choosePicked(i){
   S.ui.pinnedId = t.id;
   if(t.lastPostponedAt) t.lastPostponedAt = null;      /* you chose it, so it isn't resting any more */
   save(); renderNow(true);
-  if(parked) toast(parked.name+" parked, "+fmtDur(parked.mins)+" banked. "+t.name+" it is.");
-  else toast(voice("picked")[0]);
+  say("picked", { task:t, parked:parked, skipped:byId(S.ui.lastServedId) });
 }
 function closePicker(){
   if(!Pick.on) return;
@@ -2400,7 +2660,8 @@ function nowView(){
   /* No planet chosen means you're out in the system, looking at your life from
      a distance. That is a legitimate place to be — it's where you stop. */
   if(!s.planet) return { kind:"system" };
-  if(s.sessionDone || sessionShouldEnd()) return { kind:"sessionDone" };
+  var over = s.sessionDone ? "cleared" : sessionShouldEnd();
+  if(over) return { kind:"sessionDone", why:over };
   if(!isErrandPlanet(s.planet) && s.lunchState === "active") return { kind:"lunchOn" };
   if(!planetOpen(s.planet).length) return { kind:"empty" };
   var choice = chooseTask();
@@ -2409,7 +2670,7 @@ function nowView(){
   return { kind: isErrandPlanet(s.planet) ? "transit" : "one", choice:choice, id:choice.task.id };
 }
 function viewSig(v){
-  return [v.kind, v.id||"", v.paused?1:0, v.mins||"", S.session.planet||"-", S.session.location,
+  return [v.kind, v.id||"", v.why||"", v.paused?1:0, v.mins||"", S.session.planet||"-", S.session.location,
           v.choice && v.choice.rest ? v.choice.rest.length : 0].join("|");
 }
 var lastNowSig = null;
@@ -2438,7 +2699,7 @@ function renderNow(force){
   if(v.kind === "closed"){ root.innerHTML = viewDayClosed(); orbMount(); revealFace(); return; }
   if(v.kind === "start"){ root.innerHTML = viewStart(); return; }
   if(v.kind === "system"){ root.innerHTML = viewSystem(); sysMount(); return; }
-  if(v.kind === "sessionDone"){ root.innerHTML = viewSessionDone(); orbMount(); revealFace(); return; }
+  if(v.kind === "sessionDone"){ root.innerHTML = viewSessionDone(v.why); orbMount(); revealFace(); return; }
   if(v.kind === "focus"){ root.innerHTML = viewFocus(); orbMount(); startTicker(); return; }
   if(v.kind === "lunchOn"){ root.innerHTML = viewLunchActive(); orbMount(); return; }
   if(v.kind === "empty"){ root.innerHTML = viewEmpty(); orbMount(); return; }
@@ -2465,7 +2726,17 @@ function sessionShouldEnd(){
   if(!worked && !dayOver) return false;
   var live = planetOpen(id).filter(function(t){ return !isResting(t) && locationOK(t); });
   if(!live.length) return false;
-  return !live.some(function(t){ return isDueToday(t) || t.priority === "important" || t.fixedStart; });
+  /* Nothing left that matters. */
+  if(!live.some(function(t){ return isDueToday(t) || t.priority === "important" || t.fixedStart || isUrgent(t); }))
+    return "cleared";
+  /* There is still work, but not enough day left to open any of it honestly,
+     and you've already had a proper one. Starting a forty-minute job with
+     twenty minutes left isn't productivity, it's a worse stopping point. */
+  var w = runway();
+  var room = Math.min(w.kind === "none" ? 600 : w.mins, Math.max(0, hhmmToMins(S.settings.workUntil) - minsOfDay()));
+  if(room > 0 && room <= 35 && productiveToday() &&
+     !live.some(function(t){ return timeLeftOn(t) <= room - 2 || t.duration <= room - 2; })) return "noRoom";
+  return false;
 }
 function dayProgress(){
   var entries = todayLog();
@@ -2501,18 +2772,65 @@ function viewSystem(){
   return '<div class="sysview">'+
     '<p class="eyebrow left">'+esc(greet)+(who() ? ", "+esc(S.profile.name) : "")+' · '+minsToHHMM(minsOfDay())+'</p>'+
     sysHTML()+
+    finishLine()+
     '<p class="runway">Pick a world · the rest disappears</p>'+
   '</div>';
 }
+/* ---------- when you intend to finish ----------
+   Your finishing time is not a setting you filled in once. It's a fact about
+   today that changes, and everything downstream of it — what fits, what's
+   worth opening, whether stopping is the right answer — has to move with it. */
+function finishLine(){
+  if(S.session.workFinished) return '<p class="finish-line">Work\'s done for today. <button class="linky" data-act="finish-time">Change</button></p>';
+  var end = hhmmToMins(S.settings.workUntil), left = end - minsOfDay();
+  return '<p class="finish-line">Working until <b>'+esc(S.settings.workUntil)+'</b>'+
+    (left > 0 ? ' · '+fmtDur(left)+' left' : ' · that\'s been and gone')+
+    ' <button class="linky" data-act="finish-time">Change</button></p>';
+}
+var FINISH_NUDGES = [-60, -30, -15, 15, 30, 60];
+function sheetFinishTime(){
+  var end = hhmmToMins(S.settings.workUntil);
+  return ''+
+  '<div class="sheet-head"><h2 class="sec">When are you finishing?</h2>'+
+    '<button class="icon-btn" data-act="close-sheet" aria-label="Close">✕</button></div>'+
+  '<p class="hint">Change this and I\'ll work out again what can sensibly fit.</p>'+
+  '<div class="choices" style="margin-top:12px">'+
+    FINISH_NUDGES.map(function(n){
+      return '<button class="choice" data-act="finish-nudge" data-min="'+n+'">'+(n<0?"−":"+")+Math.abs(n)+'m</button>';
+    }).join("")+
+  '</div>'+
+  '<div class="field" style="margin-top:14px"><label>Or set it</label>'+
+    '<input type="time" id="ft-at" value="'+esc(minsToHHMM(((end%1440)+1440)%1440))+'"></div>'+
+  '<div class="btn-row">'+
+    '<button class="btn" data-act="finish-now">I\'m done for today</button>'+
+    '<button class="btn go" data-act="finish-set">Set it</button>'+
+  '</div>';
+}
+function setFinish(mins){
+  var m = ((Math.round(mins) % 1440) + 1440) % 1440;
+  S.settings.workUntil = minsToHHMM(m);
+  S.session.workFinished = false;
+  S.session.sessionDone = false; S.session.keepGoing = false;
+  unpin();                       /* what was on the orb may no longer fit */
+  save(); render();
+  say("finishMoved", { at:S.settings.workUntil, left:Math.max(0, m - minsOfDay()) });
+}
 /* stopping is a result, not a failure to continue */
-function viewSessionDone(){
+/* Stopping is a result, not a failure to continue. Two ways to arrive here:
+   there's nothing left that matters, or there is but there isn't enough day
+   left to open any of it honestly. They deserve different words. */
+function viewSessionDone(why){
   var p = dayProgress(), here = planetLabel(S.session.planet);
   var mins = sessionMinutes();
+  var room = why === "noRoom";
+  var face = room ? '<div class="orb-task">That\'ll<br>do</div><div class="orb-sub">nothing worth opening now</div>'
+                  : '<div class="orb-task">That\'s<br>the lot</div><div class="orb-sub">nothing left worth starting</div>';
   return ''+
-    '<p class="eyebrow good">'+esc(here)+' session complete</p>'+
-    orbHTML('<div class="orb-task">That\'s<br>the lot</div><div class="orb-sub">nothing left worth starting</div>', { clear:true, hints:{ u:"", l:"", r:"Add", d:"Leave" } })+
+    '<p class="eyebrow good">'+esc(here)+(room ? ' · enough for today' : ' session complete')+'</p>'+
+    orbHTML(face, { clear:true, hints:{ u:"", l:"", r:"Add", d:"Leave" } })+
     '<p class="runway">'+p.count+' done · '+fmtDur(mins || p.done)+' focused</p>'+
-    '<div style="margin-top:14px">'+coachHTML([voice("sessionDone", { where:here })[0]])+'</div>'+
+    '<div style="margin-top:14px">'+coachHTML([line(room ? "nothingFits" : "sessionDone", {})])+'</div>'+
+    finishLine()+
     '<div class="btn-row" style="margin-top:12px">'+
       '<button class="btn" data-act="keep-going">Give me another</button>'+
       '<button class="btn go" data-act="leave-planet">Leave '+esc(here)+'</button>'+
@@ -2520,7 +2838,7 @@ function viewSessionDone(){
 }
 function viewEmpty(){
   return orbHTML('<div class="orb-task">Nothing<br>in here</div><div class="orb-sub">'+esc(planetLabel(S.session.planet))+' is empty</div>', { clear:true, hints:{ u:"", l:"", r:"Add", d:"Leave" } })+
-    '<p class="runway">'+esc(voice("empty")[0])+'</p>'+
+    '<p class="runway">Nothing in here. Add something or go somewhere else.</p>'+
     '<p class="dayline">Swipe right to add · swipe down to leave</p>';
 }
 function viewNothing(choice){
@@ -2528,11 +2846,13 @@ function viewNothing(choice){
   if(choice.reason === "nofit"){
     return orbHTML('<div class="orb-task">Too<br>tight</div><div class="orb-sub">'+fmtDur(choice.gap.mins)+' left</div>', { clear:true })+
       '<p class="runway">Nothing fits before '+esc(choice.gap.what)+'</p>'+
-      '<p class="dayline">'+esc(voice("nofit")[0])+'</p>';
+      '<p class="dayline">'+esc(line("nothingFits", {}))+'</p>';
   }
-  var line = isErrandPlanet(S.session.planet) ? voice("clearOut")[0] : voice("clear", { where:here })[0];
+  var msg = isErrandPlanet(S.session.planet)
+    ? "Nothing to pick up. Straight home."
+    : here+" is clear. Genuinely nothing left in here.";
   return orbHTML('<div class="orb-task">All<br>clear</div><div class="orb-sub">'+esc(here)+'</div>', { clear:true, hints:{ u:"", l:"", r:"Add", d:"Leave" } })+
-    '<p class="runway">'+esc(line)+'</p>'+
+    '<p class="runway">'+esc(msg)+'</p>'+
     '<p class="dayline">Swipe down to leave · swipe right to add</p>';
 }
 /* A flag planted on the moon for anything with a clock on it: red if it's late,
@@ -2558,27 +2878,33 @@ function whyLine(choice){
 function viewOne(choice){
   var t = choice.task, p = dayProgress(), w = runway();
   var early = !!choice.early;                       /* the diary task, offered ahead of time */
-  var fixedNow = choice.fixed && !early;
+  var prep = !!choice.prep;                         /* the run-up to a commitment */
+  var fixedNow = choice.fixed && !early && !prep;
   var spentAlready = isRecurring(t) ? 0 : Math.round(t.actualMinutes || 0);
-  var sub = early ? t.fixedStart+" · "+t.duration+" min"
+  var sub = prep ? "starts "+t.fixedStart+" · get ready"
+          : early ? t.fixedStart+" · "+t.duration+" min"
           : fixedNow ? "until "+minsToHHMM(taskEndMins(t))
           : (isRecurring(t) ? t.duration+" min · "+repeatLabel(t.repeatEvery)
           : (spentAlready > 0
               ? (timeLeftOn(t) > 0 ? timeLeftOn(t)+" min left · "+fmtDur(spentAlready)+" in"
                                    : "over · "+fmtDur(spentAlready)+" in")
               : t.duration+(t.estimated ? "ish min" : " min")+" · "+t.type));
-  var line = early
+  var note = prep
+    ? "Starts at "+t.fixedStart+" · this is your "+prepOf(t)+" minutes to get ready"
+    : early
     ? (choice.startsIn > 0 ? "Starts in "+fmtDur(choice.startsIn)+" · tap to start it now" : "Tap to start")
     : fixedNow
     ? "You're in this until "+minsToHHMM(taskEndMins(t))
     : (w.kind === "none" ? "Nothing in the way" : fmtDur(w.mins)+" until "+w.what);
   return ''+
-    '<p class="eyebrow'+(fixedNow?" hot":"")+'">'+esc(planetLabel(S.session.planet))+
-      (early ? " · up next" : fixedNow ? " · happening now" : (isRecurring(t) ? " · check-in" : ""))+'</p>'+
+    '<p class="eyebrow'+((fixedNow||prep)?" hot":"")+'">'+esc(planetLabel(S.session.planet))+
+      (prep ? " · getting ready" : early ? " · up next" : fixedNow ? " · happening now"
+        : choice.urgent ? " · do next" : (isRecurring(t) ? " · check-in" : ""))+'</p>'+
     orbHTML(faceTask(t, sub), { flag:flagFor(t) })+
     '<p class="why"><b>Why this?</b> '+esc(whyLine(choice))+'</p>'+
-    '<p class="runway">'+esc(line)+'</p>'+
-    '<p class="dayline">'+p.count+' done · '+fmtDur(p.done)+' on the clock</p>';
+    '<p class="runway">'+esc(note)+'</p>'+
+    '<p class="dayline">'+p.count+' done · '+fmtDur(p.done)+' on the clock</p>'+
+    finishLine();
 }
 function viewTransit(choice){
   var t = choice.task, p = dayProgress(), rest = (choice.rest||[]).slice(0,4);
@@ -2639,7 +2965,7 @@ function viewDayClosed(){
     '<p class="eyebrow">Today</p>'+
     orbHTML('<div class="orb-count">'+d.length+'</div><div class="orb-sub">tasks destroyed</div>')+
     '<p class="runway">'+fmtDur(dayProgress().done)+' on the clock</p>'+
-    '<div style="margin-top:16px">'+coachHTML([voice("endday")[0], d.length+" things done and "+fmtDur(dayProgress().done)+" on the clock."])+'</div>'+
+    '<div style="margin-top:16px">'+coachHTML(["That's the day.", d.length+" things done and "+fmtDur(dayProgress().done)+" on the clock."])+'</div>'+
     '<button class="btn wide" data-act="reopen" style="margin-top:12px">Actually, I\'m not finished</button>';
 }
 
@@ -2718,8 +3044,11 @@ function orbSwipe(dir){
     return;
   }
 }
-function flashDone(t){
-  toast("✓ "+t.name, function(){ t.status = "open"; t.completedAt = null; save(); render(); });
+/* Finishing something is a good event. It is not an opening for a dig. */
+function flashDone(t, wasUrgent){
+  say("done", { task:t, urgent:wasUrgent }, function(){
+    t.status = "open"; t.completedAt = null; save(); render();
+  });
 }
 /* completing a check-in cycles it; the toast is where you close it off for good */
 function settleTask(t, mins){
@@ -2737,8 +3066,9 @@ function settleTask(t, mins){
     toast("✓ "+t.name+" · back in "+repeatLabel(t.repeatEvery).replace("every ",""),
       function(){ finishRecurring(t); render(); toast("Closed off for today."); }, "finish for today");
   } else {
+    var wasUrgent = !!t.urgent;
     completeTask(t, mins);
-    flashDone(t);
+    flashDone(t, wasUrgent);
   }
 }
 
@@ -2797,18 +3127,15 @@ function timeLeftOn(t){
 function beginFocus(t, forcedMins){
   if(!t.originalEstimate) t.originalEstimate = t.duration;
   t.wakeAt = null; t.woke = false;   /* you're looking at it now — the check-in has done its job */
+  t.urgent = false;                  /* it got to the front. It doesn't need to keep saying so */
   var spent = isRecurring(t) ? 0 : Math.round(t.actualMinutes || 0);
   var left = timeLeftOn(t);
   var planned = forcedMins || (spent > 0 ? Math.max(5, left) : t.duration);
   S.focus = { taskId:t.id, startedAt:Date.now(), plannedMin:planned, addedMin:0, extensions:0,
               paused:false, pausedAt:null, rang:false, resumedFrom: spent > 0 ? spent : 0 };
   save(); renderNow(true);
-  if(spent > 0 && !forcedMins){
-    toast(left > 0 ? "Picking up where you left off — "+fmtDur(spent)+" already in."
-                   : "You're already past the estimate. "+planned+" minutes to see it off.");
-  } else {
-    toast(voice("start", { mins: planned })[0]);
-  }
+  if(spent > 0 && !forcedMins) say("start", { task:t, resumed:true, spent:spent, left:left, mins:planned });
+  else say("start", { task:t, mins:planned });
 }
 function endFocus(){
   var f = S.focus; if(!f) return 0;
@@ -2926,6 +3253,7 @@ var PRI_STEPS = PRIORITY_ORDER.map(function(k){ return { value:k, label:PRIORITY
 var EFF_STEPS = EFFORT_ORDER.map(function(k){ return { value:k, label:EFFORT[k] }; });
 var CAT_STEPS = [{ value:"Work", label:"Work" }, { value:"Personal", label:"Personal" }];
 var REPEATS = [{v:0,l:"Never"},{v:30,l:"30m"},{v:60,l:"1h"},{v:120,l:"2h"},{v:180,l:"3h"},{v:240,l:"4h"}];
+var PREP_CHOICES = [0, 5, 10, 15, 30];
 
 var MIC_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"/><path d="M18 11a1 1 0 0 0-2 0 4 4 0 0 1-8 0 1 1 0 0 0-2 0 6 6 0 0 0 5 5.91V20H9a1 1 0 0 0 0 2h6a1 1 0 0 0 0-2h-2v-3.09A6 6 0 0 0 18 11z"/></svg>';
 
@@ -3067,7 +3395,8 @@ function dictate(btn, onInterim, onFinal){
 var cap = null;
 function newCapture(){
   return { text:"", duration:null, priority:null, due:null, when:null,
-           fixedStart:null, repeatEvery:null, planet:null, unblocks:null, open:null };
+           fixedStart:null, repeatEvery:null, planet:null, unblocks:null, open:null,
+           urgent:null, type:null, after:null, note:null };
 }
 
 /* ---------- reading the sentence ---------- */
@@ -3089,7 +3418,12 @@ function parseCapture(raw){
   else if(eat(/\bevery\s+hour\b/i)) d.repeatEvery = 60;
   if(d.repeatEvery) said.push(repeatLabel(d.repeatEvery));
 
-  if(eat(/(^|\s)!\s*/) || eat(/\b(important|urgent|urgently|top priority|asap|must do)\b/i)){
+  /* Urgency and importance are different claims. "Important" says this matters;
+     "urgent" says do it next. Something can be either, or both. */
+  if(eat(/\b(urgent(?:ly)?|asap|a\.s\.a\.p\.|do next|next task|top priority|right now|straight ?away)\b/i)){
+    d.urgent = true; said.push("Do next");
+  }
+  if(eat(/(^|\s)!\s*/) || eat(/\b(important|must do|big one|matters)\b/i)){
     d.priority = "important"; said.push("Important");
   }
 
@@ -3188,6 +3522,7 @@ function sheetCapture(){
   '<div class="qc-chips">'+
     '<button class="qc-chip" id="qc-time" type="button" aria-pressed="'+(cap.duration?"true":"false")+'">'+(cap.duration ? cap.duration+"m" : "Time")+'</button>'+
     '<button class="qc-chip" id="qc-imp" type="button" aria-pressed="'+(cap.priority==="important")+'">Important</button>'+
+    '<button class="qc-chip" id="qc-urg" type="button" aria-pressed="'+(!!cap.urgent)+'">Do next</button>'+
     '<button class="qc-chip" id="qc-when" type="button" aria-pressed="'+(cap.due?"true":"false")+'">'+esc(capWhenLabel())+'</button>'+
     '<button class="qc-chip ghost" id="qc-more" type="button">•••&nbsp;More</button>'+
   '</div>'+
@@ -3232,6 +3567,10 @@ function bindCapture(){
     cap.priority = cap.priority === "important" ? null : "important";
     syncCapChips();
   });
+  root.querySelector("#qc-urg").addEventListener("click", function(){
+    cap.urgent = !cap.urgent;
+    syncCapChips();
+  });
   root.querySelectorAll("[data-qcdur]").forEach(function(b){
     b.addEventListener("click", function(){
       cap.duration = Math.max(5, Math.min(480, (cap.duration || S.settings.defaultDuration) + (+b.dataset.qcdur)));
@@ -3260,8 +3599,10 @@ function syncCapChips(){
   var root = document.getElementById("sheetRoot");
   if(!root) return;
   var t = root.querySelector("#qc-time"), i = root.querySelector("#qc-imp"), w = root.querySelector("#qc-when");
+  var u = root.querySelector("#qc-urg");
   if(t){ t.textContent = cap.duration ? cap.duration+"m" : "Time"; t.setAttribute("aria-pressed", String(!!cap.duration)); }
   if(i) i.setAttribute("aria-pressed", String(cap.priority === "important"));
+  if(u) u.setAttribute("aria-pressed", String(!!cap.urgent));
   if(w){ w.textContent = capWhenLabel(); w.setAttribute("aria-pressed", String(!!cap.due)); }
 }
 /* everything the sentence didn't say, worked out rather than asked */
@@ -3282,8 +3623,9 @@ function buildCaptured(raw){
     name:nm, planet:planet, priority:pri, due:due,
     duration:mins, estimated:!explicitMins,
     effort: guessEffort(mins, repeat),
-    type: guessType(nm, planet, !!fixedStart),
+    type: cap.type || guessType(nm, planet, !!fixedStart),
     repeatEvery: fixedStart ? 0 : repeat,
+    urgent: cap.urgent != null ? cap.urgent : !!parsed.urgent,
     unblocks: cap.unblocks || null,
     fixedStart: fixedStart,
     fixedEnd: fixedStart ? minsToHHMM(hhmmToMins(fixedStart) + mins) : null
@@ -3297,6 +3639,7 @@ function commitCapture(thenEdit){
   var built = buildCaptured(raw);
   if(!built){ toast("Give it a name first."); return; }
   var t = built.task;
+  var after = cap.after, note = cap.note;
   S.tasks.push(t);
   if(!S.session.started){ S.session.started = true; S.session.date = todayKey(); }
   cap = newCapture();
@@ -3311,12 +3654,16 @@ function commitCapture(thenEdit){
     setTimeout(function(){ nm.remove(); }, 1000);
   }
   if(thenEdit){ openEditSheet(t.id); return; }
+  if(after === "snooze"){
+    var dd = new Date(); dd = new Date(dd.getFullYear(), dd.getMonth(), dd.getDate()+1, 9, 0, 0, 0);
+    t.wakeAt = dd.getTime(); save(); render();
+    toast(note || ("Filed for tomorrow morning. "+t.name+"."));
+    return;
+  }
   if(!built.sure && !S.session.planet){ openSheet(sheetWhichPlanet(t.id)); return; }
-  var bits = [];
-  if(t.due) bits.push(dueLabel(t));
-  if(t.priority === "important") bits.push("Important");
-  bits.push((t.estimated ? "~" : "")+t.duration+"m");
-  toast("✓ Added to "+planetLabel(t.planet)+" · "+bits.join(" · "), function(){ openEditSheet(t.id); }, "edit");
+  if(note){ toast(note); return; }
+  say("added", { task:t, urgent:t.urgent, mins:t.duration, where:planetLabel(t.planet) },
+      function(){ openEditSheet(t.id); }, "edit");
 }
 /* the one extra tap, only when ONE genuinely can't tell */
 function sheetWhichPlanet(id){
@@ -3431,6 +3778,7 @@ function sheetTimeUp(){
     '<button class="btn go wide" data-act="tu-done">Done</button>'+
     '<button class="btn wide" data-act="extend" data-min="5">Nearly — 5 more</button>'+
     '<button class="btn wide" data-act="extend" data-min="15">Still going — 15 more</button>'+
+    '<button class="btn wide" data-act="tu-waiting">Done what I can — waiting to hear</button>'+
     '<button class="btn wide" data-act="tu-rabbit">Rabbit hole. Get me out</button>'+
     '<button class="btn wide" data-act="tu-commit" style="border-color:color-mix(in srgb,var(--hi) 45%,transparent)">Can\'t reasonably stop here</button>'+
   '</div>';
@@ -3443,9 +3791,11 @@ var WHY_NOT = [
   { id:"fancy",  label:"Not feeling it",         kind:"avoid" },
   { id:"time",   label:"Bad time",               kind:"defer" },
   { id:"later",  label:"Check back on it later", kind:"snooze" },
+  { id:"waiting",label:"Done my bit — waiting to hear", kind:"waiting" },
   { id:"person", label:"Waiting for someone",    kind:"block" },
   { id:"thing",  label:"Need something",         kind:"block" },
   { id:"place",  label:"Wrong location",         kind:"place" },
+  { id:"gone",   label:"Not needed any more",    kind:"cancel" },
   { id:"other",  label:"Other",                  kind:"defer" }
 ];
 /* "Wrong headspace" and "don't fancy it" were two doors into the same room, so
@@ -3514,6 +3864,86 @@ function snoozeTask(t, when){
     t.wakeAt = null; t.woke = false; save(); render(); toast("Awake again.");
   }, "undo");
 }
+/* ---------- done what I can ----------
+   Not finished, not blocked before you started, not abandoned. You've done your
+   part and you're waiting to find out whether it worked. It leaves the running
+   order and keeps everything it knows, and it never counts against you. */
+function sheetWaitingOn(id){
+  var t = byId(id);
+  return ''+
+  '<div class="sheet-head"><h2 class="sec">Waiting on what?</h2>'+
+    '<button class="icon-btn" data-act="close-sheet" aria-label="Close">✕</button></div>'+
+  '<p class="hint">'+esc(t ? t.name : "")+' — so you know what to chase if it goes quiet.</p>'+
+  '<div class="field" style="margin-top:12px"><label>Who or what</label>'+
+    '<input type="text" id="wo-what" placeholder="Someone to test it" autocomplete="off"></div>'+
+  '<button class="btn go wide" data-act="waiting-set" data-id="'+esc(id)+'">Park it as waiting</button>'+
+  '<button class="btn wide" data-act="waiting-set" data-id="'+esc(id)+'" data-skip="1">Just mark it waiting</button>';
+}
+function setWaiting(t, on){
+  if(!t) return;
+  t.status = "waiting"; t.waitingOn = on || null; t.urgent = false;
+  t.lastPostponedAt = null;      /* you did the work. This is not a dodge */
+  unpin(); save(); closeSheet(); render();
+  say("waiting", { task:t, on:on });
+}
+function confirmWorked(t){
+  if(!t) return;
+  completeTask(t, 0);
+  render();
+  say("confirmed", { task:t });
+}
+function reopenTask(t){
+  if(!t) return;
+  t.status = "open"; t.reopened = (t.reopened||0) + 1;
+  t.waitingOn = null; t.lastPostponedAt = null; t.postponedToday = 0;
+  unpin(); save(); render();
+  say("reopened", { task:t });
+}
+/* ---------- no longer needed ----------
+   Circumstances changed and the job evaporated. That is neither a completion
+   nor a deletion: you shouldn't have to pretend you did it, or lose the fact
+   that it ever existed. */
+function cancelTask(t){
+  if(!t) return;
+  t.status = "cancelled"; t.cancelledAt = Date.now(); t.urgent = false;
+  t.lastPostponedAt = null;
+  unpin(); save(); closeSheet(); render();
+  say("cancelled", { task:t }, function(){
+    t.status = "open"; t.cancelledAt = null; save(); render();
+  });
+}
+/* ---------- before you walk away from something unresolved ----------
+   Stopping is often right, but the thing you were fighting with is sometimes
+   still doing damage while it sits there. A broken form is still on the
+   website. This is the small job between "I'm stopping" and "I've stopped". */
+function sheetBeforeLeaving(id){
+  var t = byId(id);
+  return ''+
+  '<div class="sheet-head"><h2 class="sec">Anything needed before you leave it?</h2>'+
+    '<button class="icon-btn" data-act="close-sheet" aria-label="Close">✕</button></div>'+
+  '<p class="hint">'+esc(t ? t.name : "")+' stays parked either way. This is about the damage it does meanwhile.</p>'+
+  '<div class="stack" style="margin-top:12px">'+
+    '<button class="btn go wide" data-act="mitigate" data-kind="safe" data-id="'+esc(id)+'">Make it safe first</button>'+
+    '<button class="btn wide" data-act="mitigate" data-kind="around" data-id="'+esc(id)+'">Add a workaround</button>'+
+    '<button class="btn wide" data-act="mitigate" data-kind="follow" data-id="'+esc(id)+'">Add a follow-up for later</button>'+
+    '<button class="btn wide" data-act="close-sheet">No — just park it</button>'+
+  '</div>';
+}
+var MITIGATIONS = {
+  safe:   { prefix:"Make safe: ",   type:"Admin",  mins:10, urgent:true,
+            note:"Right. Do that bit now and the problem can wait." },
+  around: { prefix:"Work around: ", type:"Admin",  mins:15, urgent:true,
+            note:"Good. Deal with the symptom now, leave the problem parked." },
+  follow: { prefix:"Follow up: ",   type:"Admin",  mins:15, urgent:false,
+            note:"Filed for later. The original stays parked." }
+};
+function mitigate(t, kind){
+  var m = MITIGATIONS[kind] || MITIGATIONS.around;
+  closeSheet();
+  openCapture({ text: m.prefix + t.name, planet: planetOf(t), type: m.type,
+                duration: m.mins, urgent: m.urgent,
+                after: kind === "follow" ? "snooze" : null, note: m.note });
+}
 function sheetWhereNeeded(id){
   var t = byId(id);
   return ''+
@@ -3534,7 +3964,17 @@ function applyWhyNot(t, rid){
     t.postponedToday++; t.avoidCount = (t.avoidCount||0) + 1;
     S.session.lightUntil = Date.now() + 45*60000;      /* keep the heavy stuff away for a bit */
     unpin(); save(); renderNow(true); moonArrive();
-    toast(t.avoidCount === 1 ? voice("dodge1")[0] : (t.avoidCount === 2 ? voice("dodge2")[0] : voice("dodge3")[0]));
+    say("dodge", { task:t });
+    return;
+  }
+  if(r.kind === "waiting"){
+    unpin(); save();
+    Orb.moonAway = true;
+    openSheet(sheetWaitingOn(t.id));
+    return;
+  }
+  if(r.kind === "cancel"){
+    cancelTask(t);
     return;
   }
   if(r.kind === "snooze"){
@@ -3654,6 +4094,12 @@ function sheetEdit(id){
     '<div class="inline" id="ed-date-row" style="'+((t.due && t.due !== todayKey() && t.due !== dateFromToday(1)) ? "" : "display:none")+';margin-top:8px">'+
       '<input type="date" id="ed-date" value="'+esc(t.due||todayKey())+'"></div></div>'+
   '<div class="field"><label>Importance</label>'+sliderHTML("ed-pri", PRI_STEPS, t.priority)+'</div>'+
+  /* Urgency isn't a louder kind of importance. It's a different claim: not
+     "this matters" but "do this next", and it only holds until you have. */
+  '<div class="field"><label>Do it next</label><div class="choices">'+
+    '<button class="choice" data-eurg="1" aria-pressed="'+(!!t.urgent)+'">Urgent — next up</button>'+
+    '<button class="choice" data-eurg="0" aria-pressed="'+(!t.urgent)+'">Take its turn</button>'+
+  '</div><p class="hint">Urgent jumps the queue once, then goes back to normal.</p></div>'+
   '<div class="field"><label>Mental load</label>'+sliderHTML("ed-eff", EFF_STEPS, t.effort)+'</div>'+
   '<div class="field"><label>Kind of work</label><div class="choices">'+
     TYPES.map(function(x){ return '<button class="choice" data-etype="'+esc(x)+'" aria-pressed="'+(t.type===x)+'">'+esc(x)+'</button>'; }).join("")+
@@ -3669,6 +4115,14 @@ function sheetEdit(id){
     '<input type="time" id="ed-start" value="'+esc(t.fixedStart||"")+'"><span class="hint">to</span>'+
     '<input type="time" id="ed-end" value="'+esc(t.fixedEnd||"")+'"></div>'+
     '<p class="hint">Leave blank for "whenever it fits".</p></div>'+
+  /* Something that starts at 11:30 and takes ten minutes to set up really
+     starts at 11:20. Optional — most things need none. */
+  '<div class="field" id="ed-prep-row" style="'+(t.fixedStart ? "" : "display:none")+'"><label>Time to get ready first</label>'+
+    '<div class="choices">'+ PREP_CHOICES.map(function(pv){
+      return '<button class="choice" data-eprep="'+pv+'" aria-pressed="'+((t.prepMins||0)===pv)+'">'+(pv?pv+"m":"None")+'</button>';
+    }).join("")+'</div>'+
+    '<p class="hint">Nothing unrelated will be started inside this window.</p></div>'+
+  '<button class="btn wide" data-act="cancel-task" data-id="'+id+'">No longer needed</button>'+
   '<div class="btn-row">'+
     '<button class="btn danger" data-act="delete-task" data-id="'+id+'">Delete</button>'+
     '<button class="btn go" data-act="save-edit" data-id="'+id+'">Save</button>'+
@@ -3723,6 +4177,20 @@ function openEditSheet(id){
         save();
       });
     });
+    r.querySelectorAll("[data-eurg]").forEach(function(b){
+      b.addEventListener("click", function(){
+        t.urgent = b.dataset.eurg === "1";
+        r.querySelectorAll("[data-eurg]").forEach(function(x){ x.setAttribute("aria-pressed", String((x.dataset.eurg === "1") === !!t.urgent)); });
+        save();
+      });
+    });
+    r.querySelectorAll("[data-eprep]").forEach(function(b){
+      b.addEventListener("click", function(){
+        t.prepMins = +b.dataset.eprep;
+        r.querySelectorAll("[data-eprep]").forEach(function(x){ x.setAttribute("aria-pressed", String(+x.dataset.eprep === t.prepMins)); });
+        save();
+      });
+    });
     r.querySelectorAll("[data-eloc]").forEach(function(b){
       b.addEventListener("click", function(){
         var id2 = b.dataset.eloc;
@@ -3773,7 +4241,8 @@ function commitTo(mins){
   S.focus = { taskId:t.id, startedAt:Date.now(), plannedMin:mins, addedMin:0,
               extensions:0, paused:false, pausedAt:null, rang:false, committed:true };
   save(); closeSheet(); renderNow(true); startTicker();
-  toast(voice(again ? "commitAgain" : "commitOn", { mins:mins })[0]);
+  toast(again ? "Another "+mins+". Deliberate, not drifting."
+              : "Right — that's a proper job. "+mins+" minutes to a finish or a safe stop.");
 }
 
 function bindAddLocation(){
@@ -3926,6 +4395,11 @@ function rowHTML(t){
     meta += isCooling(t) ? '<span class="mini">next in '+coolMins(t)+'m</span>' : '<span class="mini hot">due now</span>';
     if(t.checkCount) meta += '<span class="mini good">checked '+t.checkCount+'×</span>';
   }
+  if(t.urgent && t.status === "open") meta += '<span class="mini hot">Do next</span>';
+  if(t.prepMins) meta += '<span class="mini">'+t.prepMins+'m to get ready</span>';
+  if(isWaiting(t)) meta += '<span class="mini cool">waiting'+(t.waitingOn ? " on "+esc(t.waitingOn) : "")+'</span>';
+  if(t.reopened) meta += '<span class="mini">reopened '+t.reopened+'×</span>';
+  if(isCancelled(t)) meta += '<span class="mini">no longer needed</span>';
   if(isAsleep(t)) meta += '<span class="mini cool">back '+esc(wakeLabel(t))+'</span>';
   else if(justWoke(t)) meta += '<span class="mini hot">you asked for this now</span>';
   if(isCommitted(t)) meta += '<span class="mini hot">Committed</span>';
@@ -3942,11 +4416,16 @@ function rowHTML(t){
   if(t.status === "done" && t.actualMinutes) meta += '<span class="mini good">'+t.actualMinutes+'m actual</span>';
   var actions = (t.status === "done"
     ? '<button class="icon-btn" data-act="undone" data-id="'+t.id+'" aria-label="Reopen">↩</button>'
-    : (t.status === "blocked"
-      ? '<button class="icon-btn" data-act="unblock" data-id="'+t.id+'" aria-label="Unblock">↺</button>'
-      : (isAsleep(t)
-        ? '<button class="icon-btn" data-act="wake-now" data-id="'+t.id+'" aria-label="Wake it now">⏰</button>'
-        : '<button class="icon-btn" data-act="complete" data-id="'+t.id+'" aria-label="Mark done">✓</button>')))
+    : (t.status === "cancelled"
+      ? '<button class="icon-btn" data-act="uncancel" data-id="'+t.id+'" aria-label="Put it back">↩</button>'
+      : (isWaiting(t)
+        ? '<button class="icon-btn" data-act="waiting-worked" data-id="'+t.id+'" aria-label="It worked">✓</button>'+
+          '<button class="icon-btn" data-act="waiting-reopen" data-id="'+t.id+'" aria-label="Still not right">↺</button>'
+      : (t.status === "blocked"
+        ? '<button class="icon-btn" data-act="unblock" data-id="'+t.id+'" aria-label="Unblock">↺</button>'
+        : (isAsleep(t)
+          ? '<button class="icon-btn" data-act="wake-now" data-id="'+t.id+'" aria-label="Wake it now">⏰</button>'
+          : '<button class="icon-btn" data-act="complete" data-id="'+t.id+'" aria-label="Mark done">✓</button>')))))
     + '<button class="icon-btn" data-act="edit" data-id="'+t.id+'" aria-label="Edit">⋯</button>';
   return '<div class="row'+(t.status==="done"?" done":"")+'"><div class="row-main">'+
     '<div class="row-title">'+esc(t.name)+'</div><div class="row-meta">'+meta+'</div></div>'+
@@ -3976,6 +4455,8 @@ function renderList(){
   var bucket = function(arr, label){
     var asleep = arr.filter(isAsleep);
     arr = arr.filter(function(t){ return !isAsleep(t); });
+    var next = arr.filter(isUrgent);
+    arr = arr.filter(function(t){ return !isUrgent(t); });
     var timed = arr.filter(function(t){ return !!t.fixedStart; });
     var loops = arr.filter(function(t){ return !t.fixedStart && isRecurring(t); });
     var rest = arr.filter(function(t){ return !t.fixedStart && !isRecurring(t); });
@@ -3984,7 +4465,8 @@ function renderList(){
     var norm = rest.filter(function(t){ return !isDueToday(t) && t.priority === "normal"; });
     var opt  = rest.filter(function(t){ return !isDueToday(t) && t.priority === "optional"; });
     var pre = label ? label+" · " : "";
-    return group(pre+"In the diary", timed) + group(pre+"Check-ins", loops) + group(pre+"Due today", due) +
+    return group(pre+"Do next", next) +
+           group(pre+"In the diary", timed) + group(pre+"Check-ins", loops) + group(pre+"Due today", due) +
            group(pre+"Important", imp) + group(pre+"Everything else", norm) + group(pre+"Optional", opt) +
            group(pre+"Coming back later", asleep);
   };
@@ -3993,8 +4475,10 @@ function renderList(){
     var mine = open.filter(function(t){ return planetOf(t) === p.id; });
     if(mine.length) html += bucket(mine, p.label);
   });
-  html += group("Blocked", scope.filter(function(t){ return t.status === "blocked"; })) +
-          group("Completed", doneScope);
+  html += group("Waiting to hear", scope.filter(isWaiting)) +
+          group("Blocked", scope.filter(function(t){ return t.status === "blocked"; })) +
+          group("Completed", doneScope) +
+          group("No longer needed", scope.filter(isCancelled));
   document.getElementById("listRoot").innerHTML = html + '</div>';
 }
 function renderDone(){
@@ -4037,9 +4521,11 @@ function perTaskHTML(){
     rows.map(function(t){
       var est = t.originalEstimate || t.duration;
       var state = t.status === "done" ? '<span class="mini good">Done</span>'
+                : (t.status === "waiting" ? '<span class="mini cool">Waiting to hear</span>'
+                : (t.status === "cancelled" ? '<span class="mini">No longer needed</span>'
                 : (t.status === "blocked" ? '<span class="mini">Blocked</span>'
                 : (isRecurring(t) ? '<span class="mini cool">'+(t.checkCount||0)+' check-in'+((t.checkCount||0)===1?'':'s')+'</span>'
-                : '<span class="mini">'+(timeLeftOn(t) > 0 ? fmtDur(timeLeftOn(t))+' left' : 'over estimate')+'</span>'));
+                : '<span class="mini">'+(timeLeftOn(t) > 0 ? fmtDur(timeLeftOn(t))+' left' : 'over estimate')+'</span>'))));
       var over = !isRecurring(t) && t.actualMinutes > est;
       return '<div class="tt-row">'+
         '<div class="tt-top"><span class="tt-name">'+(t.status==="done"?"✓ ":"")+esc(t.name)+'</span>'+
@@ -4074,7 +4560,6 @@ function runsHTML(){
 }
 function renderYou(){
   var p = S.profile, st = S.settings;
-  var tn = function(v,l){ return '<button class="choice grow" data-tone="'+v+'" aria-pressed="'+(p.tone===v)+'">'+l+'</button>'; };
   /* A colour per world. Enter it and the whole app — sphere, tints, paper —
      wears that colour, so you know which part of your life you're in without
      reading a word. */
@@ -4108,7 +4593,8 @@ function renderYou(){
   '<div class="stack" style="gap:20px">'+
     '<div class="stack" style="gap:6px"><p class="eyebrow left">Setup</p><h1 class="big" style="font-size:clamp(1.7rem,7vw,2.2rem)">Set and forget</h1></div>'+
     '<div class="field"><label>Your name</label><input type="text" id="yo-name" placeholder="Mark" value="'+esc(p.name)+'"></div>'+
-    '<div class="field"><label>How blunt should I be?</label><div class="choices">'+tn("gentle","Gentle")+tn("normal","Normal")+tn("ruthless","Ruthless")+'</div></div>'+
+    /* There is one ONE. How blunt it is depends on what you've actually done,
+       not on a slider you set in a good mood three weeks ago. */
     '<hr class="divider">'+
     '<div class="field"><label>Working until</label><input type="time" id="yo-until" value="'+esc(st.workUntil)+'"></div>'+
     '<div class="field"><label>Lunch</label><div class="choices">'+
@@ -4164,7 +4650,6 @@ function renderYou(){
       toast(l.label+" is "+hueName(l.hue).toLowerCase()+" now.");
     });
   });
-  root.querySelectorAll("[data-tone]").forEach(function(b){ b.addEventListener("click", function(){ S.profile.tone = b.dataset.tone; save(); renderYou(); }); });
   root.querySelectorAll("[data-lunchreq]").forEach(function(b){ b.addEventListener("click", function(){ S.settings.lunchRequired = b.dataset.lunchreq === "1"; save(); renderYou(); renderChips(); }); });
   root.querySelectorAll("[data-warn]").forEach(function(b){ b.addEventListener("click", function(){ S.settings.warnMinutes = +b.dataset.warn; save(); renderYou(); }); });
   root.querySelectorAll("[data-chime]").forEach(function(b){ b.addEventListener("click", function(){ S.settings.chime = b.dataset.chime === "1"; save(); renderYou(); if(S.settings.chime) chime(); }); });
@@ -4225,9 +4710,11 @@ function releaseNags(){
 function completeTask(t, mins){
   unpin();
   releaseNags();
-  t.status = "done"; t.completedAt = Date.now();
+  var wasUrgent = !!t.urgent;
+  t.status = "done"; t.completedAt = Date.now(); t.urgent = false; t.wasUrgent = wasUrgent;
   t.actualMinutes = (t.actualMinutes || 0) + (mins || 0);
-  S.log.push({ date:todayKey(), taskId:t.id, name:t.name, type:t.type, minutes:mins || 0, at:t.completedAt, kind:"done" });
+  S.log.push({ date:todayKey(), taskId:t.id, name:t.name, type:t.type, minutes:mins || 0, at:t.completedAt,
+               kind:"done", urgent:wasUrgent });
   save();
 }
 document.addEventListener("click", function(e){
@@ -4253,6 +4740,34 @@ document.addEventListener("click", function(e){
       Orb.moonAway = false; snoozeTask(t, when);
     } break;
     case "wake-now": if(t){ t.wakeAt = null; t.woke = false; save(); render(); toast(t.name+" is back in play."); } break;
+    case "waiting-set": if(t){
+      var wo = document.getElementById("wo-what");
+      Orb.moonAway = false;
+      setWaiting(t, b.dataset.skip ? null : (wo && wo.value.trim()));
+    } break;
+    case "finish-time": openSheet(sheetFinishTime()); break;
+    case "finish-nudge": setFinish(hhmmToMins(S.settings.workUntil) + (+b.dataset.min)); closeSheet(); break;
+    case "finish-set": {
+      var fi = document.getElementById("ft-at");
+      if(!fi || !fi.value){ toast("Pick a time first."); break; }
+      setFinish(hhmmToMins(fi.value)); closeSheet(); break;
+    }
+    case "finish-now": {
+      S.session.workFinished = true; unpin(); save(); closeSheet(); render();
+      say("finishNow", {});
+      break;
+    }
+    case "mitigate": if(t) mitigate(t, b.dataset.kind); break;
+    case "waiting-worked": if(t) confirmWorked(t); break;
+    case "waiting-reopen": if(t) reopenTask(t); break;
+    case "cancel-task": if(t){ closeSheet(); cancelTask(t); } break;
+    case "uncancel": if(t){ t.status = "open"; t.cancelledAt = null; save(); render(); toast(t.name+" is back on the list."); } break;
+    case "tu-waiting": if(S.focus){
+      var wt = byId(S.focus.taskId), wm = endFocus();
+      if(wt){ wt.actualMinutes = (wt.actualMinutes||0) + wm; }
+      stopTicker(); closeSheet();
+      if(wt){ Orb.moonAway = false; openSheet(sheetWaitingOn(wt.id)); } else render();
+    } break;
     case "needplace": {
       var np = b.dataset.needplace;
       if(t){
@@ -4291,6 +4806,7 @@ document.addEventListener("click", function(e){
         t.fixedStart = (s1 && s1.value) ? s1.value : null;
         t.fixedEnd = (e1 && e1.value) ? e1.value : null;
         if(t.fixedStart && t.fixedEnd && hhmmToMins(t.fixedEnd) > hhmmToMins(t.fixedStart)) t.duration = hhmmToMins(t.fixedEnd) - hhmmToMins(t.fixedStart);
+        if(!t.fixedStart) t.prepMins = 0;      /* nothing to get ready for */
         save();
       }
       closeSheet(); render(); toast("Updated.");
@@ -4334,7 +4850,7 @@ document.addEventListener("click", function(e){
         releaseNags();
       }
       unpin(); closeSheet(); save(); renderNow(true);
-      toast(voice("safestop")[0]);
+      say("safestop", { task:byId(S.focus && S.focus.taskId) });
       break;
     }
     case "commit-rabbit": openSheet(sheetCommitRabbit()); break;
@@ -4355,7 +4871,8 @@ document.addEventListener("click", function(e){
         rt2.lastPostponedAt = Date.now();
       }
       unpin(); closeSheet(); save(); renderNow(true);
-      toast(voice("rabbit")[0]);
+      say("safestop", { task:rt2 });
+      if(rt2) setTimeout(function(){ openSheet(sheetBeforeLeaving(rt2.id)); }, 700);
       break;
     }
     case "tu-rabbit": {
@@ -4365,7 +4882,8 @@ document.addEventListener("click", function(e){
         recordRun(rt, "rabbit"); rt.commit = null;
         rt.lastPostponedAt = Date.now();
       }
-      closeSheet(); save(); renderNow(true); toast(voice("rabbit")[0]);
+      closeSheet(); save(); renderNow(true); say("rabbit", { task:rt });
+      if(rt) setTimeout(function(){ openSheet(sheetBeforeLeaving(rt.id)); }, 700);
       break;
     }
     case "extend": {
@@ -4374,7 +4892,8 @@ document.addEventListener("click", function(e){
       ef.addedMin += add; ef.extensions++; ef.rang = false;
       var xt = byId(ef.taskId); if(xt) xt.extensions = (xt.extensions||0) + 1;
       save(); closeSheet(); renderNow(true);
-      toast(ef.extensions === 1 ? voice("ext1",{add:add})[0] : voice("extN",{plan:ef.plannedMin,total:fmtDur(ef.plannedMin+ef.addedMin)})[0]);
+      say("extend", { task:byId(ef.taskId), add:add, extensions:ef.extensions,
+                      plan:ef.plannedMin, total:fmtDur(ef.plannedMin+ef.addedMin) });
       break;
     }
     case "finish-work": S.session.workFinished = true; save(); render(); toast(transitTasks().length ? "Work's done. Check the pickup list." : "Work's done. Leave it there."); break;
@@ -4561,7 +5080,7 @@ if(!S.profile.sawGestures && S.session.started) showGestures();
    app out from under a running timer. */
 (function () {
   if (!('serviceWorker' in navigator) || location.protocol !== 'https:') return;
-  var BUILD = '20260902-1525-2e0d3d';
+  var BUILD = '20260902-1559-542bdc';
   window.addEventListener('load', function () {
     navigator.serviceWorker.register('sw.js?v=' + BUILD).then(function (reg) {
       function watch(sw) {
