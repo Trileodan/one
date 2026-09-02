@@ -23,10 +23,16 @@ inside a world, nothing from any other world exists** — no counts, no badges,
 no "up next" from the kitchen. Pull the sphere down against its own weight and
 let go, and it catapults back into orbit.
 
-On the sphere: **swipe up** to finish, **left** for not right now (it asks why,
-and treats a bad time differently from not fancying it), **right** to throw
-something new in without losing your place, **down** to leave. Tap to start the
-clock, hold to pick a different task from *this* world.
+The one thing you're doing hangs in front of that world as its **moon** —
+eclipsing it, the way it would look from the sun. A flag is planted on it if the
+job is overdue (red), due today (orange) or important (gold).
+
+Handle the moon, not the world: **push it up** to finish and the next moon swings
+in from below, **left** for not right now (it asks why, and treats a bad time
+differently from not fancying it), **right** to throw something new in without
+losing your place. **Pull down** and you get the whole world — planet and moon —
+and letting go catapults it back into orbit. Tap to start the clock; press and
+hold and this world's tasks come round on a rolodex of moons.
 
 Adding a task needs one thing: what it is. ONE reads the sentence — *"Call
 Harrogate today 20m"*, *"Team meeting tomorrow 11am 1h"* — guesses the length
