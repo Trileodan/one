@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="ONE">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="one-build" content="20260901-0922-fb8837">
+<meta name="one-build" content="20260902-0953-8c53fd">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png" sizes="192x192">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -260,24 +260,97 @@ h2.sec{font-family:var(--display);font-variation-settings:'wdth' 88,'wght' 700;f
 .swipe-hint.u{top:4px;left:50%;transform:translateX(-50%);color:var(--cool)}
 .swipe-hint.d{bottom:4px;left:50%;transform:translateX(-50%)}
 
-/* the dial rides the sphere itself, like a safe or a thermostat: the live
-   location sits at 12 o'clock, its neighbours fade away at 10 and 2 */
-.orb-dial{position:absolute;inset:0;z-index:4;pointer-events:none}
-.loc{
-  position:absolute;left:50%;top:50%;
-  font-family:var(--display);font-variation-settings:'wdth' 82,'wght' 800;
-  font-size:12px;letter-spacing:.13em;text-transform:uppercase;
-  color:hsl(var(--orb-h) 92% 12%);white-space:nowrap;max-width:52%;overflow:hidden;text-overflow:ellipsis;
-  padding:3px 6px;border:0;background:transparent;cursor:pointer;pointer-events:auto;
-  will-change:transform,opacity;transform-origin:50% 50%;
+/* ---------- the solar system ----------
+   Your life as separate worlds. Static positions, slow individual drift: it
+   should feel like somewhere, not like a screensaver. */
+.sys{
+  position:relative;width:min(94vw,440px);aspect-ratio:1;margin:0 auto;
+  transition:transform .38s cubic-bezier(.4,0,.2,1), opacity .38s ease;
 }
-.orb.cool .loc{color:#111436}
-.loc.sel{font-variation-settings:'wdth' 86,'wght' 900}
-.dial-mark{
-  position:absolute;left:50%;top:3.2%;width:2px;height:11px;margin-left:-1px;border-radius:2px;
-  background:hsl(var(--orb-h) 92% 12%);opacity:.5;z-index:5;pointer-events:none;
+.sys.leaving{transform:scale(1.6);opacity:0}
+.orbit{
+  position:absolute;left:50%;top:50%;border-radius:50%;pointer-events:none;
+  border:1px solid var(--line-2);transform:translate(-50%,-50%);
 }
-.orb.cool .dial-mark{background:#111436}
+.orbit.o1{width:66%;height:62%}
+.orbit.o2{width:92%;height:88%;border-style:dashed;opacity:.6}
+.body{
+  position:absolute;transform:translate(-50%,-50%);
+  appearance:none;background:none;border:0;padding:0;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:7px;
+  width:var(--sz);transition:transform .38s cubic-bezier(.4,0,.2,1), opacity .3s ease;
+  animation:bodydrift var(--drift,11s) ease-in-out infinite;
+}
+@keyframes bodydrift{0%,100%{margin-top:-4px}50%{margin-top:5px}}
+.body:active{filter:brightness(1.08)}
+.body .body-orb{
+  position:relative;width:100%;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;
+  background:radial-gradient(circle at 34% 26%,
+    hsl(calc(var(--orb-h) + 10) 100% 84%) 0%,
+    hsl(var(--orb-h) 96% 60%) 34%,
+    hsl(var(--orb-h) 88% 46%) 64%,
+    hsl(calc(var(--orb-h) - 6) 96% 24%) 100%);
+  box-shadow:0 14px 34px -14px hsl(var(--orb-h) 96% 50% / .5),
+             0 2px 1px rgba(255,255,255,.28) inset,
+             0 -14px 26px -14px hsl(var(--orb-h) 96% 14% / .85) inset;
+}
+.body .body-name{
+  font-family:var(--display);font-variation-settings:'wdth' 84,'wght' 800;
+  font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2);white-space:nowrap;
+}
+.sys .body.chosen{transform:translate(-50%,-50%) translate(var(--dx,0),var(--dy,0)) scale(3.4);opacity:.9;z-index:5}
+.sys.leaving .body:not(.chosen){opacity:0;transform:translate(-50%,-50%) scale(.7)}
+/* the sun is today, not a category: what you have done, not what is left */
+.body.sun .body-orb{
+  background:radial-gradient(circle at 40% 34%, #FFF6E2 0%, #FFD98A 26%, #FFA92E 58%, #E2760A 84%, #A63F02 100%);
+  box-shadow:0 0 44px 6px rgba(255,169,46,.32), 0 2px 2px rgba(255,255,255,.4) inset;
+  animation:sunpulse 7s ease-in-out infinite;flex-direction:column;gap:0;
+}
+@keyframes sunpulse{0%,100%{box-shadow:0 0 40px 4px rgba(255,169,46,.26), 0 2px 2px rgba(255,255,255,.4) inset}
+                    50%{box-shadow:0 0 62px 10px rgba(255,169,46,.4), 0 2px 2px rgba(255,255,255,.4) inset}}
+.sun-num{font-family:var(--display);font-variation-settings:'wdth' 80,'wght' 900;font-size:clamp(1.7rem,8vw,2.4rem);
+  line-height:.9;color:#5B2600;font-variant-numeric:tabular-nums}
+.sun-sub{font-family:var(--mono);font-size:8.5px;letter-spacing:.18em;text-transform:uppercase;color:#7A3703}
+/* errands travel: a comet, not a place you live */
+.body.comet .body-orb{border-radius:50%}
+.comet-tail{
+  position:absolute;left:46%;top:50%;width:165%;height:32%;transform:translateY(-50%) rotate(-14deg);
+  border-radius:50%;pointer-events:none;z-index:-1;
+  background:linear-gradient(90deg, hsl(var(--orb-h) 96% 62% / .5), hsl(var(--orb-h) 96% 62% / 0) 70%);
+  filter:blur(5px);
+}
+/* projects are chosen, not owed: a little belt of your own things */
+.body.belt .body-orb{background:none;box-shadow:none;position:relative}
+.belt-rock{
+  position:absolute;border-radius:50%;
+  background:radial-gradient(circle at 34% 30%, hsl(calc(var(--orb-h) + 12) 96% 76%), hsl(var(--orb-h) 92% 40%) 70%, hsl(var(--orb-h) 96% 22%));
+  box-shadow:0 6px 16px -8px hsl(var(--orb-h) 96% 46% / .7);
+}
+.belt-rock.r1{width:52%;height:52%;left:2%;top:26%}
+.belt-rock.r2{width:38%;height:38%;left:52%;top:6%}
+.belt-rock.r3{width:30%;height:30%;left:62%;top:60%}
+/* leaving a world: it launches away and the system comes back */
+.orb-stage.launch{transition:transform .34s cubic-bezier(.5,0,.9,.4), opacity .34s ease;transform:translateY(-62vh) scale(.34);opacity:0}
+.pull{transition:none}
+.place-row{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-top:2px}
+.place-chip{
+  appearance:none;cursor:pointer;border-radius:99px;border:1px solid var(--line);background:var(--surface);
+  color:var(--muted);padding:7px 13px;min-height:38px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;
+}
+.place-chip[aria-pressed="true"]{color:var(--ink);border-color:color-mix(in srgb,var(--hi) 50%,transparent);background:var(--hi-soft)}
+
+/* quick capture: one field and a row of optional afterthoughts */
+.qc-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:-6px}
+.qc-chip{
+  appearance:none;cursor:pointer;border-radius:99px;border:1px solid var(--line);background:var(--surface);
+  color:var(--ink-2);padding:9px 15px;min-height:42px;font-weight:650;font-size:13.5px;
+  transition:border-color .14s ease,color .14s ease,background .14s ease;
+}
+.qc-chip[aria-pressed="true"]{color:var(--hi);border-color:color-mix(in srgb,var(--hi) 55%,transparent);background:var(--hi-soft)}
+.qc-chip.ghost{color:var(--muted);border-style:dashed}
+.qc-drawer{display:flex;flex-direction:column;gap:8px;margin-top:-8px}
+.qc-drawer[hidden]{display:none}
 
 .committed-note{
   margin:14px auto 0;max-width:34ch;text-align:center;
@@ -287,6 +360,9 @@ h2.sec{font-family:var(--display);font-variation-settings:'wdth' 88,'wght' 700;f
 }
 .committed-note b{font-family:var(--display);font-variation-settings:'wdth' 90,'wght' 800;font-size:14px;letter-spacing:.02em;color:var(--hi)}
 .committed-note span{font-size:13.5px;color:var(--ink-2);line-height:1.35}
+/* the orb showing its working: one sentence, never a paragraph */
+.why{text-align:center;max-width:32ch;margin:10px auto 2px;font-size:13.5px;line-height:1.4;color:var(--muted)}
+.why b{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--hi);margin-right:6px}
 .runway{text-align:center;font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);margin:2px 0 0}
 .dayline{text-align:center;font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:8px 0 0}
 
@@ -521,17 +597,29 @@ var HUE_NAMES = { 8:"Red", 22:"Orange", 45:"Amber", 95:"Green", 150:"Mint", 175:
                   195:"Sky", 215:"Blue", 260:"Violet", 285:"Purple", 320:"Magenta", 340:"Pink" };
 function hueName(h){ return HUE_NAMES[h] || ("Hue "+h); }
 
+/* The four worlds. A planet is a part of your life, not a building: you can be
+   in Work at the kitchen table. Where you physically are is separate metadata
+   (S.locations), and only decides whether a job is possible right now. */
+var DEFAULT_PLANETS = [
+  { id:"work",     label:"Work",     kind:"planet", hue:22  },
+  { id:"home",     label:"Home",     kind:"planet", hue:150 },
+  { id:"errands",  label:"Errands",  kind:"comet",  hue:195 },
+  { id:"projects", label:"Projects", kind:"belt",   hue:285 }
+];
+
 var DEFAULTS = {
-  version:4,
+  version:5,
   profile:{ name:"", tone:"normal", sawGestures:false },
   settings:{
     lunchDuration:45, lunchFrom:"12:00", lunchTo:"13:00", lunchRequired:true,
     workUntil:"17:30", defaultDuration:30, autoLocation:true, warnMinutes:10, chime:true
   },
+  planets: JSON.parse(JSON.stringify(DEFAULT_PLANETS)),
   locations: JSON.parse(JSON.stringify(DEFAULT_LOCATIONS)),
   schedule: JSON.parse(JSON.stringify(DEFAULT_SCHEDULE)),
   session:{
     date:null, started:false, motivation:"meh", location:"work", lastPlace:"work", segIndex:-1,
+    planet:null, enteredAt:null, sessionDone:false, keepGoing:false, lightUntil:0,
     lunchState:"pending", lunchEndsAt:null, workFinished:false, dayClosed:false, briefed:false, spun:false
   },
   tasks:[], focus:null, history:[],
@@ -599,8 +687,41 @@ var S = load() || JSON.parse(JSON.stringify(DEFAULTS));
       t.type = "Planning";
       if(t.effort === "normal") t.effort = "deep";
     }
+
+    /* ---- v5: planets, deadlines, importance ----
+       Every task gains the part of life that owns it. Being out and about was
+       a place; now it's a world of its own, so those tasks emigrate and stop
+       carrying a physical requirement they no longer need. */
+    if(!t.planet){
+      if(t.locations && t.locations.some(isTransit)) t.planet = "errands";
+      else if(t.type === "Personal Project") t.planet = "projects";
+      else if(t.category === "Personal") t.planet = "home";
+      else t.planet = "work";
+    }
+    if(!planetById(t.planet)) t.planet = "work";
+    if(t.planet === "errands"){ t.locations = ["anywhere"]; }
+    else if(Array.isArray(t.locations)){
+      var kept = t.locations.filter(function(x){ return x === "anywhere" || (locById(x) && !isTransit(x)); });
+      t.locations = kept.length ? kept : ["anywhere"];
+    }
+    t.category = t.planet === "work" ? "Work" : "Personal";
+
+    /* "Must do today" was importance and urgency wearing one coat. Split them:
+       the urgency becomes a real deadline, the importance stays importance. */
+    if(!("due" in t)) t.due = null;
+    if(t.priority === "must"){ t.priority = "important"; if(!t.due) t.due = todayKey(); }
+    if(["optional","normal","important"].indexOf(t.priority) < 0) t.priority = "normal";
+    if(!("estimated" in t)) t.estimated = false;
+    if(!("avoidCount" in t)) t.avoidCount = 0;
+    if(!("needsPlace" in t)) t.needsPlace = null;
   });
-  S.version = 4;
+  if(!Array.isArray(S.planets) || !S.planets.length) S.planets = JSON.parse(JSON.stringify(DEFAULT_PLANETS));
+  DEFAULT_PLANETS.forEach(function(p){
+    if(!planetById(p.id)) S.planets.push(JSON.parse(JSON.stringify(p)));
+  });
+  S.planets.forEach(function(p){ if(typeof p.hue !== "number") p.hue = 215; });
+  if(S.session.planet && !planetById(S.session.planet)) S.session.planet = null;
+  S.version = 5;
 })();
 
 (function rollover(){
@@ -653,7 +774,6 @@ function locLabel(id){ if(id === "anywhere") return "Anywhere"; var l = locById(
 function locHue(id){ var l = locById(id); return l ? l.hue : 215; }
 function places(){ return S.locations.filter(function(l){ return l.kind === "place"; }); }
 function transitLocs(){ return S.locations.filter(function(l){ return l.kind === "transit"; }); }
-function locIndex(id){ for(var i=0;i<S.locations.length;i++) if(S.locations[i].id===id) return i; return 0; }
 function slug(s){
   var base = String(s).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || "place";
   var id = base, n = 2;
@@ -682,8 +802,38 @@ function applySchedule(){
   }
   return false;
 }
+/* ---------- planets: the part of life a task belongs to ---------- */
+function planetById(id){
+  if(!id || !Array.isArray(S.planets)) return null;
+  for(var i=0;i<S.planets.length;i++) if(S.planets[i].id === id) return S.planets[i];
+  return null;
+}
+function planetLabel(id){ var p = planetById(id); return p ? p.label : "Somewhere"; }
+function planetHue(id){ var p = planetById(id); return p ? p.hue : 22; }
+function inPlanet(){ return S.session.planet ? planetById(S.session.planet) : null; }
+function planetOf(t){ return t.planet || "work"; }
+/* every task in this world, whatever state it's in */
+function planetTasks(id){ return liveTasks().filter(function(t){ return planetOf(t) === id; }); }
+function planetOpen(id){ return planetTasks(id).filter(function(t){ return t.status === "open"; }); }
+function isErrandPlanet(id){ var p = planetById(id); return !!p && p.kind === "comet"; }
+
+/* ---------- deadlines ---------- */
+function isDueToday(t){ return !!t.due && t.due <= todayKey(); }
+function isOverdue(t){ return !!t.due && t.due < todayKey(); }
+function dueLabel(t){
+  if(!t.due) return "";
+  var k = todayKey();
+  if(t.due < k) return "Overdue";
+  if(t.due === k) return "Today";
+  var d = new Date(); d.setDate(d.getDate()+1);
+  if(t.due === todayKey(d)) return "Tomorrow";
+  var p = t.due.split("-");
+  return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][(+p[1])-1]+" "+(+p[2]);
+}
+function dateFromToday(n){ var d = new Date(); d.setDate(d.getDate()+n); return todayKey(d); }
+
 function applyHue(){
-  var h = locHue(S.session.location);
+  var h = S.session.planet ? planetHue(S.session.planet) : locHue(S.session.location);
   var r = document.documentElement.style;
   r.setProperty("--loc-h", String(h));
   r.setProperty("--orb-h", String(h));
@@ -692,15 +842,18 @@ function applyHue(){
 /* ============================================================
    4. VOCABULARY
    ============================================================ */
-var PRIORITY_ORDER = ["optional","normal","important","must"];
-var PRIORITY = { must:"Must do today", important:"Important", normal:"Normal", optional:"Optional" };
+/* Importance is how much it matters. When it's due is a separate question —
+   mixing the two is what made "must do today" mean three different things. */
+var PRIORITY_ORDER = ["optional","normal","important"];
+var PRIORITY = { important:"Important", normal:"Normal", optional:"Optional" };
+var WHEN_CHOICES = [{v:"none",l:"No deadline"},{v:"today",l:"Today"},{v:"tomorrow",l:"Tomorrow"},{v:"date",l:"Pick date"}];
 var EFFORT_ORDER = ["easy","normal","deep"];
 var EFFORT = { easy:"Easy win", normal:"Normal", deep:"Deep work" };
 /* "Deep Work" isn't a kind of work, it's how heavy the work is — and mental
    load already says that. One less near-duplicate to choose between. */
 var TYPES = ["Admin","Email","Physical","Planning","Creative","Errand","Meeting","Personal Project"];
 var BLOCK_REASONS = ["Waiting for someone","Need information","Need equipment/materials","Wrong location","Can't access it right now","Other"];
-var HOUSEHOLD = /\b(bin|bins|rubbish|recycling|washing|laundry|dishes|dishwasher|kitchen|tidy|hoover|vacuum|garage|ironing|beds?)\b/i;
+var HOUSEHOLD = /\b(bin|bins|rubbish|recycling|washing|laundry|dishes|dishwasher|kitchen|bathroom|bedroom|tidy|hoover|vacuum|garage|garden|lawn|ironing|beds?|curtains?|blinds?|shelf|shelves|rail|boiler|radiator|plumber|electrician|light ?bulb|lamp|fence|shed|loft|attic|cupboard|drawer|hallway|carpet|door|window|dinner|tea|cooking|meal ?plan|kids?|school run)\b/i;
 var ERRANDY = /\b(petrol|diesel|fuel|milk|bread|shop|shopping|groceries|chemist|pharmacy|post office|parcel|bank|collect|pick up|pickup|drop off|dry clean|car wash|cash)\b/i;
 
 /* ============================================================
@@ -724,7 +877,9 @@ var VOICE = {
     commitOn:[["Understood. {mins} minutes to see it through."]],
     commitAgain:[["Another {mins}. Take your time."]],
     safestop:[["Left somewhere sensible. That's the right call."]],
-    clear:[["Nothing waiting at {where}. Enjoy it."]],
+    clear:[["Nothing waiting in {where}. Enjoy it."]],
+    enter:[["{where} it is. Everything else can wait."]],
+    sessionDone:[["That's {where} done for now. You're allowed to stop."]],
     clearOut:[["Nothing to collect. Straight home."]],
     empty:[["Give me something to work with."]],
     nofit:[["Not enough runway. Have a breather."]],
@@ -756,6 +911,8 @@ var VOICE = {
     safestop:[["Left somewhere sensible. That's a proper decision, that."],
               ["Parked safe. It'll keep till you can do it properly."],
               ["Good call. Half a job done well beats a mess."]],
+    enter:[["{where}. Nothing else exists for a bit."],["Right — {where}. The rest of your life is on mute."],["Welcome to {where}. Mind the mess."]],
+    sessionDone:[["{where}'s done. Nothing left worth starting. Go and be a person."],["That's the useful stuff cleared. Stopping is the correct answer here."],["You've done {where}. Genuinely — leave it."]],
     clear:[["{where}'s clear. Genuinely nothing. Go and enjoy that."],
            ["Nothing waiting at {where}. Feels weird, doesn't it."],
            ["All done at {where}. Have a cup of tea about it."]],
@@ -779,6 +936,8 @@ var VOICE = {
     commitOn:[["{mins} minutes. You said it, now do it."]],
     commitAgain:[["{mins} more. That estimate had better be honest."]],
     safestop:[["Safe and stopped. Fine."]],
+    enter:[["{where}. Head down."],["{where} it is. No wandering off."]],
+    sessionDone:[["{where} is cleared. Take the win and stop."],["Nothing left worth starting. That's a finish, not a break."]],
     clear:[["{where} is clear. Don't get comfortable."],["Nothing left here. Find something or finish."]],
     clearOut:[["Nothing to collect. Go home."]],
     empty:[["An empty list isn't an achievement. Fill it."]],
@@ -799,18 +958,31 @@ function voice(key, vars){
    ============================================================ */
 function uid(){ return Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4); }
 function makeTask(o){
+  var planet = planetById(o.planet) ? o.planet : "work";
   return {
     id:uid(), name:(o.name||"Untitled").trim(),
-    category:o.category||"Work", priority:o.priority||"normal", effort:o.effort||"normal",
-    duration:o.duration||S.settings.defaultDuration,
-    locations:(o.locations && o.locations.length) ? o.locations.slice() : ["anywhere"],
+    planet:planet,
+    category: planet === "work" ? "Work" : "Personal",   /* kept in step with the planet, for the engine */
+    priority:o.priority||"normal", effort:o.effort||"normal",
+    due:o.due||null,
+    duration:o.duration||S.settings.defaultDuration, estimated:!!o.estimated,
+    locations: planet === "errands" ? ["anywhere"]
+             : ((o.locations && o.locations.length) ? o.locations.slice() : ["anywhere"]),
     type:o.type||"Admin",
     fixedStart:o.fixedStart||null, fixedEnd:o.fixedEnd||null, warned:false,
     unblocks:o.unblocks||null,
     repeatEvery:o.repeatEvery||0, nextDueAt:null, checkCount:0,
     status:"open", blockedReason:null, postponedToday:0, lastPostponedAt:null,
+    avoidCount:0, needsPlace:null,
     actualMinutes:0, createdAt:Date.now(), completedAt:null, archived:false
   };
+}
+/* moving a task between worlds keeps the derived bits honest */
+function setPlanet(t, id){
+  if(!planetById(id)) return;
+  t.planet = id;
+  t.category = id === "work" ? "Work" : "Personal";
+  if(id === "errands") t.locations = ["anywhere"];
 }
 function liveTasks(){ return S.tasks.filter(function(t){ return !t.archived; }); }
 function byId(id){ for(var i=0;i<S.tasks.length;i++) if(S.tasks[i].id===id) return S.tasks[i]; return null; }
@@ -820,8 +992,7 @@ function doneToday(){
   return S.tasks.filter(function(t){ return t.status==="done" && t.completedAt && todayKey(new Date(t.completedAt))===d; });
 }
 function transitTasks(){
-  var ids = transitLocs().map(function(l){ return l.id; });
-  return openTasks().filter(function(t){ return !t.fixedStart && !isCooling(t) && t.locations.some(function(l){ return ids.indexOf(l) > -1; }); });
+  return openTasks().filter(function(t){ return planetOf(t) === "errands" && !t.fixedStart && !isCooling(t); });
 }
 /* ============================================================
    COMMITTED TASKS
@@ -867,7 +1038,7 @@ function recordRun(t, outcome, extraMins){
 function isRecurring(t){ return !!(t.repeatEvery && t.repeatEvery > 0); }
 /* how long a dodged task stays out of the way */
 function dodgeRestMins(t){
-  if(t.priority === "must") return 12;
+  if(isDueToday(t)) return 12;
   if(t.priority === "important") return 20;
   if(t.priority === "optional") return 120;
   return 35;
@@ -966,9 +1137,13 @@ function departureImminent(){
 /* ============================================================
    8. SELECTION ENGINE
    ============================================================ */
+/* Can this actually be done from where your body is? Nothing to do with which
+   world it belongs to — a Work task can need the workplace, or nowhere at all. */
 function locationOK(t){
   var here = S.session.location;
-  if(isTransit(here)) return t.locations.indexOf(here) > -1;
+  if(planetOf(t) === "errands") return true;      /* errands live in their own world */
+  if(t.needsPlace && t.needsPlace !== here) return false;
+  if(isTransit(here)) return t.locations.indexOf("anywhere") > -1;
   return t.locations.indexOf("anywhere") > -1 || t.locations.indexOf(here) > -1;
 }
 function recentDone(n){
@@ -976,23 +1151,31 @@ function recentDone(n){
 }
 function scoreTask(t, ctx){
   var s = 0, why = [];
-  s += ({must:110, important:64, normal:32, optional:8})[t.priority];
+  s += ({ important:64, normal:32, optional:8 })[t.priority] || 32;
+
+  /* A deadline is urgency, importance is weight. Both count, separately. */
+  if(isOverdue(t)){ s += 130; why.push("This was due "+dueLabel(t).toLowerCase()+". It goes first."); }
+  else if(isDueToday(t)){ s += 96; why.push(t.priority === "important" ? "Important, and due today." : "Due today."); }
+  else if(t.due === dateFromToday(1)){ s += 26; }
+  if(t.priority === "important" && !t.due) why.push("You marked this one important.");
 
   if(ctx.transit){ s += Math.max(0, 40 - t.duration); return { score:s, why:why }; }
 
-  /* Work outranks personal during working hours — full stop. The single
-     exception: you've just done heavy lifting, there is no quick work job
-     going, and the personal one is a genuine easy win you can do here. */
-  if(ctx.workingHours && t.category === "Personal"){
-    var breather = ctx.heavy >= 2 && t.effort === "easy" && !ctx.workEasyWin;
-    if(breather){ s += 26; why.push("No quick work job going. Take the easy one as a breather."); }
-    else return { score:-999, why:[] };
-  }
+  /* You chose which world to be in. Inside it, nothing is second class — the
+     old work-beats-personal veto lived at this level and now lives one level
+     up, in which planet you decided to enter. */
+  if(ctx.heavy >= 2 && t.effort === "easy" && !ctx.workEasyWin) s += 6;
 
   /* check-ins are small wins that get louder the longer they're overdue */
   if(isRecurring(t)){
     s += 18 + Math.min(46, overdueMins(t) * 0.7);
     if(t.checkCount) why.push("Time for another look at this.");
+  }
+
+  /* you said your head wasn't in it — so nothing heavy for a while */
+  if(S.session.lightUntil && Date.now() < S.session.lightUntil){
+    if(t.effort === "deep"){ s -= 46; }
+    else if(t.effort === "easy"){ s += 24; why.push("Your head wasn't in the big stuff. Here's a small one."); }
   }
 
   var mot = S.session.motivation;
@@ -1023,7 +1206,7 @@ function scoreTask(t, ctx){
       /* three dodges and it goes to the front of the queue, whatever it is */
       s += 110 + (t.postponedToday - 3) * 12;
       why.push("Dodged "+t.postponedToday+" times. It's not going anywhere.");
-    } else if(t.priority === "must" || t.priority === "important"){
+    } else if(isDueToday(t) || t.priority === "important"){
       s += t.postponedToday * 26;
       why.push("That's "+(t.postponedToday===2?"twice":t.postponedToday+" times")+" you've dodged this now.");
     } else if(t.priority === "optional"){ s -= t.postponedToday * 30; }
@@ -1042,20 +1225,26 @@ function scoreTask(t, ctx){
     if(t.duration <= L.minsToOpen + 3){ s += 36; why.push(fmtDur(L.minsToOpen)+" before lunch. Knock out a quick one."); }
     else s -= (L.minsToOpen <= 30 ? 55 : 30);
   }
-  if(ctx.minsLeftOfDay < 90 && t.duration >= 60 && t.priority !== "must") s -= 24;
+  if(ctx.minsLeftOfDay < 90 && t.duration >= 60 && !isDueToday(t)) s -= 24;
   s += Math.min(10, (Date.now() - t.createdAt) / (1000*60*60) * 2);
   return { score:s, why:why };
 }
 
+/* Everything selection ever looks at is one world's worth of tasks. Nothing
+   from another planet can be chosen, counted, or hinted at. */
+function planetPool(){
+  var here = S.session.planet;
+  return openTasks().filter(function(t){ return planetOf(t) === here; });
+}
 function chooseTask(){
+  if(!S.session.planet) return { task:null, reason:"nowhere" };
   var fx = currentFixed();
   if(fx) return { task:fx, fixed:true, why:[] };
 
-  var L = lunchInfo(), transit = isTransit(S.session.location);
+  var L = lunchInfo(), transit = isErrandPlanet(S.session.planet);
   if(!transit && (L.overdue || S.session.lunchState === "active")) return { lunch:true };
 
-  var pool = openTasks().filter(function(t){ return !t.fixedStart && !isCooling(t); }).filter(locationOK);
-  if(!transit && S.session.workFinished) pool = pool.filter(function(t){ return t.category !== "Work"; });
+  var pool = planetPool().filter(function(t){ return !t.fixedStart && !isCooling(t); }).filter(locationOK);
   if(!pool.length) return { task:null, reason:"none" };
 
   /* You can always pass on something, whatever it is. A dodged task steps out
@@ -1115,6 +1304,12 @@ function coachHTML(lines){
     lines.map(function(l,i){ return i===0? "<b>"+esc(l)+"</b>" : "<span>"+esc(l)+"</span>"; }).join("")+'</div></div>';
 }
 var toastUndo = null;
+function hideToast(){
+  var t = document.getElementById("toast");
+  if(t) t.classList.remove("is-on");
+  toastUndo = null;
+  clearTimeout(toast._t);
+}
 function toast(msg, action, hint){
   var t = document.getElementById("toast");
   t.textContent = msg + (action ? " — tap to "+(hint || "undo") : "");
@@ -1149,16 +1344,17 @@ function chime(low){
 /* ============================================================
    10. THE ORB
    ============================================================ */
-var Orb = { stage:null, labels:[], n:0, pos:0, vel:0, bezel:null, twoFinger:false, lastTwist:0, lastBezel:0,
-            lastX:0, lastT:0, raf:null, snapping:false, settleTo:0, spinning:false, moved:false, movedAt:0, swipe:null };
+var Orb = { stage:null, swipe:null, holdT:null, moved:false, movedAt:0, twoFinger:false };
 
+/* The sphere is the world you're standing on: one task, four directions, no
+   dial. Which world you're in is decided out in the solar system, deliberately,
+   not by nudging a control while you're trying to work. */
 function orbHTML(inner, opts){
   opts = opts || {};
-  var labels = S.locations.map(function(l,i){
-    return '<button class="loc'+(l.kind==="transit"?" transit":"")+'" data-loc-i="'+i+'" type="button">'+esc(l.label)+'</button>';
-  }).join("");
+  var hints = opts.hints || {};
+  var lab = function(k, d){ return hints[k] === undefined ? d : hints[k]; };
   return ''+
-  '<div class="orb-stage" id="orbStage" role="group" aria-label="Location dial and current task">'+
+  '<div class="orb-stage" id="orbStage" role="group" aria-label="Current task">'+
     '<div class="orb-wrap">'+
       '<div class="orb-float" id="orbFloat">'+
         '<div class="orb-breath"></div>'+
@@ -1169,15 +1365,13 @@ function orbHTML(inner, opts){
         '<div class="orb'+(opts.cool?" cool":"")+(opts.clear?" clear":"")+'" id="orb">'+
           '<div class="orb-turn" id="orbTurn"><div class="orb-skin" id="orbSkin"></div></div>'+
           '<div class="orb-face" id="orbFace">'+inner+'</div>'+
-          '<div class="orb-dial" id="orbDial">'+labels+'</div>'+
-          '<span class="dial-mark"></span>'+
         '</div>'+
       '</div>'+
     '</div>'+
-    '<span class="swipe-hint l" id="hint-l">Not now</span>'+
-    '<span class="swipe-hint r" id="hint-r">Done</span>'+
-    '<span class="swipe-hint u" id="hint-u">Can\'t yet</span>'+
-    '<span class="swipe-hint d" id="hint-d">Add task</span>'+
+    '<span class="swipe-hint u" id="hint-u">'+esc(lab("u","Done"))+'</span>'+
+    '<span class="swipe-hint l" id="hint-l">'+esc(lab("l","Not now"))+'</span>'+
+    '<span class="swipe-hint r" id="hint-r">'+esc(lab("r","Add"))+'</span>'+
+    '<span class="swipe-hint d" id="hint-d">'+esc(lab("d","Leave"))+'</span>'+
   '</div>';
 }
 function faceTask(t, sub){
@@ -1187,183 +1381,14 @@ function orbMount(){
   var stage = document.getElementById("orbStage");
   Orb.stage = stage;
   if(!stage) return;
-  Orb.labels = [].slice.call(stage.querySelectorAll(".loc"));
-  Orb.n = Orb.labels.length;
-  Orb.pos = locIndex(S.session.location);
-  Orb.vel = 0; Orb.snapping = false; Orb.spinning = false; Orb.twoFinger = false;
-  orbLayout();
-
+  Orb.twoFinger = false;
   var orb = document.getElementById("orb");
-  if(orb) orb.addEventListener("pointerdown", orbDown);
-
-  stage.addEventListener("touchstart", function(e){
-    if(e.touches.length >= 2){
-      Orb.twoFinger = true; Orb.moved = false;
-      Orb.lastTwist = twistAngle(e);
-      Orb.lastT = performance.now(); Orb.vel = 0; Orb.snapping = false;
-      if(Orb.swipe) cancelSwipe();
-      if(Orb.bezel) endBezel();
-    }
-  }, { passive:true });
-  stage.addEventListener("touchmove", function(e){
-    if(!Orb.twoFinger || e.touches.length < 2) return;
-    var a = twistAngle(e), twist = normAngle(a - Orb.lastTwist);
-    Orb.lastTwist = a;
-    applySpin(-twist / SPREAD, Math.abs(twist) > 0.004);   /* markings follow your fingers */
-    e.preventDefault();
-  }, { passive:false });
-  stage.addEventListener("touchend", function(e){
-    if(Orb.twoFinger && e.touches.length < 2){ Orb.twoFinger = false; orbRun(); }
-  });
-
-  Orb.labels.forEach(function(el){
-    el.addEventListener("click", function(ev){
-      ev.stopPropagation();
-      if(Orb.moved && performance.now() - Orb.movedAt < 320) return;   /* that was a turn */
-      orbStepTo(+el.dataset.locI);
-    });
-  });
+  if(orb) orb.addEventListener("pointerdown", swipeDown);
 }
-
-/* ---------- dial geometry ----------
-   Neighbours sit 60 degrees apart around the sphere. Whatever is at 12 o'clock
-   is live; everything past about 88 degrees has faded out entirely, so you
-   never see more than the active one and its two neighbours. */
-var SPREAD = Math.PI/3;
-var FADE_AT = Math.PI*0.49;
 function cyc(x, n){
   var y = ((x % n) + n) % n;
   if(y > n/2) y -= n;
   return y;
-}
-function orbLayout(){
-  if(!Orb.stage || !Orb.stage.isConnected) return;
-  var orbEl = document.getElementById("orb");
-  if(!orbEl) return;
-  var R = orbEl.offsetWidth / 2;
-  var rad = R * 0.735, n = Orb.n || 1, cMin = Math.cos(FADE_AT);
-  var sel = ((Math.round(Orb.pos) % n) + n) % n;
-  Orb.labels.forEach(function(el, i){
-    var off = cyc(i - Orb.pos, n), th = off * SPREAD;
-    if(Math.abs(th) >= FADE_AT){ el.style.opacity = "0"; el.style.visibility = "hidden"; return; }
-    var c = Math.cos(th);
-    var op = Math.max(0, (c - cMin) / (1 - cMin));
-    var x = rad * Math.sin(th), y = -rad * c;
-    el.style.visibility = "visible";
-    el.style.transform = "translate(-50%,-50%) translate("+x.toFixed(1)+"px,"+y.toFixed(1)+"px) scale("+(0.82 + 0.18*op).toFixed(3)+")";
-    el.style.opacity = (0.10 + 0.90*op*op).toFixed(3);
-    el.classList.toggle("sel", !Orb.spinning && i === sel && Math.abs(off) < 0.03);
-  });
-  var skin = document.getElementById("orbSkin");
-  if(skin) skin.style.setProperty("--spin", (Orb.pos * 96).toFixed(1));
-  var turn = document.getElementById("orbTurn");
-  if(turn) turn.style.transform = "rotate("+(Orb.pos * 26).toFixed(2)+"deg)";
-}
-function orbSetSpinning(on){
-  if(Orb.spinning === on) return;
-  Orb.spinning = on;
-  if(Orb.stage) Orb.stage.classList.toggle("spinning", on);
-}
-function twistAngle(e){
-  var dx = e.touches[1].clientX - e.touches[0].clientX;
-  var dy = e.touches[1].clientY - e.touches[0].clientY;
-  return Math.atan2(dy, dx);
-}
-function normAngle(a){
-  while(a > Math.PI) a -= Math.PI*2;
-  while(a < -Math.PI) a += Math.PI*2;
-  return a;
-}
-/* dPos is in dial slots; positive brings the 2 o'clock label round to the top */
-function applySpin(dPos, moved){
-  var t = performance.now(), dt = Math.max(8, t - Orb.lastT);
-  if(moved){ Orb.moved = true; Orb.movedAt = t; }
-  Orb.pos += dPos;
-  Orb.vel = Math.max(-0.08, Math.min(0.08, dPos / dt * 16));
-  Orb.lastT = t;
-  if(Orb.moved) orbSetSpinning(true);
-  orbLayout();
-}
-
-/* ---------- one pointer, two zones: bezel turns, face responds ---------- */
-function orbCentre(){
-  var r = document.getElementById("orb").getBoundingClientRect();
-  return { x:r.left + r.width/2, y:r.top + r.height/2, r:r.width/2 };
-}
-function bezelAngle(x, y, c){ return Math.atan2(x - c.x, -(y - c.y)); }
-function orbDown(e){
-  if(Orb.twoFinger) return;
-  if(Pick.on) return;
-  var c = orbCentre();
-  var dist = Math.sqrt(Math.pow(e.clientX-c.x,2) + Math.pow(e.clientY-c.y,2)) / c.r;
-  if(dist > 0.58) startBezel(e, c);
-  else swipeDown(e);
-}
-function startBezel(e, c){
-  Orb.bezel = { c:c };
-  Orb.moved = false; Orb.snapping = false; Orb.vel = 0;
-  Orb.lastBezel = bezelAngle(e.clientX, e.clientY, c);
-  Orb.lastT = performance.now();
-  document.getElementById("orb").classList.add("grabbing");
-  window.addEventListener("pointermove", bezelMove);
-  window.addEventListener("pointerup", bezelUp);
-  window.addEventListener("pointercancel", bezelUp);
-}
-function bezelMove(e){
-  if(!Orb.bezel) return;
-  var a = bezelAngle(e.clientX, e.clientY, Orb.bezel.c);
-  var d = normAngle(a - Orb.lastBezel);
-  Orb.lastBezel = a;
-  applySpin(-d / SPREAD, Math.abs(d) > 0.012);
-  e.preventDefault();
-}
-function endBezel(){
-  Orb.bezel = null;
-  var o = document.getElementById("orb"); if(o) o.classList.remove("grabbing");
-  window.removeEventListener("pointermove", bezelMove);
-  window.removeEventListener("pointerup", bezelUp);
-  window.removeEventListener("pointercancel", bezelUp);
-}
-function bezelUp(){
-  var b = Orb.bezel; if(!b) return;
-  var moved = Orb.moved;
-  endBezel();
-  if(!moved){ orbSetSpinning(false); orbLayout(); return; }   /* a tap is handled by the label's click */
-  orbRun();
-}
-function orbStepTo(i){
-  if(!Orb.n) return;
-  Orb.settleTo = Orb.pos + cyc(i - Orb.pos, Orb.n);
-  Orb.vel = 0; Orb.snapping = true;
-  orbSetSpinning(Math.abs(Orb.settleTo - Orb.pos) > 0.03);
-  orbRun();
-}
-function orbRun(){
-  if(Orb.raf) return;
-  var tick = function(){
-    Orb.raf = null;
-    if(Orb.bezel || Orb.twoFinger) return;
-    if(!Orb.snapping){
-      Orb.pos += Orb.vel; Orb.vel *= 0.82;
-      if(Math.abs(Orb.vel) < 0.004){ Orb.snapping = true; Orb.settleTo = Math.round(Orb.pos); }
-    } else {
-      var diff = Orb.settleTo - Orb.pos;
-      Orb.pos += diff * 0.26;
-      if(Math.abs(diff) < 0.002){ Orb.pos = Orb.settleTo; orbLayout(); orbSettled(); return; }
-    }
-    orbLayout();
-    Orb.raf = requestAnimationFrame(tick);
-  };
-  Orb.raf = requestAnimationFrame(tick);
-}
-function orbSettled(){
-  var n = Orb.n, idx = ((Math.round(Orb.pos) % n) + n) % n;
-  Orb.pos = idx; Orb.settleTo = idx;
-  orbSetSpinning(false); orbLayout();
-  var loc = S.locations[idx];
-  if(!loc) return;
-  if(loc.id === S.session.location){ revealFace(); return; }
-  changeLocation(loc.id);
 }
 function revealFace(){
   var face = document.getElementById("orbFace");
@@ -1372,19 +1397,112 @@ function revealFace(){
   void face.offsetWidth;
   face.classList.add("surfacing");
 }
-function changeLocation(id){
-  unpin();
-  var prev = S.session.location, prevPlace = S.session.lastPlace;
+
+/* ============================================================
+   THE SOLAR SYSTEM
+   Your life, drawn as separate worlds. The Sun is today. The
+   planets are the parts of life that own your tasks. Nothing
+   here counts your backlog at you.
+   ============================================================ */
+var SYS_LAYOUT = [
+  { id:"work",     x:20, y:24, size:25 },
+  { id:"home",     x:80, y:37, size:23 },
+  { id:"projects", x:22, y:76, size:17 },
+  { id:"errands",  x:70, y:76, size:14 }
+];
+function sysBodyHTML(b){
+  var p = planetById(b.id);
+  if(!p) return "";
+  var cls = "body " + (p.kind === "comet" ? "comet" : (p.kind === "belt" ? "belt" : "planet"));
+  var inner = p.kind === "belt"
+    ? '<span class="belt-rock r1"></span><span class="belt-rock r2"></span><span class="belt-rock r3"></span>'
+    : (p.kind === "comet" ? '<span class="comet-tail"></span>' : '');
+  return '<button class="'+cls+'" type="button" data-planet="'+esc(p.id)+'" '+
+         'style="left:'+b.x+'%;top:'+b.y+'%;--sz:'+b.size+'%;--orb-h:'+p.hue+';--drift:'+(9 + (b.size % 5))+'s">'+
+         '<span class="body-orb">'+inner+'</span>'+
+         '<span class="body-name">'+esc(p.label)+'</span>'+
+         '</button>';
+}
+function sysHTML(){
+  var p = dayProgress();
+  var sun = '<button class="body sun" type="button" data-planet="__sun" style="left:50%;top:50%;--sz:29%">'+
+      '<span class="body-orb"><span class="sun-num">'+p.count+'</span>'+
+      '<span class="sun-sub">'+(p.count === 1 ? "done" : "done")+'</span></span>'+
+      '<span class="body-name">'+(p.done ? fmtDur(p.done)+" focused" : "Today")+'</span></button>';
+  return '<div class="sys" id="sysStage">'+
+      '<span class="orbit o1" aria-hidden="true"></span>'+
+      '<span class="orbit o2" aria-hidden="true"></span>'+
+      sun + SYS_LAYOUT.map(sysBodyHTML).join("")+
+    '</div>';
+}
+function sysMount(){
+  var stage = document.getElementById("sysStage");
+  if(!stage) return;
+  stage.querySelectorAll("[data-planet]").forEach(function(b){
+    b.addEventListener("click", function(){
+      var id = b.dataset.planet;
+      if(id === "__sun"){ go("done"); return; }
+      enterPlanet(id, b);
+    });
+  });
+}
+/* the camera travels to the world you picked, then that world becomes the orb */
+function enterPlanet(id, el){
+  if(!planetById(id)) return;
+  var stage = document.getElementById("sysStage");
+  if(stage && el){
+    var sr = stage.getBoundingClientRect(), br = el.getBoundingClientRect();
+    var dx = (sr.left + sr.width/2) - (br.left + br.width/2);
+    var dy = (sr.top + sr.height/2) - (br.top + br.height/2);
+    el.style.setProperty("--dx", dx.toFixed(1)+"px");
+    el.style.setProperty("--dy", dy.toFixed(1)+"px");
+    el.classList.add("chosen");
+    stage.classList.add("leaving");
+    setTimeout(function(){ landOn(id); }, 360);
+    return;
+  }
+  landOn(id);
+}
+function landOn(id){
+  S.session.planet = id;
+  S.session.enteredAt = Date.now();
+  S.session.sessionDone = false;
+  S.session.keepGoing = false;
+  S.ui.arrival = null;
+  unpin(); save();
+  applyHue(); renderNow(true); renderChips(); renderList();
+  var open = planetOpen(id).filter(function(t){ return !isCooling(t); });
+  if(open.length) toast(voice("enter", { where: planetLabel(id) })[0]);
+}
+/* leaving is a decision too: the world you were in launches away */
+function leavePlanet(){
+  if(S.focus && !S.focus.paused){ toast("Clock's running. Finish it or park it first."); return; }
+  var stage = document.getElementById("orbStage");
+  var done = function(){
+    S.session.planet = null;
+    S.focus = null; stopTicker();
+    S.ui.arrival = null;
+    unpin(); save();
+    applyHue(); renderNow(true); renderChips(); renderList();
+  };
+  if(stage){ stage.classList.add("launch"); setTimeout(done, 340); }
+  else done();
+}
+/* where your body is — separate from which world you're working in */
+function setPlace(id){
+  if(!locById(id)) return;
+  var prevPlace = S.session.lastPlace;
   S.session.location = id;
-  if(isTransit(id)){ S.session.briefed = true; }
+  if(isTransit(id)) S.session.briefed = true;
   else {
     var outstanding = transitTasks();
-    if(prevPlace && prevPlace !== id && outstanding.length && (isTransit(prev) || prev !== id)){
-      S.ui.arrival = outstanding.slice(0,5).map(function(t){ return t.id; });
+    S.session.lastPlace = id;
+    S.session.briefed = false;
+    if(prevPlace && prevPlace !== id && outstanding.length && isTransit(prevPlace)){
+      toast(outstanding.length+" thing"+(outstanding.length===1?"":"s")+" still on the errand run.");
     }
-    S.session.lastPlace = id; S.session.briefed = false;
   }
-  save(); applyHue(); renderNow(true); renderChips();
+  unpin(); save(); renderNow(true); renderChips();
 }
 
 /* ============================================================
@@ -1392,16 +1510,17 @@ function changeLocation(id){
    ============================================================ */
 var Pick = { on:false, list:[], els:[], pos:0, vel:0, raf:null, drag:null, step:54 };
 
+/* Only this world's tasks, ever. Manual selection is useful; browsing the rest
+   of your life while you are trying to work is not. */
 function pickerList(){
-  var pool = openTasks().filter(function(t){ return !t.fixedStart && !isCooling(t); }).filter(locationOK);
-  if(!isTransit(S.session.location) && S.session.workFinished) pool = pool.filter(function(t){ return t.category !== "Work"; });
+  var pool = planetPool().filter(function(t){ return !t.fixedStart && !isCooling(t); }).filter(locationOK);
   var recent = recentDone(3);
   var ctx = {
-    recent:recent, lunch:lunchInfo(), transit:isTransit(S.session.location),
+    recent:recent, lunch:lunchInfo(), transit:isErrandPlanet(S.session.planet),
     heavy: recent.filter(function(r){ return r.effort==="deep" || r.duration>=45; }).length,
     workingHours: workingHours(),
     workEasyWin: pool.some(function(t){ return t.category === "Work" && (t.effort === "easy" || t.duration <= 15); }),
-    runway: isTransit(S.session.location) ? { mins:600, what:"", kind:"none" } : runway(),
+    runway: isErrandPlanet(S.session.planet) ? { mins:600, what:"", kind:"none" } : runway(),
     minsLeftOfDay: Math.max(0, hhmmToMins(S.settings.workUntil) - minsOfDay())
   };
   return pool.map(function(t){ return { t:t, s:scoreTask(t, ctx).score }; })
@@ -1409,11 +1528,11 @@ function pickerList(){
              .map(function(r){ return r.t; });
 }
 function canPick(){
-  if(S.session.dayClosed || !S.session.started) return false;
+  if(S.session.dayClosed || !S.session.started || !S.session.planet) return false;
   if(committedTask()) return false;      /* you committed — no browsing for something nicer */
   if(currentFixed()) return false;
   if(S.focus && !S.focus.paused) return false;      /* not while the clock is running */
-  if(!isTransit(S.session.location) && S.session.lunchState === "active") return false;
+  if(!isErrandPlanet(S.session.planet) && S.session.lunchState === "active") return false;
   return true;
 }
 function openPicker(){
@@ -1635,21 +1754,25 @@ function nowView(){
   if(s.dayClosed) return { kind:"closed" };
   if(!s.started) return { kind:"start" };
   if(S.focus) return { kind:"focus", id:S.focus.taskId, paused:!!S.focus.paused, mins:S.focus.plannedMin + S.focus.addedMin };
-  if(!isTransit(s.location) && s.lunchState === "active") return { kind:"lunchOn" };
-  if(!openTasks().length) return { kind:"empty" };
+  /* No planet chosen means you're out in the system, looking at your life from
+     a distance. That is a legitimate place to be — it's where you stop. */
+  if(!s.planet) return { kind:"system" };
+  if(s.sessionDone || sessionShouldEnd()) return { kind:"sessionDone" };
+  if(!isErrandPlanet(s.planet) && s.lunchState === "active") return { kind:"lunchOn" };
+  if(!planetOpen(s.planet).length) return { kind:"empty" };
   var choice = chooseTask();
   if(choice.lunch) return { kind:"lunchDue", early:!!choice.early, choice:choice };
   if(!choice.task) return { kind:"nothing", choice:choice };
-  return { kind: isTransit(s.location) ? "transit" : "one", choice:choice, id:choice.task.id };
+  return { kind: isErrandPlanet(s.planet) ? "transit" : "one", choice:choice, id:choice.task.id };
 }
 function viewSig(v){
-  return [v.kind, v.id||"", v.paused?1:0, v.mins||"", S.session.location,
+  return [v.kind, v.id||"", v.paused?1:0, v.mins||"", S.session.planet||"-", S.session.location,
           v.choice && v.choice.rest ? v.choice.rest.length : 0].join("|");
 }
 var lastNowSig = null;
 function refreshNowLines(){
   var rl = document.querySelector("#nowRoot .runway"), dl = document.querySelector("#nowRoot .dayline");
-  if(rl && !S.focus && !isTransit(S.session.location) && !S.session.dayClosed){
+  if(rl && !S.focus && S.session.planet && !isErrandPlanet(S.session.planet) && !S.session.dayClosed){
     var w = runway();
     if(w.kind !== "none") rl.textContent = fmtDur(w.mins)+" until "+w.what;
   }
@@ -1670,6 +1793,8 @@ function renderNow(force){
   lastNowSig = sig;
   if(v.kind === "closed"){ root.innerHTML = viewDayClosed(); orbMount(); revealFace(); return; }
   if(v.kind === "start"){ root.innerHTML = viewStart(); return; }
+  if(v.kind === "system"){ root.innerHTML = viewSystem(); sysMount(); return; }
+  if(v.kind === "sessionDone"){ root.innerHTML = viewSessionDone(); orbMount(); revealFace(); return; }
   if(v.kind === "focus"){ root.innerHTML = viewFocus(); orbMount(); startTicker(); return; }
   if(v.kind === "lunchOn"){ root.innerHTML = viewLunchActive(); orbMount(); return; }
   if(v.kind === "empty"){ root.innerHTML = viewEmpty(); orbMount(); return; }
@@ -1679,10 +1804,29 @@ function renderNow(force){
   orbMount(); revealFace(); paintDayRing();
 }
 function todayLog(){ var d = todayKey(); return S.log.filter(function(l){ return l.date === d; }); }
+/* measured minutes since you entered this world */
+function sessionMinutes(){
+  var from = S.session.enteredAt || 0;
+  return todayLog().filter(function(l){ return l.at >= from; }).reduce(function(a,l){ return a + (l.minutes||0); }, 0);
+}
+/* Productivity is not serving tasks forever. When nothing left in this world is
+   important, due, or overdue, ONE says so instead of quietly finding filler. */
+function sessionShouldEnd(){
+  var id = S.session.planet;
+  if(!id || isErrandPlanet(id) || S.session.sessionDone || S.session.keepGoing) return false;
+  var mine = todayLog().filter(function(l){ return l.at >= (S.session.enteredAt||0); });
+  /* a real stint, not one quick job — otherwise "you're done" is just annoying */
+  var worked = mine.length >= 2 || sessionMinutes() >= 25;
+  var dayOver = !isErrandPlanet(id) && minsOfDay() > hhmmToMins(S.settings.workUntil) && id === "work";
+  if(!worked && !dayOver) return false;
+  var live = planetOpen(id).filter(function(t){ return !isCooling(t) && locationOK(t); });
+  if(!live.length) return false;
+  return !live.some(function(t){ return isDueToday(t) || t.priority === "important" || t.fixedStart; });
+}
 function dayProgress(){
   var entries = todayLog();
   var done = entries.reduce(function(a,l){ return a + (l.minutes||0); }, 0);
-  var leftCount = openTasks().filter(function(t){ return !t.locations.some(isTransit) && !isCooling(t); }).length;
+  var leftCount = openTasks().filter(function(t){ return planetOf(t) !== "errands" && !isCooling(t); }).length;
   var total = entries.length + leftCount;
   return { done:done, leftCount:leftCount, frac: total ? entries.length/total : 0, count:entries.length,
            checks: entries.filter(function(l){ return l.kind === "check"; }).length };
@@ -1706,22 +1850,61 @@ function viewStart(){
     '<p class="hint">Lunch, working hours and where you\'ll be live in Setup and Day — set once, forget.</p>'+
   '</div>';
 }
+/* the view from outside: which part of life do you want to be in? */
+function viewSystem(){
+  var p = dayProgress(), hour = new Date().getHours();
+  var greet = hour < 12 ? "Morning" : (hour < 18 ? "Afternoon" : "Evening");
+  var placeChips = S.locations.map(function(l){
+    return '<button class="place-chip" data-act="setplace" data-place="'+esc(l.id)+'" aria-pressed="'+(S.session.location === l.id)+'">'+esc(l.label)+'</button>';
+  }).join("");
+  return ''+
+    '<p class="eyebrow left">'+esc(greet)+(who() ? ", "+esc(S.profile.name) : "")+' · '+minsToHHMM(minsOfDay())+'</p>'+
+    sysHTML()+
+    '<p class="runway">Pick a world. The rest disappears.</p>'+
+    '<div class="place-row">'+placeChips+'</div>'+
+    '<p class="dayline">Tap a world to go in · nothing else follows you</p>';
+}
+/* stopping is a result, not a failure to continue */
+function viewSessionDone(){
+  var p = dayProgress(), here = planetLabel(S.session.planet);
+  var mins = sessionMinutes();
+  return ''+
+    '<p class="eyebrow good">'+esc(here)+' session complete</p>'+
+    orbHTML('<div class="orb-task">That\'s<br>the lot</div><div class="orb-sub">nothing left worth starting</div>', { clear:true, hints:{ u:"", l:"", r:"Add", d:"Leave" } })+
+    '<p class="runway">'+p.count+' done · '+fmtDur(mins || p.done)+' focused</p>'+
+    '<div style="margin-top:14px">'+coachHTML([voice("sessionDone", { where:here })[0]])+'</div>'+
+    '<div class="btn-row" style="margin-top:12px">'+
+      '<button class="btn" data-act="keep-going">Give me another</button>'+
+      '<button class="btn go" data-act="leave-planet">Leave '+esc(here)+'</button>'+
+    '</div>';
+}
 function viewEmpty(){
-  return orbHTML('<div class="orb-task">Nothing<br>in here</div><div class="orb-sub">the ball is empty</div>', { clear:true })+
+  return orbHTML('<div class="orb-task">Nothing<br>in here</div><div class="orb-sub">'+esc(planetLabel(S.session.planet))+' is empty</div>', { clear:true, hints:{ u:"", l:"", r:"Add", d:"Leave" } })+
     '<p class="runway">'+esc(voice("empty")[0])+'</p>'+
-    '<p class="dayline">Swipe down to add'+(micSupported() ? ' · or hold the mic and say it' : '')+'</p>';
+    '<p class="dayline">Swipe right to add · swipe down to leave</p>';
 }
 function viewNothing(choice){
-  var here = locLabel(S.session.location);
+  var here = planetLabel(S.session.planet);
   if(choice.reason === "nofit"){
     return orbHTML('<div class="orb-task">Too<br>tight</div><div class="orb-sub">'+fmtDur(choice.gap.mins)+' left</div>', { clear:true })+
       '<p class="runway">Nothing fits before '+esc(choice.gap.what)+'</p>'+
       '<p class="dayline">'+esc(voice("nofit")[0])+'</p>';
   }
-  var line = isTransit(S.session.location) ? voice("clearOut")[0] : voice("clear", { where:here })[0];
-  return orbHTML('<div class="orb-task">All<br>clear</div><div class="orb-sub">'+esc(here)+'</div>', { clear:true })+
+  var line = isErrandPlanet(S.session.planet) ? voice("clearOut")[0] : voice("clear", { where:here })[0];
+  return orbHTML('<div class="orb-task">All<br>clear</div><div class="orb-sub">'+esc(here)+'</div>', { clear:true, hints:{ u:"", l:"", r:"Add", d:"Leave" } })+
     '<p class="runway">'+esc(line)+'</p>'+
-    '<p class="dayline">Turn the dial to move · swipe down to add</p>';
+    '<p class="dayline">Swipe down to leave · swipe right to add</p>';
+}
+/* one line saying why this and not something else — the orb showing its working */
+function whyLine(choice){
+  var t = choice.task;
+  var w = (choice.why || []).filter(Boolean);
+  if(w.length) return w[0];
+  if(choice.fixed) return "It's in the diary. That's why.";
+  if(isRecurring(t)) return "Due another look.";
+  if(t.effort === "easy") return "Small one. Get it off the pile.";
+  if(t.duration >= 45) return "You've got the room for it right now.";
+  return "Nothing else is more use to you this minute.";
 }
 function viewOne(choice){
   var t = choice.task, p = dayProgress(), fixedNow = choice.fixed, w = runway();
@@ -1731,22 +1914,24 @@ function viewOne(choice){
           : (spentAlready > 0
               ? (timeLeftOn(t) > 0 ? timeLeftOn(t)+" min left · "+fmtDur(spentAlready)+" in"
                                    : "over · "+fmtDur(spentAlready)+" in")
-              : t.duration+" min · "+t.type));
+              : t.duration+(t.estimated ? "ish min" : " min")+" · "+t.type));
   var line = fixedNow
     ? "You're in this until "+minsToHHMM(taskEndMins(t))
     : (w.kind === "none" ? "Nothing in the way" : fmtDur(w.mins)+" until "+w.what);
   return ''+
-    (fixedNow ? '<p class="eyebrow hot">Happening now</p>' : (isRecurring(t) ? '<p class="eyebrow">Check-in</p>' : ''))+
+    '<p class="eyebrow'+(fixedNow?" hot":"")+'">'+esc(planetLabel(S.session.planet))+
+      (fixedNow ? " · happening now" : (isRecurring(t) ? " · check-in" : ""))+'</p>'+
     orbHTML(faceTask(t, sub))+
+    '<p class="why"><b>Why this?</b> '+esc(whyLine(choice))+'</p>'+
     '<p class="runway">'+esc(line)+'</p>'+
     '<p class="dayline">'+p.count+' done · '+fmtDur(p.done)+' on the clock</p>';
 }
 function viewTransit(choice){
   var t = choice.task, p = dayProgress(), rest = (choice.rest||[]).slice(0,4);
   return ''+
-    '<p class="eyebrow cool">While you\'re out</p>'+
-    orbHTML(faceTask(t, t.type))+
-    '<p class="runway">'+(rest.length ? (rest.length+1)+" errands" : "Last one")+'</p>'+
+    '<p class="eyebrow cool">Errand run</p>'+
+    orbHTML(faceTask(t, t.type), { hints:{ u:"Got it", l:"Skip", r:"Add", d:"Leave" } })+
+    '<p class="runway">'+(rest.length ? (rest.length+1)+" to pick up" : "Last one")+'</p>'+
     (rest.length ? '<div class="pickup" style="margin-top:12px">'+rest.map(function(x){
       return '<button class="pick" data-act="tick" data-id="'+x.id+'"><span class="tick">✓</span>'+esc(x.name)+'</button>';
     }).join("")+'</div>' : '')+
@@ -1763,7 +1948,7 @@ function viewFocus(){
     var added = t.commit.added.reduce(function(a,m){ return a+m; }, 0);
     return ''+
       '<p class="eyebrow hot">Committed task'+(f.makingSafe ? " · making it safe" : "")+'</p>'+
-      orbHTML(inner, { running:true })+
+      orbHTML(inner, { running:true, hints:{ u:"", l:"Reassess", r:"Add", d:"" } })+
       '<p class="runway" id="runwayLine">'+ (t.originalEstimate||t.duration)+'m estimated · '+
         fmtDur(spentOn(t))+' spent · +'+fmtDur(added)+' committed</p>'+
       '<div class="committed-note">'+
@@ -1775,9 +1960,9 @@ function viewFocus(){
 
   return ''+
     '<p class="eyebrow hot">'+(f.paused ? "Paused" : "Working")+'</p>'+
-    orbHTML(inner, { running:true })+
+    orbHTML(inner, { running:true, hints:{ u:"Done", l:"Park it", r:"Add", d:"" } })+
     '<p class="runway" id="runwayLine"></p>'+
-    '<p class="dayline">Tap to '+(f.paused?"resume":"pause")+' · swipe right when it\'s done</p>';
+    '<p class="dayline">Tap to '+(f.paused?"resume":"pause")+' · swipe up when it\'s done</p>';
 }
 function viewLunchDue(early){
   return ''+
@@ -1815,7 +2000,8 @@ function orbTap(){
     save(); renderNow(true);
     return;
   }
-  if(!isTransit(s.location) && s.lunchState === "active"){
+  if(!s.planet) return;
+  if(!isErrandPlanet(s.planet) && s.lunchState === "active"){
     S.session.lunchState = "done"; save(); renderNow(true); toast("Right. Back to it."); return;
   }
   var choice = chooseTask();
@@ -1825,40 +2011,32 @@ function orbTap(){
     save(); renderNow(true); return;
   }
   if(!choice.task) return;
-  if(isTransit(s.location)){ settleTask(choice.task, 0); renderNow(true); return; }
+  if(isErrandPlanet(s.planet)){ settleTask(choice.task, 0); renderNow(true); return; }
   if(choice.fixed){ beginFocus(choice.task, Math.max(1, taskEndMins(choice.task) - minsOfDay())); return; }
   beginFocus(choice.task);
 }
+/* Four directions, one meaning each.
+   UP done · LEFT not now · RIGHT capture something · DOWN leave this world. */
 function orbSwipe(dir){
   var s = S.session;
-  if(dir === "d"){ draft = draft || newDraft(); openSheet(sheetAddTask(), bindAddTask); return; }
+  /* capturing never derails what you're doing, whatever state you're in */
+  if(dir === "r"){ openCapture(); return; }
   if(s.dayClosed) return;
+  if(dir === "d"){ leavePlanet(); return; }
   if(S.focus){
-    var ct = committedTask();
-    if(ct){
-      /* no walking away from a committed job by accident — reassess instead */
-      if(dir === "r"){ openSheet(sheetCommitCheck()); return; }
-      openSheet(sheetCommitCheck());
-      return;
-    }
-    if(dir === "r"){ finishFocus(); return; }
+    if(committedTask()){ openSheet(sheetCommitCheck()); return; }
+    if(dir === "u"){ finishFocus(); return; }
     if(dir === "l"){ abandonFocus(); return; }
-    if(dir === "u"){ abandonFocus(true); return; }
     return;
   }
   var choice = chooseTask(), t = choice.task;
   if(!t) return;
-  if(dir === "r"){ settleTask(t, 0); renderNow(true); return; }
+  if(dir === "u"){ settleTask(t, 0); renderNow(true); return; }
   if(dir === "l"){
     if(choice.fixed){ toast("That one's happening whether you like it or not."); return; }
-    t.postponedToday++; t.lastPostponedAt = Date.now();
-    unpin(); save();
-    toast(t.postponedToday === 1 ? voice("dodge1")[0]
-        : (t.postponedToday === 2 ? voice("dodge2")[0] : voice("dodge3")[0]));
-    renderNow(true);
+    openSheet(sheetWhyNot(t.id));
     return;
   }
-  if(dir === "u"){ openSheet(sheetBlocked(t.id)); return; }
 }
 function flashDone(t){
   toast("✓ "+t.name, function(){ t.status = "open"; t.completedAt = null; save(); render(); });
@@ -1977,6 +2155,7 @@ function abandonFocus(block){
    13. SHEETS
    ============================================================ */
 function openSheet(html, bind){
+  hideToast();     /* a sheet is the message now */
   document.getElementById("sheetRoot").innerHTML = '<div class="grab"></div>'+html;
   document.getElementById("sheet").classList.add("is-on");
   document.getElementById("backdrop").classList.add("is-on");
@@ -2194,259 +2373,295 @@ function dictate(btn, onInterim, onFinal){
   catch(err){ toast("Couldn't start listening."); }
 }
 
-var draft = null;
-function newDraft(){
-  var here = S.session.location;
-  return {
-    name:"", category:"Work", priority:"normal", effort:"normal",
-    duration:S.settings.defaultDuration,
-    locations: isTransit(here) ? [here] : [],
-    setCat:false, setEff:false, setType:false,
-    type:"Admin", timed:false, repeatEvery:0, unblocks:null,
-    fixedStart:minsToHHMM(Math.ceil((minsOfDay()+30)/15)*15), fixedEnd:null
-  };
-}
-/* Name, length, where, how much it matters — four answers and it's in. Anything
-   the app can work out for itself (category from the place, mental load from the
-   length) is worked out, and only argued with if you open "More". */
-function inferDraft(){
-  if(!draft.setCat){
-    /* Somewhere chosen, and none of it work? Then it's personal. Nothing chosen
-       means it follows you everywhere, which is the working day's problem. */
-    var here = draft.locations;
-    draft.category = (here.length && here.indexOf("work") < 0) ? "Personal" : "Work";
-  }
-  if(!draft.setEff){
-    draft.effort = draft.repeatEvery ? "easy" : (draft.duration <= 10 ? "easy" : (draft.duration >= 60 ? "deep" : "normal"));
-  }
-  if(!draft.setType){
-    draft.type = draft.timed ? "Meeting"
-      : (draft.locations.some(isTransit) ? "Errand"
-      : (draft.category === "Personal" ? "Personal Project" : "Admin"));
-  }
-}
-function sheetAddTask(){
-  draft = draft || newDraft();
-  inferDraft();
-  var locBtns = S.locations.map(function(l){
-    return '<button class="choice'+(l.kind==="transit"?" cool":"")+'" data-loc="'+esc(l.id)+'" aria-pressed="'+(draft.locations.indexOf(l.id)>-1)+'">'+esc(l.label)+'</button>';
-  }).join("");
-  var typeBtns = TYPES.map(function(x){
-    return '<button class="choice" data-type="'+esc(x)+'" aria-pressed="'+(draft.type===x)+'">'+esc(x)+'</button>';
-  }).join("");
-  return ''+
-  '<div class="sheet-head"><h2 class="sec">Add a task</h2><button class="icon-btn" data-act="close-sheet" aria-label="Close">✕</button></div>'+
-  '<div class="field"><label>What is it?</label>'+
-    '<div class="inline"><input type="text" id="at-name" placeholder="Do the pay run" value="'+esc(draft.name)+'" autocomplete="off">'+
-    (micSupported() ? '<button class="mic" id="at-mic" type="button" aria-label="Dictate the task">'+MIC_SVG+'</button>' : '')+'</div>'+
-    '<p class="hint heard" id="at-heard"></p>'+
-  '</div>'+
-  '<div class="field"><label>How long</label><div class="stepper">'+
-    '<button class="step" data-dur="-15">−15</button><button class="step" data-dur="-5">−5</button>'+
-    '<div class="val" id="at-dur">'+draft.duration+'<small>minutes</small></div>'+
-    '<button class="step" data-dur="5">+5</button><button class="step" data-dur="15">+15</button>'+
-  '</div></div>'+
-  '<div class="field"><label>Where can it be done?</label><div class="choices" id="at-locs">'+locBtns+'</div>'+
-    '<p class="hint">Tap none and it can be done anywhere.</p></div>'+
-  '<div class="field"><label>Priority</label>'+sliderHTML("sl-pri", PRI_STEPS, draft.priority)+'</div>'+
-  '<button class="more-toggle" id="at-more" type="button" aria-expanded="false" aria-controls="at-extra">More</button>'+
-  '<div id="at-extra" hidden>'+
-    '<div class="field"><label>Mental load</label>'+sliderHTML("sl-eff", EFF_STEPS, draft.effort)+'</div>'+
-    '<div class="field"><label>Category</label>'+sliderHTML("sl-cat", CAT_STEPS, draft.category)+'</div>'+
-    '<div class="field"><label>Kind of work</label><div class="choices" id="at-types">'+typeBtns+'</div></div>'+
-    '<div class="field"><label>Comes back round</label><div class="choices" id="at-rep">'+
-      REPEATS.map(function(r){ return '<button class="choice'+(r.v?" cool":"")+'" data-rep="'+r.v+'" aria-pressed="'+(draft.repeatEvery===r.v)+'">'+r.l+'</button>'; }).join("")+
-    '</div><p class="hint" id="at-rephint" style="'+(draft.repeatEvery?"":"display:none")+'">Ticking it off restarts the countdown instead of finishing it. Close it off for the day from the toast, or from the list.</p></div>'+
-    '<div class="field"><label>At a set time?</label><div class="choices">'+
-        '<button class="choice grow" id="at-untimed" aria-pressed="'+(!draft.timed)+'">Whenever it fits</button>'+
-        '<button class="choice grow cool" id="at-timed" aria-pressed="'+(draft.timed)+'">Fixed time</button>'+
-      '</div>'+
-      '<div class="inline" id="at-times" style="'+(draft.timed?"":"display:none")+'">'+
-        '<input type="time" id="at-start" value="'+esc(draft.fixedStart)+'"><span class="hint">to</span>'+
-        '<input type="time" id="at-end" value="'+esc(draft.fixedEnd || minsToHHMM(hhmmToMins(draft.fixedStart)+draft.duration))+'"></div>'+
-      '<p class="hint" id="at-timedhint" style="'+(draft.timed?"":"display:none")+'">I\'ll keep that window clear and warn you '+S.settings.warnMinutes+' minutes before.</p>'+
-    '</div>'+
-  '</div>'+
-  '<button class="btn go wide" data-act="save-task">Add it</button>';
-}
-/* after dictation, push the whole parsed draft back into the controls */
-function syncAddSheet(){
-  var root = document.getElementById("sheetRoot");
-  if(!root || !root.querySelector("#at-name")) return;
-  inferDraft();
-  /* if it heard something that lives under "More", open More so you can see it */
-  var extra = root.querySelector("#at-extra"), more = root.querySelector("#at-more");
-  if(extra && extra.hidden && (draft.timed || draft.repeatEvery || draft.setEff || draft.setCat || draft.setType)){
-    extra.hidden = false;
-    if(more){ more.setAttribute("aria-expanded","true"); more.firstChild.nodeValue = "Fewer"; }
-  }
-  root.querySelector("#at-name").value = draft.name || "";
-  root.querySelector("#at-dur").innerHTML = draft.duration+"<small>minutes</small>";
-  var pri = document.getElementById("sl-pri"), eff = document.getElementById("sl-eff"), cat = document.getElementById("sl-cat");
-  if(pri && pri._setIndex) pri._setIndex(Math.max(0, PRIORITY_ORDER.indexOf(draft.priority)));
-  if(eff && eff._setIndex) eff._setIndex(Math.max(0, EFFORT_ORDER.indexOf(draft.effort)));
-  if(cat && cat._setIndex) cat._setIndex(draft.category === "Personal" ? 1 : 0);
-  root.querySelectorAll("[data-loc]").forEach(function(x){ x.setAttribute("aria-pressed", String(draft.locations.indexOf(x.dataset.loc) > -1)); });
-  root.querySelectorAll("[data-type]").forEach(function(x){ x.setAttribute("aria-pressed", String(x.dataset.type === draft.type)); });
-  root.querySelectorAll("[data-rep]").forEach(function(x){ x.setAttribute("aria-pressed", String(+x.dataset.rep === (draft.repeatEvery||0))); });
-  var rh = root.querySelector("#at-rephint"); if(rh) rh.style.display = draft.repeatEvery ? "" : "none";
-  var tb = root.querySelector("#at-timed"), ub = root.querySelector("#at-untimed");
-  if(tb && ub){
-    tb.setAttribute("aria-pressed", String(!!draft.timed));
-    ub.setAttribute("aria-pressed", String(!draft.timed));
-    root.querySelector("#at-times").style.display = draft.timed ? "" : "none";
-    root.querySelector("#at-timedhint").style.display = draft.timed ? "" : "none";
-    if(draft.timed){
-      root.querySelector("#at-start").value = draft.fixedStart;
-      root.querySelector("#at-end").value = minsToHHMM(hhmmToMins(draft.fixedStart) + draft.duration);
-    }
-  }
+/* ============================================================
+   QUICK CAPTURE
+   Capture it. Forget it. Carry on with what you were doing.
+   One field is required: what needs doing. Everything else is
+   guessed from the words, inherited from the world you're in,
+   or corrected later — never asked for up front.
+   ============================================================ */
+var cap = null;
+function newCapture(){
+  return { text:"", duration:null, priority:null, due:null, when:null,
+           fixedStart:null, repeatEvery:null, planet:null, unblocks:null, open:null };
 }
 
-function bindAddTask(){
-  var root = document.getElementById("sheetRoot");
-  var mic = root.querySelector("#at-mic"), heard = root.querySelector("#at-heard");
-  if(mic){
-    mic.addEventListener("click", function(){
-      heard.textContent = "Listening…";
-      dictate(mic, function(txt){ heard.textContent = "“"+txt+"”"; },
-        function(txt){
-          var got = parseSpoken(txt);
-          Object.keys(got).forEach(function(k){ if(k.charAt(0) !== "_") draft[k] = got[k]; });
-          if(got.category) draft.setCat = true;
-          if(got.effort) draft.setEff = true;
-          if(got.type) draft.setType = true;
-          if(draft.timed && !draft.fixedStart) draft.timed = false;
-          syncAddSheet();
-          heard.textContent = got._said && got._said.length ? "Heard: "+got._said.join(" · ") : "“"+txt+"”";
-        });
-    });
-  }
-  var nameEl = root.querySelector("#at-name");
-  if(nameEl){
-    nameEl.focus();
-    nameEl.addEventListener("input", function(){ draft.name = nameEl.value; });
-    nameEl.addEventListener("keydown", function(e){ if(e.key === "Enter"){ e.preventDefault(); commitTask(); } });
-  }
-  /* every control mutates in place — the sheet never re-renders, so it never jumps */
-  /* whatever the app guessed gets quietly re-guessed until you say otherwise */
-  var reflect = function(){
-    inferDraft();
-    var eff = document.getElementById("sl-eff"), cat = document.getElementById("sl-cat");
-    if(eff && eff._setIndex) eff._setIndex(Math.max(0, EFFORT_ORDER.indexOf(draft.effort)));
-    if(cat && cat._setIndex) cat._setIndex(draft.category === "Personal" ? 1 : 0);
-    root.querySelectorAll("[data-type]").forEach(function(x){ x.setAttribute("aria-pressed", String(x.dataset.type === draft.type)); });
-  };
-  root.querySelectorAll("[data-dur]").forEach(function(b){
-    b.addEventListener("click", function(){
-      draft.duration = Math.max(5, Math.min(480, draft.duration + (+b.dataset.dur)));
-      root.querySelector("#at-dur").innerHTML = draft.duration+"<small>minutes</small>";
-      var en = root.querySelector("#at-end"), st = root.querySelector("#at-start");
-      if(en && st && draft.timed) en.value = minsToHHMM(hhmmToMins(st.value) + draft.duration);
-      reflect();
-    });
-  });
-  var more = root.querySelector("#at-more"), extra = root.querySelector("#at-extra");
-  if(more && extra){
-    more.addEventListener("click", function(){
-      var open = extra.hidden;
-      extra.hidden = !open;
-      more.setAttribute("aria-expanded", String(open));
-      more.firstChild.nodeValue = open ? "Fewer" : "More";
-    });
-  }
-  bindSlider("sl-pri", PRI_STEPS, function(v){ draft.priority = v; });
-  bindSlider("sl-eff", EFF_STEPS, function(v){ draft.effort = v; draft.setEff = true; });
-  bindSlider("sl-cat", CAT_STEPS, function(v){ draft.category = v; draft.setCat = true; });
-  root.querySelectorAll("[data-loc]").forEach(function(b){
-    b.addEventListener("click", function(){
-      /* No "anywhere" button any more — nothing tapped means exactly that. */
-      var id = b.dataset.loc, i = draft.locations.indexOf(id);
-      if(i > -1) draft.locations.splice(i,1); else draft.locations.push(id);
-      root.querySelectorAll("[data-loc]").forEach(function(x){
-        x.setAttribute("aria-pressed", String(draft.locations.indexOf(x.dataset.loc) > -1));
-      });
-      reflect();
-    });
-  });
-  root.querySelectorAll("[data-type]").forEach(function(b){
-    b.addEventListener("click", function(){
-      draft.type = b.dataset.type; draft.setType = true;
-      root.querySelectorAll("[data-type]").forEach(function(x){ x.setAttribute("aria-pressed", String(x.dataset.type === draft.type)); });
-    });
-  });
-  root.querySelectorAll("[data-rep]").forEach(function(b){
-    b.addEventListener("click", function(){
-      draft.repeatEvery = +b.dataset.rep;
-      root.querySelectorAll("[data-rep]").forEach(function(x){ x.setAttribute("aria-pressed", String(+x.dataset.rep === draft.repeatEvery)); });
-      root.querySelector("#at-rephint").style.display = draft.repeatEvery ? "" : "none";
-      reflect();      /* a check-in belongs in the small-win bucket unless you say otherwise */
-    });
-  });
-  var timed = root.querySelector("#at-timed"), untimed = root.querySelector("#at-untimed");
-  var setTimed = function(on){
-    draft.timed = on;
-    timed.setAttribute("aria-pressed", String(on));
-    untimed.setAttribute("aria-pressed", String(!on));
-    root.querySelector("#at-times").style.display = on ? "" : "none";
-    root.querySelector("#at-timedhint").style.display = on ? "" : "none";
-    reflect();
-  };
-  timed.addEventListener("click", function(){ setTimed(true); });
-  untimed.addEventListener("click", function(){ setTimed(false); });
-  var st = root.querySelector("#at-start");
-  if(st) st.addEventListener("change", function(){
-    var en = root.querySelector("#at-end");
-    if(en) en.value = minsToHHMM(hhmmToMins(st.value) + draft.duration);
-  });
-  root.querySelector('[data-act="save-task"]').addEventListener("click", commitTask);
+/* ---------- reading the sentence ---------- */
+var WEEKDAYS = ["sunday","monday","tuesday","wednesday","thursday","friday","saturday"];
+function nextWeekday(idx){
+  var d = new Date(), delta = (idx - d.getDay() + 7) % 7;
+  d.setDate(d.getDate() + (delta === 0 ? 7 : delta));
+  return todayKey(d);
 }
-function commitTask(){
-  var root = document.getElementById("sheetRoot");
-  var nm = (root.querySelector("#at-name").value||"").trim();
-  if(!nm){ toast("Give it a name first."); root.querySelector("#at-name").focus(); return; }
-  draft.name = nm;
-  if(draft.timed){
-    draft.fixedStart = root.querySelector("#at-start").value || draft.fixedStart;
-    draft.fixedEnd = root.querySelector("#at-end").value || null;
-    if(draft.fixedEnd && hhmmToMins(draft.fixedEnd) > hhmmToMins(draft.fixedStart)) draft.duration = hhmmToMins(draft.fixedEnd) - hhmmToMins(draft.fixedStart);
+/* Everything it recognises is lifted out of the name, so "Call Harrogate today
+   20m" leaves "Call Harrogate" and three pieces of metadata you never typed. */
+function parseCapture(raw){
+  var text = " " + wordNumbers(String(raw||"").trim()) + " ", d = {}, said = [], m;
+  function eat(re){ var mm = text.match(re); if(mm){ text = text.replace(mm[0], " "); return mm; } return null; }
+
+  if((m = eat(/\bevery\s+(\d{1,3})\s*(?:minutes?|mins?|m)\b/i))) d.repeatEvery = +m[1];
+  else if((m = eat(/\bevery\s+(\d{1,2})\s*(?:hours?|hrs?|h)\b/i))) d.repeatEvery = (+m[1])*60;
+  else if(eat(/\bevery\s+half\s*(?:an\s*)?hour\b/i)) d.repeatEvery = 30;
+  else if(eat(/\bevery\s+hour\b/i)) d.repeatEvery = 60;
+  if(d.repeatEvery) said.push(repeatLabel(d.repeatEvery));
+
+  if(eat(/(^|\s)!\s*/) || eat(/\b(important|urgent|urgently|top priority|asap|must do)\b/i)){
+    d.priority = "important"; said.push("Important");
   }
-  var t = makeTask({
-    name:draft.name, category:draft.category, priority:draft.priority, effort:draft.effort,
-    duration:draft.duration, locations:draft.locations.length ? draft.locations : ["anywhere"], type:draft.type,
-    repeatEvery: draft.timed ? 0 : draft.repeatEvery,
-    unblocks: draft.unblocks || null,
-    fixedStart: draft.timed ? draft.fixedStart : null,
-    fixedEnd: draft.timed ? draft.fixedEnd : null
+
+  if(eat(/\btomorrow\b/i)){ d.due = dateFromToday(1); said.push("Tomorrow"); }
+  else if(eat(/\btoday\b/i) || eat(/\bby\s+(?:the\s+)?end\s+of\s+(?:the\s+)?day\b/i)){ d.due = todayKey(); said.push("Today"); }
+  else if((m = eat(/\b(?:on\s+|next\s+)?(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/i))){
+    d.due = nextWeekday(WEEKDAYS.indexOf(m[1].toLowerCase())); said.push(dueLabelFor(d.due));
+  }
+
+  if((m = eat(/\b(?:at\s+)?(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)\b/i)) ||
+     (m = eat(/\bat\s+(\d{1,2})[:.](\d{2})\b/i))){
+    var hh = +m[1], mm2 = m[2] ? +m[2] : 0, ap = (m[3]||"").toLowerCase();
+    if(/^p/.test(ap) && hh < 12) hh += 12;
+    if(/^a/.test(ap) && hh === 12) hh = 0;
+    if(!ap && hh >= 1 && hh <= 7) hh += 12;
+    if(hh < 24 && mm2 < 60){
+      d.fixedStart = pad(hh)+":"+pad(mm2);
+      if(!d.due) d.due = todayKey();
+      said.push("at "+d.fixedStart);
+    }
+  }
+
+  var LEAD = "(?:for\\s+|about\\s+|around\\s+|roughly\\s+|takes\\s+)?";
+  if((m = eat(new RegExp("\\b"+LEAD+"(\\d{1,3})\\s*(?:minutes?|mins?|min|m)\\b","i")))) d.duration = +m[1];
+  else if((m = eat(new RegExp("\\b"+LEAD+"(\\d{1,2})\\s*(?:hours?|hrs?|h)\\b","i")))) d.duration = (+m[1])*60;
+  else if(eat(new RegExp("\\b"+LEAD+"an?\\s+hour\\s+and\\s+a\\s+half\\b","i"))) d.duration = 90;
+  else if(eat(new RegExp("\\b"+LEAD+"half\\s+an\\s+hour\\b","i"))) d.duration = 30;
+  else if(eat(new RegExp("\\b"+LEAD+"an?\\s+hour\\b","i"))) d.duration = 60;
+  if(d.duration) said.push(d.duration+" min");
+
+  var name = text.replace(/\b(add (a )?task|remind me to|remember to|i need to|i've got to|note to self|please)\b/ig," ")
+                 .replace(/[\s,;.]+/g," ").replace(/^[\s,;.-]+|[\s,;.-]+$/g,"").trim();
+  if(name) d.name = name.charAt(0).toUpperCase() + name.slice(1);
+  d._said = said;
+  return d;
+}
+function dueLabelFor(key){ return dueLabel({ due:key }); }
+
+/* ---------- guessing the rest ---------- */
+var GUESS_MINS = [
+  [/\b(bin|bins|rubbish|recycling|kettle|two minute|quick)\b/i, 5],
+  [/\b(email|e-?mail|reply|ring|call|text|message|book|order|invoice|chase)\b/i, 10],
+  [/\b(tidy|hoover|vacuum|washing|dishes|shop|shopping|petrol|post|collect|pick up)\b/i, 15],
+  [/\b(write|draft|review|read|plan|sort|update|prep)\b/i, 30],
+  [/\b(meeting|call with|catch ?up|1:1|one to one)\b/i, 60],
+  [/\b(design|build|develop|create|make|install|fit|fix|paint|decorate|research)\b/i, 60]
+];
+function estimateMinutes(name){
+  for(var i=0;i<GUESS_MINS.length;i++) if(GUESS_MINS[i][0].test(name)) return GUESS_MINS[i][1];
+  return S.settings.defaultDuration;
+}
+var WORKY = /\b(invoice|payroll|supplier|client|customer|quote|order|spreadsheet|report|meeting|portal|signage|staff|rota|vat|tax|accounts|email|contract|tender|site|survey|drawing|quote)\b/i;
+var PROJECTY = /\b(app|website|hobby|blog|game|prototype|side project|guitar|photos?|model|develop one)\b/i;
+function inferPlanet(name){
+  if(ERRANDY.test(name)) return "errands";
+  if(PROJECTY.test(name)) return "projects";
+  if(HOUSEHOLD.test(name)) return "home";
+  if(WORKY.test(name)) return "work";
+  return null;
+}
+function guessEffort(mins, repeat){
+  if(repeat) return "easy";
+  return mins <= 10 ? "easy" : (mins >= 60 ? "deep" : "normal");
+}
+function guessType(name, planet, timed){
+  if(timed) return "Meeting";
+  if(planet === "errands") return "Errand";
+  if(/\b(email|e-?mail|reply|inbox)\b/i.test(name)) return "Email";
+  if(/\b(ring|call|phone|chase)\b/i.test(name)) return "Admin";
+  if(HOUSEHOLD.test(name) || /\b(fix|fit|install|paint|carry|move|clean|hang)\b/i.test(name)) return "Physical";
+  if(/\b(plan|schedule|organise|prep)\b/i.test(name)) return "Planning";
+  if(/\b(design|draft|write|draw|create)\b/i.test(name)) return "Creative";
+  if(planet === "projects") return "Personal Project";
+  return "Admin";
+}
+
+/* ---------- the sheet ---------- */
+function openCapture(prefill){
+  cap = newCapture();
+  if(prefill) for(var k in prefill) cap[k] = prefill[k];
+  openSheet(sheetCapture(), bindCapture);
+}
+function capWhenLabel(){
+  if(cap.fixedStart) return cap.fixedStart;
+  if(!cap.due) return "When";
+  return dueLabelFor(cap.due);
+}
+function sheetCapture(){
+  var mins = cap.duration || S.settings.defaultDuration;
+  return ''+
+  '<div class="sheet-head"><h2 class="sec">Quick capture</h2><button class="icon-btn" data-act="close-sheet" aria-label="Close">✕</button></div>'+
+  '<div class="field"><label for="qc-name">What needs doing?</label>'+
+    '<div class="inline"><input type="text" id="qc-name" placeholder="Email Dionne about Crystal" value="'+esc(cap.text)+'" autocomplete="off" enterkeyhint="done">'+
+    (micSupported() ? '<button class="mic" id="qc-mic" type="button" aria-label="Say it">'+MIC_SVG+'</button>' : '')+'</div>'+
+  '</div>'+
+  '<div class="qc-chips">'+
+    '<button class="qc-chip" id="qc-time" type="button" aria-pressed="'+(cap.duration?"true":"false")+'">'+(cap.duration ? cap.duration+"m" : "Time")+'</button>'+
+    '<button class="qc-chip" id="qc-imp" type="button" aria-pressed="'+(cap.priority==="important")+'">Important</button>'+
+    '<button class="qc-chip" id="qc-when" type="button" aria-pressed="'+(cap.due?"true":"false")+'">'+esc(capWhenLabel())+'</button>'+
+    '<button class="qc-chip ghost" id="qc-more" type="button">•••&nbsp;More</button>'+
+  '</div>'+
+  '<div id="qc-time-row" class="qc-drawer" hidden><div class="stepper">'+
+    '<button class="step" data-qcdur="-15">−15</button><button class="step" data-qcdur="-5">−5</button>'+
+    '<div class="val" id="qc-dur">'+mins+'<small>minutes</small></div>'+
+    '<button class="step" data-qcdur="5">+5</button><button class="step" data-qcdur="15">+15</button>'+
+  '</div><p class="hint">Leave it alone and I\'ll guess from the words.</p></div>'+
+  '<div id="qc-when-row" class="qc-drawer" hidden><div class="choices">'+
+    WHEN_CHOICES.map(function(w){
+      return '<button class="choice" data-qcwhen="'+w.v+'" aria-pressed="false">'+w.l+'</button>';
+    }).join("")+
+    '</div>'+
+    '<div class="inline" id="qc-date-row" style="display:none;margin-top:8px">'+
+      '<input type="date" id="qc-date" value="'+esc(cap.due||todayKey())+'">'+
+      '<input type="time" id="qc-time-at" value="'+esc(cap.fixedStart||"")+'">'+
+    '</div><p class="hint">A time turns it into something in the diary.</p></div>'+
+  '<p class="hint heard" id="qc-heard"></p>'+
+  '<button class="btn go wide" id="qc-add">Add</button>';
+}
+function bindCapture(){
+  var root = document.getElementById("sheetRoot");
+  var name = root.querySelector("#qc-name"), heard = root.querySelector("#qc-heard");
+  if(name){
+    name.focus();
+    name.addEventListener("input", function(){ cap.text = name.value; });
+    name.addEventListener("keydown", function(e){ if(e.key === "Enter"){ e.preventDefault(); commitCapture(); } });
+  }
+  var mic = root.querySelector("#qc-mic");
+  if(mic) mic.addEventListener("click", function(){
+    heard.textContent = "Listening…";
+    dictate(mic, function(txt){ name.value = txt; },
+      function(txt){ name.value = txt; cap.text = txt; heard.textContent = ""; });
   });
+  var timeRow = root.querySelector("#qc-time-row"), whenRow = root.querySelector("#qc-when-row");
+  root.querySelector("#qc-time").addEventListener("click", function(){
+    timeRow.hidden = !timeRow.hidden;
+    if(!timeRow.hidden && !cap.duration){ cap.duration = S.settings.defaultDuration; syncCapChips(); }
+  });
+  root.querySelector("#qc-when").addEventListener("click", function(){ whenRow.hidden = !whenRow.hidden; });
+  root.querySelector("#qc-imp").addEventListener("click", function(){
+    cap.priority = cap.priority === "important" ? null : "important";
+    syncCapChips();
+  });
+  root.querySelectorAll("[data-qcdur]").forEach(function(b){
+    b.addEventListener("click", function(){
+      cap.duration = Math.max(5, Math.min(480, (cap.duration || S.settings.defaultDuration) + (+b.dataset.qcdur)));
+      root.querySelector("#qc-dur").innerHTML = cap.duration+"<small>minutes</small>";
+      syncCapChips();
+    });
+  });
+  root.querySelectorAll("[data-qcwhen]").forEach(function(b){
+    b.addEventListener("click", function(){
+      var v = b.dataset.qcwhen, dateRow = root.querySelector("#qc-date-row");
+      if(v === "none"){ cap.due = null; cap.fixedStart = null; dateRow.style.display = "none"; }
+      else if(v === "today"){ cap.due = todayKey(); dateRow.style.display = "none"; }
+      else if(v === "tomorrow"){ cap.due = dateFromToday(1); dateRow.style.display = "none"; }
+      else { cap.due = cap.due || todayKey(); dateRow.style.display = ""; }
+      root.querySelectorAll("[data-qcwhen]").forEach(function(x){ x.setAttribute("aria-pressed", String(x === b)); });
+      syncCapChips();
+    });
+  });
+  var dt = root.querySelector("#qc-date"), tm = root.querySelector("#qc-time-at");
+  if(dt) dt.addEventListener("change", function(){ cap.due = dt.value || null; syncCapChips(); });
+  if(tm) tm.addEventListener("change", function(){ cap.fixedStart = tm.value || null; if(tm.value && !cap.due) cap.due = todayKey(); syncCapChips(); });
+  root.querySelector("#qc-more").addEventListener("click", function(){ commitCapture(true); });
+  root.querySelector("#qc-add").addEventListener("click", function(){ commitCapture(); });
+}
+function syncCapChips(){
+  var root = document.getElementById("sheetRoot");
+  if(!root) return;
+  var t = root.querySelector("#qc-time"), i = root.querySelector("#qc-imp"), w = root.querySelector("#qc-when");
+  if(t){ t.textContent = cap.duration ? cap.duration+"m" : "Time"; t.setAttribute("aria-pressed", String(!!cap.duration)); }
+  if(i) i.setAttribute("aria-pressed", String(cap.priority === "important"));
+  if(w){ w.textContent = capWhenLabel(); w.setAttribute("aria-pressed", String(!!cap.due)); }
+}
+/* everything the sentence didn't say, worked out rather than asked */
+function buildCaptured(raw){
+  var parsed = parseCapture(raw);
+  var nm = (parsed.name || raw || "").trim();
+  if(!nm) return null;
+  var planet = cap.planet || S.session.planet || inferPlanet(nm);
+  var sure = !!(cap.planet || S.session.planet || inferPlanet(nm));
+  if(!planet) planet = "work";
+  var repeat = cap.repeatEvery != null ? cap.repeatEvery : (parsed.repeatEvery || 0);
+  var explicitMins = cap.duration || parsed.duration || null;
+  var mins = explicitMins || estimateMinutes(nm);
+  var fixedStart = cap.fixedStart || parsed.fixedStart || null;
+  var due = cap.due || parsed.due || null;
+  var pri = cap.priority || parsed.priority || "normal";
+  var t = makeTask({
+    name:nm, planet:planet, priority:pri, due:due,
+    duration:mins, estimated:!explicitMins,
+    effort: guessEffort(mins, repeat),
+    type: guessType(nm, planet, !!fixedStart),
+    repeatEvery: fixedStart ? 0 : repeat,
+    unblocks: cap.unblocks || null,
+    fixedStart: fixedStart,
+    fixedEnd: fixedStart ? minsToHHMM(hhmmToMins(fixedStart) + mins) : null
+  });
+  return { task:t, sure:sure, said:parsed._said || [] };
+}
+function commitCapture(thenEdit){
+  var root = document.getElementById("sheetRoot");
+  var raw = ((root && root.querySelector("#qc-name") ? root.querySelector("#qc-name").value : cap.text) || "").trim();
+  if(!raw){ toast("Give it a name first."); return; }
+  var built = buildCaptured(raw);
+  if(!built){ toast("Give it a name first."); return; }
+  var t = built.task;
   S.tasks.push(t);
   if(!S.session.started){ S.session.started = true; S.session.date = todayKey(); }
-  draft = newDraft();
+  cap = newCapture();
   save(); closeSheet();
-  toast(S.focus ? "Added. You're still on the current one." : "Added: "+t.name);
-  render();
+  /* the current task keeps the screen — capture never moves you */
+  renderChips(); renderList(); renderPlan();
+  if(S.ui.tab === "now" && !S.focus) renderNow(true);
+  if(thenEdit){ openEditSheet(t.id); return; }
+  if(!built.sure && !S.session.planet){ openSheet(sheetWhichPlanet(t.id)); return; }
+  var bits = [];
+  if(t.due) bits.push(dueLabel(t));
+  if(t.priority === "important") bits.push("Important");
+  bits.push((t.estimated ? "~" : "")+t.duration+"m");
+  toast("✓ Added to "+planetLabel(t.planet)+" · "+bits.join(" · "), function(){ openEditSheet(t.id); }, "edit");
 }
-/* One box per place. Where a job can be done is the thing you always know
-   without thinking, so the box answers it and you never touch a location
-   button. Anything that could happen anywhere goes in the last box. */
+/* the one extra tap, only when ONE genuinely can't tell */
+function sheetWhichPlanet(id){
+  var t = byId(id);
+  return ''+
+  '<div class="sheet-head"><h2 class="sec">Where does this belong?</h2><button class="icon-btn" data-act="close-sheet" aria-label="Leave it in Work">✕</button></div>'+
+  '<h1 class="big" style="font-size:clamp(1.4rem,6vw,1.9rem)">'+esc(t ? t.name : "")+'</h1>'+
+  '<div class="choices" style="margin-top:12px">'+
+    S.planets.map(function(p){
+      return '<button class="choice grow" data-act="setplanet" data-setplanet="'+esc(p.id)+'" data-id="'+esc(id)+'">'+esc(p.label)+'</button>';
+    }).join("")+
+  '</div>';
+}
+
+/* One box per world. Which part of life a job belongs to is the thing you never
+   have to think about, so the box answers it and the capture stays a sentence. */
 var BD_PLACEHOLDER = {
-  home: "Empty the bin&#10;Fix the shelf&#10;Ring the plumber",
-  work: "Do the pay run 45m&#10;Sales meeting @11:00 60m&#10;Check emails every 1h"
+  work:     "Do the pay run 45m&#10;Sales meeting @11:00 60m&#10;Check emails every 1h",
+  home:     "Empty the bin&#10;Fix the shelf&#10;Ring the plumber",
+  errands:  "Petrol&#10;Milk and bread&#10;Post the parcel",
+  projects: "Sort the photos&#10;Finish the app"
 };
 function bdBoxes(){
-  return S.locations.map(function(l){
-    return { id:l.id, label:l.label, transit:l.kind === "transit", hue:l.hue,
-             ph: BD_PLACEHOLDER[l.id] || (l.kind === "transit" ? "Petrol&#10;Milk and bread&#10;Post the parcel" : "") };
-  }).concat([{ id:"anywhere", label:"Anywhere", transit:false, hue:null, ph:"Book the dentist&#10;Sort the photos" }]);
+  return S.planets.map(function(p){
+    return { id:p.id, label:p.label, hue:p.hue, ph: BD_PLACEHOLDER[p.id] || "" };
+  });
 }
 function sheetBrainDump(){
   return ''+
   '<div class="sheet-head"><h2 class="sec">Brain dump</h2><button class="icon-btn" data-act="close-sheet" aria-label="Close">✕</button></div>'+
-  '<p class="hint">One per line, in the box for where you can do it. '+S.settings.defaultDuration+' minutes each unless you end with <b>20m</b>. <b>!</b> = today, <b>@11:00</b> pins a time, <b>every 1h</b> makes it a check-in.</p>'+
+  '<p class="hint">One per line, in the world it belongs to. '+S.settings.defaultDuration+' minutes each unless you end with <b>20m</b>. <b>!</b> = important, <b>today</b> or <b>tomorrow</b> sets a deadline, <b>@11:00</b> puts it in the diary, <b>every 1h</b> makes it a check-in.</p>'+
   bdBoxes().map(function(b){
     return '<div class="field bd-field">'+
       '<div class="bd-head"><label for="bd-'+esc(b.id)+'">'+
-        (b.hue == null ? '' : '<span class="swatch" style="background:hsl('+b.hue+' 55% 55%)"></span>')+
+        '<span class="swatch" style="background:hsl('+b.hue+' 62% 55%)"></span>'+
         esc(b.label)+'</label>'+
         (micSupported() ? '<button class="mic sm" data-bdmic="'+esc(b.id)+'" type="button" aria-label="Dictate into '+esc(b.label)+'">'+MIC_SVG+'</button>' : '')+
       '</div>'+
@@ -2456,32 +2671,29 @@ function sheetBrainDump(){
   '<p class="hint" id="bd-heard"></p>'+
   '<button class="btn go wide" id="bd-save">Add them all</button>';
 }
-/* one dumped line -> one task, with the box it was typed in deciding where */
-function bdLineToTask(line, where){
-  var transit = where !== "anywhere" && isTransit(where);
-  var atHome = where !== "anywhere" && !transit && where !== "work";
-  var dur = S.settings.defaultDuration, eff = "normal", pri = "normal", at = null, l = line;
+/* one dumped line -> one task, with the box it was typed in choosing its world */
+function bdLineToTask(line, planet){
+  var l = line, at = null;
   var mt = l.match(/@\s*(\d{1,2}[:.]\d{2})/);
   if(mt){ at = mt[1].replace(".",":"); if(at.length === 4) at = "0"+at; l = l.replace(mt[0],"").trim(); }
-  var rep = 0;
-  var mr = l.match(/\bevery\s+(\d{1,3})\s*(m|min|mins|minutes|h|hr|hrs|hours?)\b/i);
-  if(mr){ rep = /^h/i.test(mr[2]) ? (+mr[1])*60 : +mr[1]; l = l.replace(mr[0], "").trim(); }
-  var m = l.match(/\s(\d{1,3})\s*(m|min|mins|minutes)$/i);
-  if(m){ dur = Math.min(480, +m[1]); l = l.slice(0, m.index).trim(); }
-  if(dur <= 10) eff = "easy";
-  if(dur >= 60) eff = "deep";
-  if(/^!/.test(l)){ pri = "must"; l = l.replace(/^!\s*/,""); }
-  if(!l) return null;
-  var house = atHome && HOUSEHOLD.test(l);
+  if(!l.trim()) return null;
+  var parsed = parseCapture(l);
+  var nm = parsed.name || l.trim();
+  if(!nm) return null;
+  var rep = parsed.repeatEvery || 0;
+  var explicit = parsed.duration || null;
+  var mins = explicit || estimateMinutes(nm);
+  if(planet === "errands") mins = Math.min(mins, 15);
+  var fixed = at || parsed.fixedStart || null;
   return makeTask({
-    name:l, duration: transit ? Math.min(dur,15) : dur,
-    effort:(rep || transit || (house && dur<=15)) ? "easy" : eff,
-    priority: at ? "must" : pri,
-    category: (transit || atHome) ? "Personal" : "Work",
-    locations:[where],
-    type: at ? "Meeting" : (transit ? "Errand" : (house ? "Physical" : "Admin")),
-    repeatEvery: at ? 0 : rep,
-    fixedStart: at, fixedEnd: at ? minsToHHMM(hhmmToMins(at)+dur) : null
+    name:nm, planet:planet,
+    duration:mins, estimated:!explicit,
+    effort: guessEffort(mins, rep),
+    priority: parsed.priority || "normal",
+    due: parsed.due || (fixed ? todayKey() : null),
+    type: guessType(nm, planet, !!fixed),
+    repeatEvery: fixed ? 0 : rep,
+    fixedStart: fixed, fixedEnd: fixed ? minsToHHMM(hhmmToMins(fixed)+mins) : null
   });
 }
 function bindBrainDump(){
@@ -2533,14 +2745,85 @@ function sheetTimeUp(){
     '<button class="btn wide" data-act="tu-commit" style="border-color:color-mix(in srgb,var(--hi) 45%,transparent)">Can\'t reasonably stop here</button>'+
   '</div>';
 }
+/* ---------- swipe left: this isn't happening right now ----------
+   You shouldn't have to decide a task's technical state mid-swipe. Say why in
+   plain words; ONE works out whether that was a postponement, a block, or you
+   simply not fancying it — and only the last one counts against you. */
+var WHY_NOT = [
+  { id:"fancy",  label:"Don't fancy it",      kind:"avoid" },
+  { id:"time",   label:"Bad time",            kind:"defer" },
+  { id:"head",   label:"Wrong headspace",     kind:"head"  },
+  { id:"person", label:"Waiting for someone", kind:"block" },
+  { id:"thing",  label:"Need something",      kind:"block" },
+  { id:"place",  label:"Wrong location",      kind:"place" },
+  { id:"other",  label:"Other",               kind:"defer" }
+];
+function whyNotById(id){ for(var i=0;i<WHY_NOT.length;i++) if(WHY_NOT[i].id === id) return WHY_NOT[i]; return null; }
+function sheetWhyNot(id){
+  var t = byId(id);
+  return ''+
+  '<div class="sheet-head"><h2 class="sec">Why not?</h2><button class="icon-btn" data-act="close-sheet" aria-label="Close">✕</button></div>'+
+  '<p class="hint">'+esc(t ? t.name : "That one")+'</p>'+
+  '<div class="stack">'+ WHY_NOT.map(function(r){
+    return '<button class="btn wide" data-act="whynot" data-reason="'+r.id+'" data-id="'+esc(id)+'" '+
+      'style="font-family:var(--body);font-weight:600;letter-spacing:0;text-transform:none;font-size:15px">'+esc(r.label)+'</button>';
+  }).join("")+'</div>';
+}
+function sheetWhereNeeded(id){
+  var t = byId(id);
+  return ''+
+  '<div class="sheet-head"><h2 class="sec">Where do you need to be?</h2></div>'+
+  '<p class="hint">'+esc(t ? t.name : "")+' — I\'ll keep it quiet until you\'re there.</p>'+
+  '<div class="choices" style="margin-top:10px">'+
+    S.locations.filter(function(l){ return l.kind === "place"; }).map(function(l){
+      return '<button class="choice grow" data-act="needplace" data-needplace="'+esc(l.id)+'" data-id="'+esc(id)+'">'+esc(l.label)+'</button>';
+    }).join("")+
+    '<button class="choice grow" data-act="needplace" data-needplace="" data-id="'+esc(id)+'">Not sure</button>'+
+  '</div>';
+}
+/* one place decides what a "no" actually meant */
+function applyWhyNot(t, rid){
+  var r = whyNotById(rid) || whyNotById("other");
+  t.lastPostponedAt = Date.now();
+  if(r.kind === "avoid"){
+    t.postponedToday++; t.avoidCount = (t.avoidCount||0) + 1;
+    unpin(); save(); renderNow(true);
+    toast(t.avoidCount === 1 ? voice("dodge1")[0] : (t.avoidCount === 2 ? voice("dodge2")[0] : voice("dodge3")[0]));
+    return;
+  }
+  if(r.kind === "head"){
+    t.postponedToday++;
+    S.session.lightUntil = Date.now() + 45*60000;      /* keep the heavy stuff away for a bit */
+    unpin(); save(); renderNow(true);
+    toast("Fair enough. Nothing heavy for a while.");
+    return;
+  }
+  if(r.kind === "place"){
+    t.postponedToday++;
+    unpin(); save();
+    openSheet(sheetWhereNeeded(t.id));
+    return;
+  }
+  if(r.kind === "block"){
+    t.status = "blocked";
+    t.blockedReason = r.label;
+    unpin(); save(); renderNow(true); renderList();
+    openSheet(sheetUnblock(t.id, r.label));
+    return;
+  }
+  t.postponedToday++;
+  unpin(); save(); renderNow(true);
+  toast("Noted. Later, then.");
+}
 /* Parking something because you're waiting on a person or a part usually means
    there's a small job hiding behind it. Offer to write that one down. */
 var UNBLOCK_HINTS = {
-  "Waiting for someone":      { name:"Chase up: ", type:"Email",  mins:10, where:null },
-  "Need information":         { name:"Get the details for: ", type:"Admin", mins:10, where:null },
-  "Need equipment/materials": { name:"Get what's needed for: ", type:"Errand", mins:15, where:"transit" },
-  "Can't access it right now":{ name:"Sort access for: ", type:"Admin", mins:10, where:null },
-  "Other":                    { name:"Unblock: ", type:"Admin", mins:10, where:null }
+  "Waiting for someone":      { name:"Chase up: ", type:"Email",  mins:10 },
+  "Need something":           { name:"Get what's needed for: ", type:"Errand", mins:15 },
+  "Need information":         { name:"Get the details for: ", type:"Admin", mins:10 },
+  "Need equipment/materials": { name:"Get what's needed for: ", type:"Errand", mins:15 },
+  "Can't access it right now":{ name:"Sort access for: ", type:"Admin", mins:10 },
+  "Other":                    { name:"Unblock: ", type:"Admin", mins:10 }
 };
 function sheetUnblock(id, reason){
   var t = byId(id);
@@ -2594,36 +2877,49 @@ function sheetCommitRabbit(){
     '<button class="btn wide" data-act="commit-stopnow">It\'s already safe — stop now</button>'+
   '</div>';
 }
-function sheetBlocked(id){
-  return ''+
-  '<div class="sheet-head"><h2 class="sec">Why can\'t you?</h2><button class="icon-btn" data-act="close-sheet" aria-label="Close">✕</button></div>'+
-  '<div class="stack">'+ BLOCK_REASONS.map(function(r){
-    return '<button class="btn wide" data-act="block-reason" data-id="'+id+'" data-reason="'+esc(r)+'" style="font-family:var(--body);font-weight:600;letter-spacing:0;text-transform:none;font-size:15px">'+esc(r)+'</button>';
-  }).join("")+'</div>';
-}
+function sheetBlocked(id){ return sheetWhyNot(id); }
+/* Task details: the full control panel. Nothing was deleted when capture got
+   simple — it just stopped being a toll gate on the way in. */
 function sheetEdit(id){
   var t = byId(id); if(!t) return "";
-  var locBtns = S.locations.map(function(l){
-    return '<button class="choice'+(l.kind==="transit"?" cool":"")+'" data-eloc="'+esc(l.id)+'" aria-pressed="'+(t.locations.indexOf(l.id)>-1)+'">'+esc(l.label)+'</button>';
+  var planetBtns = S.planets.map(function(p){
+    return '<button class="choice" data-eplanet="'+esc(p.id)+'" aria-pressed="'+(planetOf(t)===p.id)+'">'+esc(p.label)+'</button>';
+  }).join("");
+  var locBtns = S.locations.filter(function(l){ return l.kind === "place"; }).map(function(l){
+    return '<button class="choice" data-eloc="'+esc(l.id)+'" aria-pressed="'+(t.locations.indexOf(l.id)>-1)+'">'+esc(l.label)+'</button>';
+  }).join("");
+  var whenBtns = WHEN_CHOICES.map(function(w){
+    var on = w.v === "none" ? !t.due
+           : (w.v === "today" ? t.due === todayKey()
+           : (w.v === "tomorrow" ? t.due === dateFromToday(1)
+           : !!t.due && t.due !== todayKey() && t.due !== dateFromToday(1)));
+    return '<button class="choice" data-ewhen="'+w.v+'" aria-pressed="'+on+'">'+w.l+'</button>';
   }).join("");
   return ''+
-  '<div class="sheet-head"><h2 class="sec">Edit</h2><button class="icon-btn" data-act="close-sheet" aria-label="Close">✕</button></div>'+
+  '<div class="sheet-head"><h2 class="sec">Task details</h2><button class="icon-btn" data-act="close-sheet" aria-label="Close">✕</button></div>'+
   '<div class="field"><label>Name</label><input type="text" id="ed-name" value="'+esc(t.name)+'"></div>'+
+  '<div class="field"><label>Which part of life?</label><div class="choices">'+planetBtns+'</div></div>'+
   '<div class="field"><label>How long</label><div class="stepper">'+
     '<button class="step" data-edur="-15" data-id="'+id+'">−15</button><button class="step" data-edur="-5" data-id="'+id+'">−5</button>'+
     '<div class="val" id="ed-dur">'+t.duration+'<small>minutes</small></div>'+
     '<button class="step" data-edur="5" data-id="'+id+'">+5</button><button class="step" data-edur="15" data-id="'+id+'">+15</button>'+
-  '</div></div>'+
-  '<div class="field"><label>Priority</label>'+sliderHTML("ed-pri", PRI_STEPS, t.priority)+'</div>'+
+  '</div>'+(t.estimated ? '<p class="hint">I guessed this one. Change it and I\'ll stop guessing.</p>' : '')+'</div>'+
+  '<div class="field"><label>Deadline</label><div class="choices">'+whenBtns+'</div>'+
+    '<div class="inline" id="ed-date-row" style="'+((t.due && t.due !== todayKey() && t.due !== dateFromToday(1)) ? "" : "display:none")+';margin-top:8px">'+
+      '<input type="date" id="ed-date" value="'+esc(t.due||todayKey())+'"></div></div>'+
+  '<div class="field"><label>Importance</label>'+sliderHTML("ed-pri", PRI_STEPS, t.priority)+'</div>'+
   '<div class="field"><label>Mental load</label>'+sliderHTML("ed-eff", EFF_STEPS, t.effort)+'</div>'+
-  '<div class="field"><label>Category</label>'+sliderHTML("ed-cat", CAT_STEPS, t.category)+'</div>'+
-  '<div class="field"><label>Where</label><div class="choices">'+locBtns+'</div>'+
-    '<p class="hint">Nothing tapped = anywhere.</p></div>'+
+  '<div class="field"><label>Kind of work</label><div class="choices">'+
+    TYPES.map(function(x){ return '<button class="choice" data-etype="'+esc(x)+'" aria-pressed="'+(t.type===x)+'">'+esc(x)+'</button>'; }).join("")+
+  '</div></div>'+
+  (planetOf(t) === "errands" ? '' :
+  '<div class="field"><label>Do you have to be somewhere?</label><div class="choices">'+locBtns+'</div>'+
+    '<p class="hint">Nothing tapped = anywhere.</p></div>')+
   '<div class="field"><label>Comes back round</label><div class="choices">'+
     REPEATS.map(function(r){ return '<button class="choice'+(r.v?" cool":"")+'" data-erep="'+r.v+'" aria-pressed="'+((t.repeatEvery||0)===r.v)+'">'+r.l+'</button>'; }).join("")+
   '</div>'+(isRecurring(t) ? '<p class="hint">Checked '+(t.checkCount||0)+'× today'+(isCooling(t)?' · next in '+coolMins(t)+'m':' · due now')+'.</p>' : '')+'</div>'+
   (isRecurring(t) ? '<button class="btn wide" data-act="finish-recurring" data-id="'+id+'">Finish this for today</button>' : '')+
-  '<div class="field"><label>Fixed time</label><div class="inline">'+
+  '<div class="field"><label>In the diary at</label><div class="inline">'+
     '<input type="time" id="ed-start" value="'+esc(t.fixedStart||"")+'"><span class="hint">to</span>'+
     '<input type="time" id="ed-end" value="'+esc(t.fixedEnd||"")+'"></div>'+
     '<p class="hint">Leave blank for "whenever it fits".</p></div>'+
@@ -2638,11 +2934,38 @@ function openEditSheet(id){
     if(!t) return;
     bindSlider("ed-pri", PRI_STEPS, function(v){ t.priority = v; save(); });
     bindSlider("ed-eff", EFF_STEPS, function(v){ t.effort = v; save(); });
-    bindSlider("ed-cat", CAT_STEPS, function(v){ t.category = v; save(); });
     r.querySelectorAll("[data-edur]").forEach(function(b){
       b.addEventListener("click", function(){
         t.duration = Math.max(5, Math.min(480, t.duration + (+b.dataset.edur)));
+        t.estimated = false;
         r.querySelector("#ed-dur").innerHTML = t.duration+"<small>minutes</small>";
+        save();
+      });
+    });
+    r.querySelectorAll("[data-eplanet]").forEach(function(b){
+      b.addEventListener("click", function(){
+        setPlanet(t, b.dataset.eplanet);
+        r.querySelectorAll("[data-eplanet]").forEach(function(x){ x.setAttribute("aria-pressed", String(x.dataset.eplanet === t.planet)); });
+        save(); renderChips();
+      });
+    });
+    r.querySelectorAll("[data-ewhen]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var v = b.dataset.ewhen, row = r.querySelector("#ed-date-row");
+        if(v === "none"){ t.due = null; row.style.display = "none"; }
+        else if(v === "today"){ t.due = todayKey(); row.style.display = "none"; }
+        else if(v === "tomorrow"){ t.due = dateFromToday(1); row.style.display = "none"; }
+        else { t.due = t.due || dateFromToday(2); row.style.display = ""; var di = r.querySelector("#ed-date"); if(di) di.value = t.due; }
+        r.querySelectorAll("[data-ewhen]").forEach(function(x){ x.setAttribute("aria-pressed", String(x === b)); });
+        save();
+      });
+    });
+    var dd = r.querySelector("#ed-date");
+    if(dd) dd.addEventListener("change", function(){ t.due = dd.value || null; save(); });
+    r.querySelectorAll("[data-etype]").forEach(function(b){
+      b.addEventListener("click", function(){
+        t.type = b.dataset.etype;
+        r.querySelectorAll("[data-etype]").forEach(function(x){ x.setAttribute("aria-pressed", String(x.dataset.etype === t.type)); });
         save();
       });
     });
@@ -2662,6 +2985,7 @@ function openEditSheet(id){
         if(i>-1) t.locations.splice(i,1); else t.locations.push(id2);
         var chosen = t.locations.slice();
         if(!t.locations.length) t.locations = ["anywhere"];   /* none tapped means exactly that */
+        t.needsPlace = null;
         r.querySelectorAll("[data-eloc]").forEach(function(x){ x.setAttribute("aria-pressed", String(chosen.indexOf(x.dataset.eloc) > -1)); });
         save();
       });
@@ -2850,12 +3174,13 @@ function renderPlan(){
 function rowHTML(t){
   var meta = '<span class="mini">'+t.duration+'m</span>';
   if(t.fixedStart) meta += '<span class="mini hot">'+esc(t.fixedStart)+'–'+esc(minsToHHMM(taskEndMins(t)))+'</span>';
-  if(t.priority === "must") meta += '<span class="mini hot">Must do today</span>';
+  if(t.due) meta += '<span class="mini'+(isDueToday(t)?" hot":"")+'">'+esc(dueLabel(t))+'</span>';
+  if(t.priority === "important") meta += '<span class="mini hot">Important</span>';
   else if(t.priority === "optional") meta += '<span class="mini">Optional</span>';
   if(t.effort === "deep") meta += '<span class="mini cool">Deep</span>';
   if(t.effort === "easy") meta += '<span class="mini good">Easy</span>';
-  meta += '<span class="mini">'+esc(t.category)+'</span>';
-  t.locations.forEach(function(l){ meta += '<span class="mini'+(isTransit(l)?" cool":"")+'">'+esc(locLabel(l))+'</span>'; });
+  meta += '<span class="mini planet-tag" style="--orb-h:'+planetHue(planetOf(t))+'">'+esc(planetLabel(planetOf(t)))+'</span>';
+  t.locations.forEach(function(l){ if(l !== "anywhere") meta += '<span class="mini">'+esc(locLabel(l))+'</span>'; });
   if(isRecurring(t)){
     meta += '<span class="mini cool">'+esc(repeatLabel(t.repeatEvery))+'</span>';
     meta += isCooling(t) ? '<span class="mini">next in '+coolMins(t)+'m</span>' : '<span class="mini hot">due now</span>';
@@ -2887,27 +3212,42 @@ function group(title, arr){
   if(!arr.length) return "";
   return '<div class="group"><div class="group-head"><h2 class="sec">'+esc(title)+'</h2><span class="count">'+arr.length+'</span></div>'+arr.map(rowHTML).join("")+'</div>';
 }
+/* Inside a world the list is that world only — Rule 1 holds everywhere, not
+   just on the orb. Out in the system you can see the lot, by world, because
+   you deliberately went looking. */
 function renderList(){
-  var live = liveTasks(), open = live.filter(function(t){ return t.status==="open"; });
-  var timed = open.filter(function(t){ return !!t.fixedStart; });
-  var free = open.filter(function(t){ return !t.fixedStart; });
-  var out = free.filter(function(t){ return t.locations.some(isTransit); });
-  var loops = free.filter(function(t){ return isRecurring(t) && !t.locations.some(isTransit); });
-  var rest0 = free.filter(function(t){ return !t.locations.some(isTransit) && !isRecurring(t); });
-  var must = rest0.filter(function(t){ return t.priority==="must"; });
-  var opt = rest0.filter(function(t){ return t.priority==="optional"; });
-  var work = rest0.filter(function(t){ return t.priority!=="must" && t.priority!=="optional" && t.category==="Work"; });
-  var pers = rest0.filter(function(t){ return t.priority!=="must" && t.priority!=="optional" && t.category==="Personal"; });
+  var here = S.session.planet;
+  var scope = here ? liveTasks().filter(function(t){ return planetOf(t) === here; }) : liveTasks();
+  var open = scope.filter(function(t){ return t.status === "open"; });
+  var doneScope = doneToday().filter(function(t){ return !here || planetOf(t) === here; });
   var html = '<div class="stack" style="gap:20px">'+
-    '<div class="stack" style="gap:6px"><p class="eyebrow left">Everything</p>'+
-    '<h1 class="big" style="font-size:clamp(1.7rem,7vw,2.2rem)">The full list</h1>'+
-    '<p class="hint">Look if you want. You don\'t have to decide anything here.</p></div>'+
+    '<div class="stack" style="gap:6px"><p class="eyebrow left">'+(here ? esc(planetLabel(here)) : "Everything")+'</p>'+
+    '<h1 class="big" style="font-size:clamp(1.7rem,7vw,2.2rem)">'+(here ? esc(planetLabel(here))+"'s list" : "The full list")+'</h1>'+
+    '<p class="hint">'+(here
+      ? "Only "+esc(planetLabel(here))+". The rest of your life stays out of sight until you leave."
+      : "Look if you want. You don't have to decide anything here.")+'</p></div>'+
     '<button class="btn wide" data-act="add-task">+ Add a task</button>';
-  if(!live.length) html += '<div class="empty">Nothing in here yet.</div>';
-  html += group("At a fixed time", timed) + group("Check-ins", loops) + group("Must do today", must) + group("Work", work) +
-          group("Personal", pers) + group("While you're out", out) +
-          group("Blocked", live.filter(function(t){ return t.status==="blocked"; })) +
-          group("Optional", opt) + group("Completed", doneToday());
+  if(!scope.length) html += '<div class="empty">Nothing in here yet.</div>';
+
+  var bucket = function(arr, label){
+    var timed = arr.filter(function(t){ return !!t.fixedStart; });
+    var loops = arr.filter(function(t){ return !t.fixedStart && isRecurring(t); });
+    var rest = arr.filter(function(t){ return !t.fixedStart && !isRecurring(t); });
+    var due  = rest.filter(isDueToday);
+    var imp  = rest.filter(function(t){ return !isDueToday(t) && t.priority === "important"; });
+    var norm = rest.filter(function(t){ return !isDueToday(t) && t.priority === "normal"; });
+    var opt  = rest.filter(function(t){ return !isDueToday(t) && t.priority === "optional"; });
+    var pre = label ? label+" · " : "";
+    return group(pre+"In the diary", timed) + group(pre+"Check-ins", loops) + group(pre+"Due today", due) +
+           group(pre+"Important", imp) + group(pre+"Everything else", norm) + group(pre+"Optional", opt);
+  };
+  if(here) html += bucket(open, "");
+  else S.planets.forEach(function(p){
+    var mine = open.filter(function(t){ return planetOf(t) === p.id; });
+    if(mine.length) html += bucket(mine, p.label);
+  });
+  html += group("Blocked", scope.filter(function(t){ return t.status === "blocked"; })) +
+          group("Completed", doneScope);
   document.getElementById("listRoot").innerHTML = html + '</div>';
 }
 function renderDone(){
@@ -2988,22 +3328,32 @@ function runsHTML(){
 function renderYou(){
   var p = S.profile, st = S.settings;
   var tn = function(v,l){ return '<button class="choice grow" data-tone="'+v+'" aria-pressed="'+(p.tone===v)+'">'+l+'</button>'; };
-  /* A colour per place. Pick one and the whole app — orb, tints, everything —
-     wears it the moment you're there, so you know where you are without reading. */
-  var locRows = S.locations.map(function(l){
+  /* A colour per world. Enter it and the whole app — sphere, tints, paper —
+     wears that colour, so you know which part of your life you're in without
+     reading a word. */
+  var planetRows = S.planets.map(function(pl){
     var dots = HUE_CHOICES.map(function(h){
-      return '<button class="hue-dot" data-hue="'+h+'" data-id="'+esc(l.id)+'" aria-pressed="'+(l.hue===h)+'" '+
+      return '<button class="hue-dot" data-hue="'+h+'" data-id="'+esc(pl.id)+'" aria-pressed="'+(pl.hue===h)+'" '+
              'style="background:hsl('+h+' 62% 55%)" aria-label="'+esc(hueName(h))+'"></button>';
     }).join("");
     return '<div class="row" style="flex-direction:column;align-items:stretch;gap:8px">'+
       '<div style="display:flex;align-items:center;gap:10px">'+
         '<div class="row-main"><div class="row-title">'+
-        '<span class="swatch" style="background:hsl('+l.hue+' 62% 55%)"></span>'+esc(l.label)+'</div>'+
-        '<div class="row-meta"><span class="mini'+(l.kind==="transit"?" cool":"")+'">'+(l.kind==="transit"?"On the move":"A place")+'</span>'+
-        '<span class="mini">'+openTasks().filter(function(x){ return x.locations.indexOf(l.id)>-1; }).length+' waiting</span></div></div>'+
-        (S.locations.length > 1 ? '<div class="row-actions"><button class="icon-btn" data-act="loc-del" data-id="'+esc(l.id)+'" aria-label="Remove">✕</button></div>' : '')+
+        '<span class="swatch" style="background:hsl('+pl.hue+' 62% 55%)"></span>'+esc(pl.label)+'</div>'+
+        '<div class="row-meta"><span class="mini">'+
+          (pl.kind === "comet" ? "Out and about" : (pl.kind === "belt" ? "Chosen, not owed" : "A part of life"))+
+        '</span></div></div>'+
       '</div>'+
       '<div class="hues">'+dots+'</div>'+
+    '</div>';
+  }).join("");
+  /* Where your body can be. Separate question, and only used to work out what
+     is actually possible right now. */
+  var locRows = S.locations.map(function(l){
+    return '<div class="row"><div class="row-main"><div class="row-title">'+esc(l.label)+'</div>'+
+      '<div class="row-meta"><span class="mini'+(l.kind==="transit"?" cool":"")+'">'+(l.kind==="transit"?"On the move":"A place")+'</span>'+
+      (S.session.location === l.id ? '<span class="mini good">You\'re here</span>' : '')+'</div></div>'+
+      (S.locations.length > 1 ? '<div class="row-actions"><button class="icon-btn" data-act="loc-del" data-id="'+esc(l.id)+'" aria-label="Remove">✕</button></div>' : '')+
     '</div>';
   }).join("");
 
@@ -3036,10 +3386,15 @@ function renderYou(){
     '</div></div>'+
     '<button class="btn go wide" id="yo-save">Save</button>'+
     '<hr class="divider">'+
-    '<div class="group"><div class="group-head"><h2 class="sec">Locations</h2><span class="count">'+S.locations.length+'</span></div>'+
+    '<div class="group"><div class="group-head"><h2 class="sec">Your worlds</h2><span class="count">'+S.planets.length+'</span></div>'+
+      planetRows+
+      '<p class="hint">Pick a colour and the sphere and everything around it wears it while you\'re in that world. Tasks live in exactly one of these — Errands travel with you, Projects are the things you chose rather than owe.</p>'+
+    '</div>'+
+    '<hr class="divider">'+
+    '<div class="group"><div class="group-head"><h2 class="sec">Where you can be</h2><span class="count">'+S.locations.length+'</span></div>'+
       locRows+
-      '<button class="btn wide" data-act="loc-add">+ Add a location</button>'+
-      '<p class="hint">Pick a colour and the sphere and everything around it wears it while you\'re there — you know where you are before you\'ve read a word. "On the move" locations hold errands and never interrupt you at a desk.</p>'+
+      '<button class="btn wide" data-act="loc-add">+ Add a place</button>'+
+      '<p class="hint">Nothing to do with which world you\'re in — this only decides what\'s physically possible right now. A Work task can need the workplace, or nowhere in particular.</p>'+
     '</div>'+
     '<hr class="divider">'+
     '<div class="stack">'+
@@ -3056,7 +3411,7 @@ function renderYou(){
   var root = document.getElementById("youRoot");
   root.querySelectorAll("[data-hue]").forEach(function(b){
     b.addEventListener("click", function(){
-      var l = locById(b.dataset.id); if(!l) return;
+      var l = planetById(b.dataset.id); if(!l) return;
       l.hue = +b.dataset.hue;
       save(); applyHue(); renderYou(); renderNow(true);
       toast(l.label+" is "+hueName(l.hue).toLowerCase()+" now.");
@@ -3091,7 +3446,7 @@ function renderChips(){
   var motLabel = { motivated:"Motivated", meh:"Meh", unmotivated:"Unmotivated" }[s.motivation];
   var chips = '<button class="statchip'+(s.motivation==="motivated"?" is-hi":"")+'" data-act="cycle-mot">'+motLabel+'</button>';
   var nf = nextFixed(), extra = "";
-  if(s.started && !s.dayClosed){
+  if(s.started && !s.dayClosed && s.planet){
     if(nf && hhmmToMins(nf.fixedStart) - minsOfDay() <= 60){
       extra = '<span class="statchip is-hi">'+esc(nf.name)+' '+esc(nf.fixedStart)+'</span>';
     } else if(L.active){ extra = '<span class="statchip is-cool">Lunch</span>'; }
@@ -3100,6 +3455,9 @@ function renderChips(){
       var n = transitTasks().length;
       extra = '<span class="statchip is-cool">'+n+' errand'+(n === 1 ? '' : 's')+'</span>';
     }
+  }
+  if(s.started && !s.dayClosed && s.planet){
+    chips = '<button class="statchip is-hi" data-act="leave-planet">'+esc(planetLabel(s.planet))+' ✕</button>' + chips;
   }
   document.getElementById("statchips").innerHTML = chips + extra;
 }
@@ -3132,36 +3490,41 @@ document.addEventListener("click", function(e){
   switch(act){
     case "close-sheet": closeSheet(); break;
     case "start-day": S.session.started = true; S.session.date = todayKey(); save(); render(); if(!S.profile.sawGestures) showGestures(); break;
-    case "add-task": draft = draft || newDraft(); openSheet(sheetAddTask(), bindAddTask); break;
-    case "add-timed": draft = newDraft(); draft.timed = true; draft.type = "Meeting"; openSheet(sheetAddTask(), bindAddTask); break;
+    case "add-task": openCapture(); break;
+    case "add-timed": openCapture({ fixedStart: minsToHHMM(Math.ceil((minsOfDay()+30)/15)*15), due: todayKey() }); break;
     case "tick": case "complete": if(t){ settleTask(t, 0); render(); } break;
     case "finish-recurring": if(t){ finishRecurring(t); closeSheet(); render(); toast("Closed off for today."); } break;
     case "undone": if(t){ t.status="open"; t.completedAt=null; save(); render(); } break;
     case "unblock": if(t){ t.status="open"; t.blockedReason=null; save(); render(); toast("Back in play."); } break;
-    case "block-reason": {
-      var reason = b.dataset.reason;
-      if(t){ t.status = "blocked"; t.blockedReason = reason; unpin(); save(); }
-      if(t && UNBLOCK_HINTS[reason]){ openSheet(sheetUnblock(t.id, reason)); render(); }
-      else { closeSheet(); toast("Parked. I won't keep asking."); render(); }
+    case "whynot": if(t){ closeSheet(); applyWhyNot(t, b.dataset.reason); } break;
+    case "needplace": {
+      var np = b.dataset.needplace;
+      if(t){
+        if(np){ t.locations = [np]; toast("Parked until you're at "+locLabel(np)+"."); }
+        else toast("Parked for now.");
+        save();
+      }
+      closeSheet(); renderNow(true); renderList();
       break;
     }
+    case "setplanet": {
+      if(t){ setPlanet(t, b.dataset.setplanet); save(); toast("✓ "+t.name+" lives in "+planetLabel(t.planet)+" now."); }
+      closeSheet(); render();
+      break;
+    }
+    case "leave-planet": closeSheet(); leavePlanet(); break;
+    case "setplace": setPlace(b.dataset.place); break;
+    case "keep-going": S.session.sessionDone = false; S.session.keepGoing = true; unpin(); save(); renderNow(true); break;
     case "unblock-skip": closeSheet(); toast("Parked. I won't keep asking."); render(); break;
     case "unblock-add": {
       var hint = UNBLOCK_HINTS[b.dataset.reason] || UNBLOCK_HINTS.Other;
-      draft = newDraft();
-      draft.name = hint.name + (t ? t.name : "");
-      draft.duration = hint.mins;
-      draft.effort = "easy";
-      draft.type = hint.type;
-      draft.category = t ? t.category : draft.category;
-      draft.unblocks = t ? t.id : null;
-      if(hint.where === "transit"){
-        var tl = transitLocs()[0];
-        if(tl) draft.locations = [tl.id];
-      } else if(t){
-        draft.locations = t.locations.slice();
-      }
-      openSheet(sheetAddTask(), bindAddTask);
+      closeSheet();
+      openCapture({
+        text: hint.name + (t ? t.name : ""),
+        duration: hint.mins,
+        planet: (hint.type === "Errand") ? "errands" : (t ? planetOf(t) : null),
+        unblocks: t ? t.id : null
+      });
       break;
     }
     case "edit": openEditSheet(id); break;
@@ -3338,13 +3701,12 @@ function showGestures(){
   el.innerHTML = '<div class="card">'+
     '<h2 class="sec">The orb</h2>'+
     '<div class="gkey"><b>Tap</b><span>Start the task — tap again to pause</span></div>'+
-    '<div class="gkey"><b>Swipe →</b><span>Done</span></div>'+
-    '<div class="gkey"><b>Swipe ←</b><span>Not now</span></div>'+
-    '<div class="gkey"><b>Swipe ↑</b><span>Can\'t do this yet</span></div>'+
-    '<div class="gkey"><b>Swipe ↓</b><span>Add a task</span></div>'+
-    '<div class="gkey"><b>Hold</b><span>Flick through everything here and pick one</span></div>'+
-    '<div class="gkey"><b>Two fingers</b><span>Turn the dial to change location</span></div>'+
-    '<p class="hint">Or grab the edge of the orb and turn it like a dial.</p>'+
+    '<div class="gkey"><b>Swipe ↑</b><span>Done</span></div>'+
+    '<div class="gkey"><b>Swipe ←</b><span>Not right now — I\'ll ask why</span></div>'+
+    '<div class="gkey"><b>Swipe →</b><span>Throw something new in and carry on</span></div>'+
+    '<div class="gkey"><b>Swipe ↓</b><span>Leave this world, back to the system</span></div>'+
+    '<div class="gkey"><b>Hold</b><span>Flick through this world\'s tasks and pick one</span></div>'+
+    '<p class="hint">Out in the solar system, tap a world to go in. Nothing from anywhere else follows you.</p>'+
     '<button class="btn go wide" id="g-close">Got it</button></div>';
   document.body.appendChild(el);
   el.querySelector("#g-close").addEventListener("click", function(){
@@ -3385,7 +3747,7 @@ setInterval(function(){
   checkWarnings();
   var moved = applySchedule();
   if(moved) applyHue();
-  if(S.ui.tab === "now" && !S.focus && !Orb.spinning && !Orb.bezel && !Orb.swipe) renderNow();
+  if(S.ui.tab === "now" && !S.focus && !Orb.swipe && !Pick.on) renderNow();
   renderChips();
 }, 15000);
 
@@ -3396,7 +3758,7 @@ document.addEventListener("visibilitychange", function(){
   if(S.focus) startTicker(); else if(S.ui.tab === "now") renderNow(true);
   renderChips();
 });
-window.addEventListener("resize", function(){ orbLayout(); if(Pick.on) layoutPicker(); });
+window.addEventListener("resize", function(){ if(Pick.on) layoutPicker(); });
 document.addEventListener("pointerdown", function(e){
   if(Pick.on && !e.target.closest("#orb")) closePicker();
 }, true);
@@ -3431,7 +3793,7 @@ if(!S.profile.sawGestures && S.session.started) showGestures();
    app out from under a running timer. */
 (function () {
   if (!('serviceWorker' in navigator) || location.protocol !== 'https:') return;
-  var BUILD = '20260901-0922-fb8837';
+  var BUILD = '20260902-0953-8c53fd';
   window.addEventListener('load', function () {
     navigator.serviceWorker.register('sw.js?v=' + BUILD).then(function (reg) {
       function watch(sw) {

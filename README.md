@@ -4,6 +4,32 @@ A productivity coach that hides your list and gives you one task at a time.
 
 > You don't have a whole list to deal with. You have ONE thing to do right now.
 
+## How it works
+
+Your life is a small solar system. The Sun is today — what you have actually
+done. Around it sit the parts of your life that own your tasks:
+
+| World | What lives there |
+| --- | --- |
+| **Work** | Everything the job asks of you |
+| **Home** | The house and the people in it |
+| **Errands** | A comet — the things that only make sense while you're out |
+| **Projects** | A little belt of the things you chose rather than owe |
+
+Tap one and the camera flies into it. **While you're inside a world, nothing
+from any other world exists** — no counts, no badges, no "up next" from the
+kitchen. Pull the sphere down to launch back out.
+
+On the sphere: **swipe up** to finish, **left** for not right now (it asks why,
+and treats a bad time differently from not fancying it), **right** to throw
+something new in without losing your place, **down** to leave. Tap to start the
+clock, hold to pick a different task from *this* world.
+
+Adding a task needs one thing: what it is. ONE reads the sentence — *"Call
+Harrogate today 20m"*, *"Team meeting tomorrow 11am 1h"* — guesses the length
+when you don't say, files it in the world you're standing in, and puts you
+straight back on what you were doing.
+
 ## Put it online
 
 1. Create a new repository on GitHub (public is fine - there's nothing in here but the app).
