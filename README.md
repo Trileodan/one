@@ -30,7 +30,10 @@ job is overdue (red), due today (orange) or important (gold).
 Handle the moon, not the world: **push it up** to finish and the next moon swings
 in from below, **left** for not right now (it asks why, and treats a bad time
 differently from not fancying it), **right** to throw something new in without
-losing your place. **Pull down** and you get the whole world — planet and moon —
+losing your place. Saying no asks why in plain words — and one of the answers is
+*check back on it later*, where you pick the moment. Until it comes round the
+task is genuinely asleep: out of the running, out of the count. When it comes
+round, it asks for you first. **Pull down** and you get the whole world — planet and moon —
 and letting go catapults it back into orbit. Tap to start the clock; press and
 hold and this world's tasks come round on a rolodex of moons.
 

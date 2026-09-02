@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="ONE">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="one-build" content="20260902-1246-50e215">
+<meta name="one-build" content="20260902-1525-2e0d3d">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png" sizes="192x192">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -949,6 +949,7 @@ var S = load() || JSON.parse(JSON.stringify(DEFAULTS));
     if(!("commit" in t)) t.commit = null;
     if(!("safeStopped" in t)) t.safeStopped = false;
     if(!("unblocks" in t)) t.unblocks = null;
+    if(!("wakeAt" in t)) t.wakeAt = null;      /* v7: asleep until you asked to see it again */
     /* the old "Deep Work" type carried two meanings; keep the one that matters */
     if(t.type === "Deep Work"){
       t.type = "Planning";
@@ -1259,7 +1260,7 @@ function makeTask(o){
     type:o.type||"Admin",
     fixedStart:o.fixedStart||null, fixedEnd:o.fixedEnd||null, warned:false,
     unblocks:o.unblocks||null,
-    repeatEvery:o.repeatEvery||0, nextDueAt:null, checkCount:0,
+    repeatEvery:o.repeatEvery||0, nextDueAt:null, checkCount:0, wakeAt:null,
     status:"open", blockedReason:null, postponedToday:0, lastPostponedAt:null,
     avoidCount:0, needsPlace:null,
     actualMinutes:0, createdAt:Date.now(), completedAt:null, archived:false
@@ -1280,7 +1281,7 @@ function doneToday(){
   return S.tasks.filter(function(t){ return t.status==="done" && t.completedAt && todayKey(new Date(t.completedAt))===d; });
 }
 function transitTasks(){
-  return openTasks().filter(function(t){ return planetOf(t) === "errands" && !t.fixedStart && !isCooling(t); });
+  return openTasks().filter(function(t){ return planetOf(t) === "errands" && !t.fixedStart && !isResting(t); });
 }
 /* ============================================================
    COMMITTED TASKS
@@ -1335,6 +1336,24 @@ function isDodged(t){
   return !!(t.lastPostponedAt && (Date.now() - t.lastPostponedAt) < dodgeRestMins(t)*60000);
 }
 function isCooling(t){ return isRecurring(t) && t.nextDueAt && Date.now() < t.nextDueAt; }
+/* You asked to be shown this again at a particular moment. Until then it isn't
+   hidden away in a list somewhere being forgotten — it's asleep, and it will
+   wake itself up. */
+function isAsleep(t){ return !!(t.wakeAt && Date.now() < t.wakeAt); }
+function isResting(t){ return isCooling(t) || isAsleep(t); }
+function justWoke(t){ return !!(t.wakeAt && Date.now() >= t.wakeAt && Date.now() - t.wakeAt < 3*3600000); }
+function wakeLabel(t){
+  if(!t.wakeAt) return "";
+  var d = new Date(t.wakeAt), now = new Date();
+  var day = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  var days = Math.round((day - today) / 86400000);
+  var hm = (d.getHours()<10?"0":"")+d.getHours()+":"+(d.getMinutes()<10?"0":"")+d.getMinutes();
+  if(days <= 0) return hm;
+  if(days === 1) return "tomorrow "+hm;
+  if(days < 7) return ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][d.getDay()]+" "+hm;
+  return d.getDate()+" "+["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()]+" "+hm;
+}
 function coolMins(t){ return isCooling(t) ? Math.max(1, Math.round((t.nextDueAt - Date.now())/60000)) : 0; }
 function overdueMins(t){
   if(!isRecurring(t) || !t.nextDueAt) return 0;
@@ -1454,6 +1473,10 @@ function scoreTask(t, ctx){
      up, in which planet you decided to enter. */
   if(ctx.heavy >= 2 && t.effort === "easy" && !ctx.workEasyWin) s += 6;
 
+  /* You set a time to come back to this, and it's come. Honour it — you knew
+     something then that you may not remember now. */
+  if(justWoke(t)){ s += 88; why.push("You asked to look at this again around now."); }
+
   /* check-ins are small wins that get louder the longer they're overdue */
   if(isRecurring(t)){
     s += 18 + Math.min(46, overdueMins(t) * 0.7);
@@ -1532,7 +1555,7 @@ function chooseTask(){
   var L = lunchInfo(), transit = isErrandPlanet(S.session.planet);
   if(!transit && (L.overdue || S.session.lunchState === "active")) return { lunch:true };
 
-  var pool = planetPool().filter(function(t){ return !t.fixedStart && !isCooling(t); }).filter(locationOK);
+  var pool = planetPool().filter(function(t){ return !t.fixedStart && !isResting(t); }).filter(locationOK);
   if(!pool.length) return { task:null, reason:"none" };
 
   /* You can always pass on something, whatever it is. A dodged task steps out
@@ -1643,7 +1666,7 @@ function chime(low){
 /* ============================================================
    10. THE ORB
    ============================================================ */
-var Orb = { stage:null, swipe:null, holdT:null, moved:false, movedAt:0, twoFinger:false };
+var Orb = { stage:null, swipe:null, holdT:null, moved:false, movedAt:0, twoFinger:false, moonAway:false };
 
 /* The sphere is the world you're standing on: one task, four directions, no
    dial. Which world you're in is decided out in the solar system, deliberately,
@@ -1981,7 +2004,7 @@ function enterPlanet(id, el){
     if(fl) requestAnimationFrame(function(){ fl.style.transition = ""; fl.style.opacity = ""; });
     revealFace();
     moonArrive();
-    var open = planetOpen(id).filter(function(t){ return !isCooling(t); });
+    var open = planetOpen(id).filter(function(t){ return !isResting(t); });
     if(open.length) toast(voice("enter", { where: planetLabel(id) })[0]);
   };
   Flight = { skip:function(e){
@@ -2007,7 +2030,7 @@ function landOn(id, quiet){
   unpin(); save();
   applyHue(); renderNow(true); renderChips(); renderList();
   if(quiet) return;
-  var open = planetOpen(id).filter(function(t){ return !isCooling(t); });
+  var open = planetOpen(id).filter(function(t){ return !isResting(t); });
   if(open.length) toast(voice("enter", { where: planetLabel(id) })[0]);
 }
 
@@ -2094,7 +2117,7 @@ var Pick = { on:false, list:[], els:[], pos:0, vel:0, raf:null, drag:null, step:
 /* Only this world's tasks, ever. Manual selection is useful; browsing the rest
    of your life while you are trying to work is not. */
 function pickerList(){
-  var pool = planetPool().filter(function(t){ return !t.fixedStart && !isCooling(t); }).filter(locationOK);
+  var pool = planetPool().filter(function(t){ return !t.fixedStart && !isResting(t); }).filter(locationOK);
   var recent = recentDone(3);
   var ctx = {
     recent:recent, lunch:lunchInfo(), transit:isErrandPlanet(S.session.planet),
@@ -2440,14 +2463,14 @@ function sessionShouldEnd(){
   var worked = mine.length >= 2 || sessionMinutes() >= 25;
   var dayOver = !isErrandPlanet(id) && minsOfDay() > hhmmToMins(S.settings.workUntil) && id === "work";
   if(!worked && !dayOver) return false;
-  var live = planetOpen(id).filter(function(t){ return !isCooling(t) && locationOK(t); });
+  var live = planetOpen(id).filter(function(t){ return !isResting(t) && locationOK(t); });
   if(!live.length) return false;
   return !live.some(function(t){ return isDueToday(t) || t.priority === "important" || t.fixedStart; });
 }
 function dayProgress(){
   var entries = todayLog();
   var done = entries.reduce(function(a,l){ return a + (l.minutes||0); }, 0);
-  var leftCount = openTasks().filter(function(t){ return planetOf(t) !== "errands" && !isCooling(t); }).length;
+  var leftCount = openTasks().filter(function(t){ return planetOf(t) !== "errands" && !isResting(t); }).length;
   var total = entries.length + leftCount;
   return { done:done, leftCount:leftCount, frac: total ? entries.length/total : 0, count:entries.length,
            checks: entries.filter(function(l){ return l.kind === "check"; }).length };
@@ -2688,7 +2711,10 @@ function orbSwipe(dir){
   }
   if(dir === "l"){
     if(choice.fixed){ toast("That one's happening whether you like it or not."); return; }
-    moonAway("l", function(){ openSheet(sheetWhyNot(t.id)); });
+    /* The moon has left the screen on the promise of an answer. If you back out
+       of the sheet without giving one, that promise is off and it comes home —
+       you shouldn't have to start a timer to get your task back. */
+    moonAway("l", function(){ Orb.moonAway = true; openSheet(sheetWhyNot(t.id)); });
     return;
   }
 }
@@ -2770,6 +2796,7 @@ function timeLeftOn(t){
 }
 function beginFocus(t, forcedMins){
   if(!t.originalEstimate) t.originalEstimate = t.duration;
+  t.wakeAt = null; t.woke = false;   /* you're looking at it now — the check-in has done its job */
   var spent = isRecurring(t) ? 0 : Math.round(t.actualMinutes || 0);
   var left = timeLeftOn(t);
   var planned = forcedMins || (spent > 0 ? Math.max(5, left) : t.duration);
@@ -2821,6 +2848,7 @@ function closeSheet(){
   stopDictation();
   document.getElementById("sheet").classList.remove("is-on");
   document.getElementById("backdrop").classList.remove("is-on");
+  if(Orb.moonAway){ Orb.moonAway = false; renderNow(true); moonArrive(); }
 }
 function sliderHTML(id, steps, value){
   var vals = steps.map(function(s){ return s.value; });
@@ -3412,14 +3440,17 @@ function sheetTimeUp(){
    plain words; ONE works out whether that was a postponement, a block, or you
    simply not fancying it — and only the last one counts against you. */
 var WHY_NOT = [
-  { id:"fancy",  label:"Don't fancy it",      kind:"avoid" },
-  { id:"time",   label:"Bad time",            kind:"defer" },
-  { id:"head",   label:"Wrong headspace",     kind:"head"  },
-  { id:"person", label:"Waiting for someone", kind:"block" },
-  { id:"thing",  label:"Need something",      kind:"block" },
-  { id:"place",  label:"Wrong location",      kind:"place" },
-  { id:"other",  label:"Other",               kind:"defer" }
+  { id:"fancy",  label:"Not feeling it",         kind:"avoid" },
+  { id:"time",   label:"Bad time",               kind:"defer" },
+  { id:"later",  label:"Check back on it later", kind:"snooze" },
+  { id:"person", label:"Waiting for someone",    kind:"block" },
+  { id:"thing",  label:"Need something",         kind:"block" },
+  { id:"place",  label:"Wrong location",         kind:"place" },
+  { id:"other",  label:"Other",                  kind:"defer" }
 ];
+/* "Wrong headspace" and "don't fancy it" were two doors into the same room, so
+   there's one door now. It still does both jobs: it goes on your record, and
+   nothing heavy comes straight back at you. */
 function whyNotById(id){ for(var i=0;i<WHY_NOT.length;i++) if(WHY_NOT[i].id === id) return WHY_NOT[i]; return null; }
 function sheetWhyNot(id){
   var t = byId(id);
@@ -3430,6 +3461,58 @@ function sheetWhyNot(id){
     return '<button class="btn wide" data-act="whynot" data-reason="'+r.id+'" data-id="'+esc(id)+'" '+
       'style="font-family:var(--body);font-weight:600;letter-spacing:0;text-transform:none;font-size:15px">'+esc(r.label)+'</button>';
   }).join("")+'</div>';
+}
+/* ---------- "check back on it later" ----------
+   Not a dodge and not a deadline: a time you've decided to look at this again.
+   Until it comes round the task is genuinely asleep — out of the running, out
+   of the count — and when it comes round it asks for you first. */
+function checkInOptions(){
+  var now = new Date(), out = [];
+  var at = function(days, h, m){
+    var d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + days, h, m, 0, 0);
+    return d;
+  };
+  out.push({ label:"In an hour", at:new Date(now.getTime() + 60*60000) });
+  out.push({ label:"In 3 hours", at:new Date(now.getTime() + 3*60*60000) });
+  var aft = at(0, 14, 0);   if(aft > now) out.push({ label:"This afternoon", at:aft });
+  var eve = at(0, 18, 30);  if(eve > now) out.push({ label:"This evening", at:eve });
+  out.push({ label:"Tomorrow morning", at:at(1, 9, 0) });
+  var mon = 1 + ((8 - now.getDay()) % 7 || 7);
+  out.push({ label:"Next Monday", at:at(mon, 9, 0) });
+  return out;
+}
+function localStamp(d){
+  var p = function(n){ return (n<10?"0":"")+n; };
+  return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+"T"+p(d.getHours())+":"+p(d.getMinutes());
+}
+function sheetCheckIn(id){
+  var t = byId(id);
+  var opts = checkInOptions();
+  var suggested = t && t.wakeAt ? new Date(t.wakeAt) : opts[0].at;
+  return ''+
+  '<div class="sheet-head"><h2 class="sec">When shall I bring it back?</h2>'+
+    '<button class="icon-btn" data-act="close-sheet" aria-label="Close">✕</button></div>'+
+  '<p class="hint">'+esc(t ? t.name : "")+' — it goes quiet until then, then asks for you first.</p>'+
+  '<div class="choices" style="margin-top:12px">'+
+    opts.map(function(o){
+      return '<button class="choice grow" data-act="checkin" data-id="'+esc(id)+'" data-at="'+o.at.getTime()+'">'+esc(o.label)+'</button>';
+    }).join("")+
+  '</div>'+
+  '<div class="field" style="margin-top:14px"><label>Or pick the moment</label>'+
+    '<input type="datetime-local" id="ci-at" value="'+esc(localStamp(suggested))+'">'+
+  '</div>'+
+  '<button class="btn go wide" data-act="checkin-custom" data-id="'+esc(id)+'">Set the check-in</button>';
+}
+function snoozeTask(t, when){
+  if(!t) return;
+  if(!(when > Date.now())) when = Date.now() + 60*60000;
+  t.wakeAt = when; t.woke = false;
+  t.postponedToday++;
+  t.lastPostponedAt = null;      /* the time you set replaces any resting period */
+  unpin(); save(); closeSheet(); renderNow(true); renderList(); renderChips(); moonArrive();
+  toast("Back with you "+wakeLabel(t)+".", function(){
+    t.wakeAt = null; t.woke = false; save(); render(); toast("Awake again.");
+  }, "undo");
 }
 function sheetWhereNeeded(id){
   var t = byId(id);
@@ -3449,20 +3532,21 @@ function applyWhyNot(t, rid){
   t.lastPostponedAt = Date.now();
   if(r.kind === "avoid"){
     t.postponedToday++; t.avoidCount = (t.avoidCount||0) + 1;
+    S.session.lightUntil = Date.now() + 45*60000;      /* keep the heavy stuff away for a bit */
     unpin(); save(); renderNow(true); moonArrive();
     toast(t.avoidCount === 1 ? voice("dodge1")[0] : (t.avoidCount === 2 ? voice("dodge2")[0] : voice("dodge3")[0]));
     return;
   }
-  if(r.kind === "head"){
-    t.postponedToday++;
-    S.session.lightUntil = Date.now() + 45*60000;      /* keep the heavy stuff away for a bit */
-    unpin(); save(); renderNow(true); moonArrive();
-    toast("Fair enough. Nothing heavy for a while.");
+  if(r.kind === "snooze"){
+    unpin(); save();
+    Orb.moonAway = true;      /* still owed an answer — back out and it comes home */
+    openSheet(sheetCheckIn(t.id));
     return;
   }
   if(r.kind === "place"){
     t.postponedToday++;
     unpin(); save();
+    Orb.moonAway = true;
     openSheet(sheetWhereNeeded(t.id));
     return;
   }
@@ -3842,6 +3926,8 @@ function rowHTML(t){
     meta += isCooling(t) ? '<span class="mini">next in '+coolMins(t)+'m</span>' : '<span class="mini hot">due now</span>';
     if(t.checkCount) meta += '<span class="mini good">checked '+t.checkCount+'×</span>';
   }
+  if(isAsleep(t)) meta += '<span class="mini cool">back '+esc(wakeLabel(t))+'</span>';
+  else if(justWoke(t)) meta += '<span class="mini hot">you asked for this now</span>';
   if(isCommitted(t)) meta += '<span class="mini hot">Committed</span>';
   if(t.safeStopped) meta += '<span class="mini good">Left safe</span>';
   if(t.status === "open" && !isRecurring(t) && t.actualMinutes > 0){
@@ -3858,7 +3944,9 @@ function rowHTML(t){
     ? '<button class="icon-btn" data-act="undone" data-id="'+t.id+'" aria-label="Reopen">↩</button>'
     : (t.status === "blocked"
       ? '<button class="icon-btn" data-act="unblock" data-id="'+t.id+'" aria-label="Unblock">↺</button>'
-      : '<button class="icon-btn" data-act="complete" data-id="'+t.id+'" aria-label="Mark done">✓</button>'))
+      : (isAsleep(t)
+        ? '<button class="icon-btn" data-act="wake-now" data-id="'+t.id+'" aria-label="Wake it now">⏰</button>'
+        : '<button class="icon-btn" data-act="complete" data-id="'+t.id+'" aria-label="Mark done">✓</button>')))
     + '<button class="icon-btn" data-act="edit" data-id="'+t.id+'" aria-label="Edit">⋯</button>';
   return '<div class="row'+(t.status==="done"?" done":"")+'"><div class="row-main">'+
     '<div class="row-title">'+esc(t.name)+'</div><div class="row-meta">'+meta+'</div></div>'+
@@ -3886,6 +3974,8 @@ function renderList(){
   if(!scope.length) html += '<div class="empty">Nothing in here yet.</div>';
 
   var bucket = function(arr, label){
+    var asleep = arr.filter(isAsleep);
+    arr = arr.filter(function(t){ return !isAsleep(t); });
     var timed = arr.filter(function(t){ return !!t.fixedStart; });
     var loops = arr.filter(function(t){ return !t.fixedStart && isRecurring(t); });
     var rest = arr.filter(function(t){ return !t.fixedStart && !isRecurring(t); });
@@ -3895,7 +3985,8 @@ function renderList(){
     var opt  = rest.filter(function(t){ return !isDueToday(t) && t.priority === "optional"; });
     var pre = label ? label+" · " : "";
     return group(pre+"In the diary", timed) + group(pre+"Check-ins", loops) + group(pre+"Due today", due) +
-           group(pre+"Important", imp) + group(pre+"Everything else", norm) + group(pre+"Optional", opt);
+           group(pre+"Important", imp) + group(pre+"Everything else", norm) + group(pre+"Optional", opt) +
+           group(pre+"Coming back later", asleep);
   };
   if(here) html += bucket(open, "");
   else S.planets.forEach(function(p){
@@ -4152,7 +4243,16 @@ document.addEventListener("click", function(e){
     case "finish-recurring": if(t){ finishRecurring(t); closeSheet(); render(); toast("Closed off for today."); } break;
     case "undone": if(t){ t.status="open"; t.completedAt=null; save(); render(); } break;
     case "unblock": if(t){ t.status="open"; t.blockedReason=null; save(); render(); toast("Back in play."); } break;
-    case "whynot": if(t){ closeSheet(); applyWhyNot(t, b.dataset.reason); } break;
+    case "whynot": if(t){ Orb.moonAway = false; closeSheet(); applyWhyNot(t, b.dataset.reason); } break;
+    case "checkin": if(t){ Orb.moonAway = false; snoozeTask(t, +b.dataset.at); } break;
+    case "checkin-custom": if(t){
+      var ci = document.getElementById("ci-at");
+      var when = ci && ci.value ? new Date(ci.value).getTime() : 0;
+      if(!when || isNaN(when)){ toast("Pick a date and time first."); break; }
+      if(when <= Date.now()){ toast("That's already been and gone. Pick a later moment."); break; }
+      Orb.moonAway = false; snoozeTask(t, when);
+    } break;
+    case "wake-now": if(t){ t.wakeAt = null; t.woke = false; save(); render(); toast(t.name+" is back in play."); } break;
     case "needplace": {
       var np = b.dataset.needplace;
       if(t){
@@ -4344,6 +4444,12 @@ function checkWarnings(){
       if(committed){ chime(true); toast(t.name+" is starting now."); }
     }
   });
+  S.tasks.forEach(function(t){
+    if(t.status !== "open" || !t.wakeAt || t.woke) return;
+    if(Date.now() < t.wakeAt) return;
+    t.woke = true; fired = true;
+    if(planetOf(t) === S.session.planet) toast("You wanted another look at "+t.name+" around now.");
+  });
   if(fired) save();
 }
 
@@ -4455,7 +4561,7 @@ if(!S.profile.sawGestures && S.session.started) showGestures();
    app out from under a running timer. */
 (function () {
   if (!('serviceWorker' in navigator) || location.protocol !== 'https:') return;
-  var BUILD = '20260902-1246-50e215';
+  var BUILD = '20260902-1525-2e0d3d';
   window.addEventListener('load', function () {
     navigator.serviceWorker.register('sw.js?v=' + BUILD).then(function (reg) {
       function watch(sw) {
