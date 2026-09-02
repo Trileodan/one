@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="ONE">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="one-build" content="20260902-1035-8acde3">
+<meta name="one-build" content="20260902-1104-ebaf19">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png" sizes="192x192">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -219,7 +219,28 @@ h2.sec{font-family:var(--display);font-variation-settings:'wdth' 88,'wght' 700;f
 }
 .orb-breath{position:absolute;inset:-3%;border-radius:50%;pointer-events:none;box-shadow:0 0 54px 4px var(--orb-glow);animation:breath 8.5s ease-in-out infinite}
 @keyframes breath{0%,100%{opacity:.34;transform:scale(.97)}50%{opacity:.62;transform:scale(1.03)}}
-.orb::after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;background:radial-gradient(58% 40% at 31% 17%, rgba(255,255,255,.55), transparent 72%)}
+.orb::after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;z-index:4;background:radial-gradient(58% 40% at 31% 17%, rgba(255,255,255,.55), transparent 72%)}
+/* The window. Whatever weather the world has, there is always one calm disc in
+   the middle of it — the pane a magic 8 ball shows its answer through. */
+.orb-window{
+  position:absolute;left:50%;top:50%;width:76%;aspect-ratio:1;transform:translate(-50%,-50%);
+  border-radius:50%;z-index:2;pointer-events:none;
+  background:radial-gradient(circle at 50% 50%,
+    hsl(var(--orb-h) 92% 56%) 0%,
+    hsl(var(--orb-h) 92% 56%) 52%,
+    hsl(var(--orb-h) 92% 55% / .96) 66%,
+    hsl(var(--orb-h) 92% 54% / .6) 82%,
+    hsl(var(--orb-h) 92% 54% / 0) 100%);
+  box-shadow:inset 0 -10px 22px -14px hsl(var(--orb-h) 96% 16% / .6);
+}
+/* the faintest glass across the top, so it sits in the sphere rather than on it */
+.orb-window::after{
+  content:"";position:absolute;left:16%;top:10%;width:56%;height:26%;border-radius:50%;
+  background:linear-gradient(160deg, rgba(255,255,255,.2), rgba(255,255,255,0) 72%);
+  filter:blur(3px);
+}
+.orb.cool .orb-window{background:radial-gradient(circle at 50% 50%, #7C88E8 0%, #7C88E8 46%, rgba(124,136,232,.9) 62%, rgba(124,136,232,.5) 78%, transparent 100%)}
+.orb.clear .orb-window{background:radial-gradient(circle at 50% 50%, #46C89A 0%, #46C89A 46%, rgba(70,200,154,.9) 62%, rgba(70,200,154,.5) 78%, transparent 100%)}
 
 .orb-face{
   position:relative;z-index:3;width:74%;text-align:center;color:hsl(var(--orb-h) 92% 12%);
@@ -305,20 +326,30 @@ h2.sec{font-family:var(--display);font-variation-settings:'wdth' 88,'wght' 700;f
 .app{position:relative;z-index:1}
 body.in-space .app{background:transparent}
 .sysview{display:flex;flex-direction:column;justify-content:center;min-height:calc(100vh - 210px)}
-.sys.arriving{animation:sysin .85s cubic-bezier(.16,.9,.3,1) both}
-@keyframes sysin{from{transform:scale(2.4);opacity:0}to{transform:scale(1);opacity:1}}
 /* The flight: the camera pulls back for a beat, then runs at the world you
    picked — which slides to the middle of the screen as you close on it. */
-.sys.leaving{animation:sysfly 2.35s cubic-bezier(.6,0,.85,.42) both}
-@keyframes sysfly{
-  0%{transform:translate(0,0) scale(1)}
-  9%{transform:translate(calc(var(--fx) * .03), calc(var(--fy) * .03)) scale(.93)}
-  100%{transform:translate(var(--fx), var(--fy)) scale(14)}
-}
-.sys.leaving .body:not(.chosen){opacity:0;transition:opacity .5s ease}
-.sys.leaving .orbit{opacity:0;transition:opacity .6s ease}
-.sys.leaving .body-name{opacity:0;transition:opacity .35s ease}
-.sysview.leaving .eyebrow,.sysview.leaving .runway{opacity:0;transition:opacity .5s ease}
+/* --- what makes travel read as one move, not two animations ---
+   The system you left is lifted out of the page and thrown past the camera,
+   while the sphere you're arriving at grows from exactly where that little
+   planet was. Both happen at once, so nothing ever cuts. */
+.lift{position:fixed;z-index:30;pointer-events:none;transform-origin:var(--ox,50%) var(--oy,50%)}
+.lift-sys{transition:transform 1.5s cubic-bezier(.4,0,.5,1), opacity 1.15s ease .18s}
+.lift-sys.gone{transform:scale(7.5);opacity:0}
+.lift-sys .body-name,.lift-sys .orbit{opacity:0;transition:opacity .4s ease}
+.sys .body-name,.sys .orbit{transition:opacity .5s ease .55s}
+.sys.zooming .body-name,.sys.zooming .orbit{opacity:0;transition:opacity .12s ease}
+.lift-orb{transform-origin:50% 50%}
+.lift-orb.thrown{animation:catapult .75s cubic-bezier(.24,.6,.32,1) both}
+/* on the way, the page holds its breath: no words until you've arrived */
+#nowRoot.approaching .orb-face,
+#nowRoot.approaching .why,
+#nowRoot.approaching .runway,
+#nowRoot.approaching .dayline,
+#nowRoot.approaching .eyebrow,
+#nowRoot.approaching .swipe-hint,
+#nowRoot.approaching .pull-note,
+#nowRoot.approaching .orb-ring{opacity:0!important;transition:none}
+#nowRoot .why,#nowRoot .runway,#nowRoot .dayline,#nowRoot .eyebrow{transition:opacity .5s ease .15s}
 .sky.warp .star{animation:none;opacity:.9;transition:transform 2.2s cubic-bezier(.6,0,.9,.4), opacity 2.2s ease}
 .sky.warp .shooter{opacity:0}
 
@@ -415,26 +446,33 @@ body.in-space .app{background:transparent}
 .sun-sub{font-family:var(--mono);font-size:8.5px;letter-spacing:.18em;text-transform:uppercase;color:#7A3703;position:relative;z-index:4}
 
 /* ---------- Work: a banded gas giant ---------- */
+/* Zones and belts: wide creamy bands, narrow dark ones, every edge soft. The
+   layer is drawn taller than the sphere and drifts sideways, so what you see is
+   a slice of a much bigger weather system. */
 .body.gas .tex{
-  background:
-    repeating-linear-gradient(178deg,
-      hsl(calc(var(--orb-h) + 14) 92% 68%) 0%, hsl(calc(var(--orb-h) + 14) 92% 68%) 3%,
-      hsl(var(--orb-h) 88% 54%) 3%,          hsl(var(--orb-h) 88% 54%) 7%,
-      hsl(calc(var(--orb-h) - 6) 84% 38%) 7%, hsl(calc(var(--orb-h) - 6) 84% 38%) 10%,
-      hsl(calc(var(--orb-h) + 8) 90% 60%) 10%, hsl(calc(var(--orb-h) + 8) 90% 60%) 15%,
-      hsl(calc(var(--orb-h) - 2) 86% 46%) 15%, hsl(calc(var(--orb-h) - 2) 86% 46%) 19%);
-  background-size:260% 100%;
-  filter:blur(.4px);
-  animation:bands 240s linear infinite;
+  background:linear-gradient(180deg,
+    hsl(calc(var(--orb-h) + 16) 78% 74%) 0%,
+    hsl(calc(var(--orb-h) + 10) 72% 66%) 7%,
+    hsl(calc(var(--orb-h) - 4) 68% 40%) 15%,
+    hsl(calc(var(--orb-h) + 12) 76% 71%) 24%,
+    hsl(calc(var(--orb-h) + 14) 74% 76%) 33%,
+    hsl(calc(var(--orb-h) - 6) 66% 36%) 41%,
+    hsl(calc(var(--orb-h) + 2) 74% 58%) 48%,
+    hsl(calc(var(--orb-h) + 12) 76% 72%) 57%,
+    hsl(calc(var(--orb-h) - 2) 70% 46%) 66%,
+    hsl(calc(var(--orb-h) - 8) 64% 32%) 73%,
+    hsl(calc(var(--orb-h) + 10) 74% 68%) 82%,
+    hsl(calc(var(--orb-h) + 4) 72% 60%) 90%,
+    hsl(calc(var(--orb-h) - 4) 68% 42%) 100%);
+  filter:blur(1.1px);
 }
-@keyframes bands{to{background-position:-260% 0}}
 .body.gas .spot{
-  position:absolute;left:26%;top:56%;width:26%;height:15%;border-radius:50%;z-index:2;
-  background:radial-gradient(circle at 40% 40%, hsl(calc(var(--orb-h) - 14) 96% 62%), hsl(calc(var(--orb-h) - 18) 92% 34%) 75%);
-  box-shadow:0 0 6px 1px hsl(calc(var(--orb-h) - 16) 96% 30% / .6) inset;
-  filter:blur(.3px);animation:spotdrift 240s linear infinite;
+  position:absolute;top:63%;width:30%;height:13%;border-radius:50%;z-index:2;
+  background:radial-gradient(circle at 42% 42%, hsl(calc(var(--orb-h) - 12) 82% 58%), hsl(calc(var(--orb-h) - 16) 76% 32%) 72%);
+  box-shadow:0 0 8px 2px hsl(calc(var(--orb-h) - 16) 80% 26% / .5) inset;
+  filter:blur(1px);animation:spotdrift 260s linear infinite;
 }
-@keyframes spotdrift{0%{left:-30%}100%{left:110%}}
+@keyframes spotdrift{0%{left:-34%}100%{left:104%}}
 
 /* ---------- Home: a lived-on world ---------- */
 .body.world .tex{
@@ -525,7 +563,7 @@ body.in-space .app{background:transparent}
     hsl(calc(var(--orb-h) - 8) 84% 34%) 5.6% 8%,
     hsl(calc(var(--orb-h) + 8) 90% 62%) 8% 12%);
   background-size:100% 100%;background-position:0 0;background-repeat:no-repeat;
-  filter:blur(3px);opacity:.62;mix-blend-mode:overlay;animation:orbbands 190s linear infinite;
+  filter:blur(5px);opacity:.42;mix-blend-mode:soft-light;animation:orbbands 190s linear infinite;
 }
 @keyframes orbbands{0%{background-position:0 0}100%{background-position:0 -100%}}
 .orb.skin-world .orb-skin{
@@ -546,11 +584,12 @@ body.in-space .app{background:transparent}
 }
 
 /* ---------- leaving a world: wind up, then catapult ---------- */
-.orb-stage.launch{animation:catapult 1s cubic-bezier(.5,0,.75,.35) both}
+/* the catapult: load the sling, then let it go */
 @keyframes catapult{
-  0%{transform:translateY(0) scale(1) rotate(0)}
-  16%{transform:translateY(46px) scale(1.03) rotate(-3deg)}
-  100%{transform:translateY(-142vh) scale(.1) rotate(26deg);opacity:.15}
+  0%{transform:translateY(0) scale(1) rotate(0);opacity:1}
+  11%{transform:translateY(56px) scale(1.05) rotate(-5deg);opacity:1}
+  86%{opacity:.5}
+  100%{transform:translateY(-150vh) scale(.04) rotate(38deg);opacity:0}
 }
 .orb-stage.pulling .orb-float{transition:none}
 .pull-note{
@@ -565,12 +604,9 @@ body.in-space .app{background:transparent}
 #nowRoot.launching .eyebrow,#nowRoot.launching .pickup,#nowRoot.launching .committed-note{
   opacity:0;transition:opacity .3s ease;
 }
-/* arriving on a world */
-.orb-stage.arriving{animation:landing .75s cubic-bezier(.16,.9,.3,1) both}
-@keyframes landing{from{transform:scale(1.5);opacity:0;filter:blur(6px)}to{transform:scale(1);opacity:1;filter:blur(0)}}
 
 @media (prefers-reduced-motion:reduce){
-  .sys.leaving,.sys.arriving,.orb-stage.launch,.orb-stage.arriving{animation-duration:.001s}
+  .lift-sys,.lift-orb{animation-duration:.001s;transition-duration:.001s}
   .tex,.clouds,.sun-tex,.sun-flare,.star,.shooter{animation:none}
   .orbit-field,.upright{transition:none}
 }
@@ -1629,6 +1665,7 @@ function orbHTML(inner, opts){
         '</svg>'+
         '<div class="orb'+(opts.cool?" cool":"")+(opts.clear?" clear":"")+' '+esc(orbSkinClass())+'" id="orb">'+
           '<div class="orb-turn" id="orbTurn"><div class="orb-skin" id="orbSkin"></div></div>'+
+          '<span class="orb-window"></span>'+
           '<div class="orb-face" id="orbFace">'+inner+'</div>'+
         '</div>'+
       '</div>'+
@@ -1685,9 +1722,6 @@ var SYS_LAYOUT = [
   { id:"projects", a:196,  r:41, size:16, tex:"belt" },
   { id:"errands",  a:122,  r:41, size:13, tex:"comet" }
 ];
-function reduceMotion(){
-  return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
 /* Seconds since midnight -> where the whole system sits. One revolution a day,
    so the sky at nine in the morning is not the sky at four in the afternoon. */
 function dayPhase(){
@@ -1792,52 +1826,128 @@ function sysMount(){
   });
 }
 
-/* ---------- the flight in ----------
-   Tapping a world starts a journey: the camera pulls back for a beat, then
-   accelerates until that world fills everything. Roughly three seconds, and a
-   second tap anywhere cuts it short for anyone in a hurry. */
+/* ============================================================
+   TRAVELLING BETWEEN WORLDS
+
+   The trick to making this feel like one continuous move rather
+   than two animations bolted together: the world you tapped and
+   the sphere you land on are treated as the same object. We
+   measure where the little planet is, render the big sphere,
+   then start it exactly on top of the planet and let it grow
+   into place. Nothing cuts, because nothing is ever swapped —
+   it is one thing, getting closer.
+   ============================================================ */
 var Flight = null;
+function reduceMotion(){
+  return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+function centreOf(el){
+  var r = el.getBoundingClientRect();
+  return { x:r.left + r.width/2, y:r.top + r.height/2, d:r.width };
+}
+/* the transform that would drop element `now` exactly onto rect `then` */
+function flipTo(nowC, thenC){
+  return "translate("+(thenC.x - nowC.x).toFixed(1)+"px,"+(thenC.y - nowC.y).toFixed(1)+"px) "+
+         "scale("+(thenC.d / Math.max(1, nowC.d)).toFixed(4)+")";
+}
+function streakStars(out, fromX, fromY){
+  var sky = document.getElementById("sky");
+  if(!sky) return;
+  sky.classList.add("warp");
+  sky.querySelectorAll(".star").forEach(function(st){
+    var r = st.getBoundingClientRect();
+    var dx = (r.left - fromX) * 7, dy = (r.top - fromY) * 7;
+    if(out){
+      st.style.transform = "translate("+dx.toFixed(0)+"px,"+dy.toFixed(0)+"px)";
+      st.style.opacity = "0";
+    } else {
+      st.style.transition = "none";
+      st.style.transform = "translate("+dx.toFixed(0)+"px,"+dy.toFixed(0)+"px)";
+      st.style.opacity = "0";
+      void st.offsetWidth;
+      st.style.transition = "";
+      st.style.transform = "";
+      st.style.opacity = "";
+    }
+  });
+}
+/* freeze what's on screen so the new view can be built underneath it */
+function liftOverlay(el, cls){
+  var r = el.getBoundingClientRect();
+  var wrap = document.createElement("div");
+  wrap.className = "lift "+(cls||"");
+  wrap.style.cssText = "position:fixed;left:"+r.left+"px;top:"+r.top+"px;width:"+r.width+"px;height:"+r.height+"px;";
+  var clone = el.cloneNode(true);
+  clone.removeAttribute("id");
+  clone.querySelectorAll("[id]").forEach(function(n){ n.removeAttribute("id"); });
+  clone.style.cssText += ";position:absolute;inset:0;margin:0;width:100%;height:100%";
+  wrap.appendChild(clone);
+  document.body.appendChild(wrap);
+  return wrap;
+}
+
+/* ---------- outward: three seconds of getting closer ---------- */
+var FLY_MS = 2400;
 function enterPlanet(id, el){
   if(!planetById(id) || Flight) return;
-  var stage = document.getElementById("sysStage"), sky = document.getElementById("sky");
-  if(!stage || !el || reduceMotion()){ landOn(id); return; }
+  var stage = document.getElementById("sysStage");
+  var target = el && el.querySelector(".body-orb");
+  if(!stage || !target || reduceMotion()){ landOn(id); return; }
 
-  /* fly towards the world you picked, not the middle of the screen */
-  var sr = stage.getBoundingClientRect(), br = el.getBoundingClientRect();
-  var tx = br.left + br.width/2, ty = br.top + br.height/2;
-  var ox = (tx - sr.left) / sr.width * 100;
-  var oy = (ty - sr.top) / sr.height * 100;
-  stage.style.transformOrigin = ox.toFixed(1)+"% "+oy.toFixed(1)+"%";
-  /* everything grows around the target, and the target itself slides to the
-     middle of the windscreen as you close on it */
-  stage.style.setProperty("--fx", (window.innerWidth/2 - tx).toFixed(1)+"px");
-  stage.style.setProperty("--fy", (window.innerHeight*0.46 - ty).toFixed(1)+"px");
-  el.classList.add("chosen");
-  stage.classList.add("leaving");
-  var view = stage.closest(".sysview");
-  if(view) view.classList.add("leaving");
+  var from = centreOf(target);
+  /* the system carries on existing while we leave it behind */
+  var ghost = liftOverlay(stage, "lift-sys");
+  ghost.style.setProperty("--ox", ((from.x - stage.getBoundingClientRect().left) / stage.offsetWidth * 100).toFixed(1)+"%");
+  ghost.style.setProperty("--oy", ((from.y - stage.getBoundingClientRect().top) / stage.offsetHeight * 100).toFixed(1)+"%");
+  streakStars(true, from.x, from.y);
 
-  if(sky){
-    sky.classList.add("warp");
-    /* stars stream past the cockpit */
-    sky.querySelectorAll(".star").forEach(function(st){
-      var dx = (parseFloat(st.style.left) - ox) * 9, dy = (parseFloat(st.style.top) - oy) * 9;
-      st.style.transform = "translate("+dx.toFixed(0)+"vw,"+dy.toFixed(0)+"vh)";
-      st.style.opacity = "0";
-    });
-  }
-  var land = function(){
+  landOn(id, true);
+
+  var float = document.getElementById("orbFloat");
+  var orb = document.getElementById("orb");
+  var root = document.getElementById("nowRoot");
+  if(!float || !orb){ ghost.remove(); return; }
+  var to = centreOf(orb);
+
+  /* start the sphere as the speck you tapped, then close the distance */
+  float.style.animation = "none";
+  float.style.transformOrigin = "50% 50%";
+  float.style.transition = "none";
+  float.style.transform = flipTo(to, from);
+  root.classList.add("approaching");
+  void float.offsetWidth;
+
+  requestAnimationFrame(function(){
+    ghost.classList.add("gone");
+    float.style.transition = "transform "+FLY_MS+"ms cubic-bezier(.72,0,.16,1)";
+    float.style.transform = "translate(0,0) scale(1)";
+  });
+
+  var arrive = function(){
     if(!Flight) return;
     clearTimeout(Flight.t);
     document.removeEventListener("pointerdown", Flight.skip, true);
     Flight = null;
-    landOn(id);
+    if(ghost.parentNode) ghost.remove();
+    float.style.transition = "";
+    float.style.transform = "";
+    float.style.animation = "";
+    var rt = document.getElementById("nowRoot");
+    if(rt) rt.classList.remove("approaching");
+    revealFace();
+    var open = planetOpen(id).filter(function(t){ return !isCooling(t); });
+    if(open.length) toast(voice("enter", { where: planetLabel(id) })[0]);
   };
-  Flight = { skip:function(e){ e.preventDefault(); e.stopPropagation(); land(); } };
-  Flight.t = setTimeout(land, 2350);
-  setTimeout(function(){ if(Flight) document.addEventListener("pointerdown", Flight.skip, true); }, 420);
+  Flight = { skip:function(e){
+    e.preventDefault(); e.stopPropagation();
+    float.style.transition = "transform .45s cubic-bezier(.2,.9,.3,1)";
+    float.style.transform = "translate(0,0) scale(1)";
+    setTimeout(arrive, 440);
+  } };
+  Flight.t = setTimeout(arrive, FLY_MS + 90);
+  setTimeout(function(){ if(Flight) document.addEventListener("pointerdown", Flight.skip, true); }, 500);
 }
-function landOn(id){
+function landOn(id, quiet){
   S.session.planet = id;
   S.session.enteredAt = Date.now();
   S.session.sessionDone = false;
@@ -1845,36 +1955,61 @@ function landOn(id){
   S.ui.arrival = null;
   unpin(); save();
   applyHue(); renderNow(true); renderChips(); renderList();
-  var stage = document.getElementById("orbStage");
-  if(stage && !reduceMotion()) stage.classList.add("arriving");
+  if(quiet) return;
   var open = planetOpen(id).filter(function(t){ return !isCooling(t); });
   if(open.length) toast(voice("enter", { where: planetLabel(id) })[0]);
 }
-/* ---------- the catapult out ----------
-   Pull the world down against its own weight; let go past the line and it
-   slings back into the sky, and the system opens up around you again. */
+
+/* ---------- inward: sling it away, then fall back into the system ---------- */
 function leavePlanet(){
   if(S.focus && !S.focus.paused){ toast("Clock's running. Finish it or park it first."); return; }
-  var stage = document.getElementById("orbStage");
-  var done = function(){
+  var float = document.getElementById("orbFloat");
+  var orb = document.getElementById("orb");
+  var leaving = S.session.planet;
+
+  var settle = function(){
     S.session.planet = null;
     S.focus = null; stopTicker();
     S.ui.arrival = null;
     unpin(); save();
     applyHue(); renderNow(true); renderChips(); renderList();
-    var sys = document.getElementById("sysStage");
-    if(sys && !reduceMotion()) sys.classList.add("arriving");
   };
-  if(stage && !reduceMotion()){
-    var f = document.getElementById("orbFloat");
-    if(f){ f.style.animation = "none"; f.style.transform = ""; }
-    stage.classList.remove("pulling", "armed");
-    stage.classList.add("launch");
-    var root = document.getElementById("nowRoot");
-    if(root) root.classList.add("launching");
-    setTimeout(done, 900);
+  if(!float || !orb || reduceMotion()){ settle(); return; }
+
+  var from = centreOf(orb);
+  /* Leaving starts where arriving finished: right up against the world. The
+     camera then falls all the way back while the sphere sails off. */
+  var camera = { x:from.x, y:from.y, d:from.d * 2.05 };
+  var thrown = liftOverlay(float, "lift-orb");
+  float.style.visibility = "hidden";
+  thrown.classList.add("thrown");
+
+  settle();
+
+  var stage = document.getElementById("sysStage");
+  var body = stage && stage.querySelector('[data-planet="'+leaving+'"] .body-orb');
+  if(stage && body){
+    var to = centreOf(body);
+    var sr = stage.getBoundingClientRect();
+    stage.style.transformOrigin = ((to.x - sr.left) / stage.offsetWidth * 100).toFixed(1)+"% "+
+                                  ((to.y - sr.top) / stage.offsetHeight * 100).toFixed(1)+"%";
+    stage.style.transition = "none";
+    stage.style.transform = flipTo(to, camera);
+    stage.style.opacity = "0";
+    stage.classList.add("zooming");
+    void stage.offsetWidth;
+    requestAnimationFrame(function(){
+      stage.style.transition = "transform 1650ms cubic-bezier(.34,.42,.28,1) 120ms, opacity 460ms ease 120ms";
+      stage.style.transform = "translate(0,0) scale(1)";
+      stage.style.opacity = "1";
+    });
+    setTimeout(function(){ stage.classList.remove("zooming"); }, 780);
+    setTimeout(function(){
+      stage.style.transition = ""; stage.style.transform = ""; stage.style.opacity = ""; stage.style.transformOrigin = "";
+    }, 1820);
+    streakStars(false, from.x, from.y);
   }
-  else done();
+  setTimeout(function(){ if(thrown.parentNode) thrown.remove(); }, 720);
 }
 
 /* where your body is — separate from which world you're working in */
@@ -4198,7 +4333,7 @@ if(!S.profile.sawGestures && S.session.started) showGestures();
    app out from under a running timer. */
 (function () {
   if (!('serviceWorker' in navigator) || location.protocol !== 'https:') return;
-  var BUILD = '20260902-1035-8acde3';
+  var BUILD = '20260902-1104-ebaf19';
   window.addEventListener('load', function () {
     navigator.serviceWorker.register('sw.js?v=' + BUILD).then(function (reg) {
       function watch(sw) {
