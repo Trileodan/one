@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="ONE">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="one-build" content="20260902-1217-c0b4c5">
+<meta name="one-build" content="20260902-1246-50e215">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png" sizes="192x192">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -219,9 +219,9 @@ h2.sec{font-family:var(--display);font-variation-settings:'wdth' 88,'wght' 700;f
 /* ---------- the rolodex of moons ----------
    Press and hold and this world's tasks come round on a wheel, each one the
    moon it would be if you chose it. */
-.orb-pick{position:absolute;left:0;right:0;top:50%;height:0;z-index:8}
+.orb-pick{position:absolute;inset:0;z-index:8;touch-action:none}
 .pick-item{
-  position:absolute;left:50%;top:0;width:56%;aspect-ratio:1;border-radius:50%;
+  position:absolute;left:50%;top:50%;width:56%;aspect-ratio:1;border-radius:50%;
   appearance:none;border:0;cursor:pointer;color:#191712;padding:8% 11%;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
   background:radial-gradient(circle at 33% 27%, #FFFEFA 0%, #F1EEE6 26%, #D8D4C9 56%, #A9A599 82%, #7C7970 100%);
@@ -351,6 +351,7 @@ body.in-space .app{background:transparent}
 .lift-orb{transform-origin:50% 50%}
 .lift-orb.thrown{animation:catapult .75s cubic-bezier(.24,.6,.32,1) both}
 /* on the way, the page holds its breath: no words until you've arrived */
+#nowRoot.approaching .orb-float,
 #nowRoot.approaching .moon,
 #nowRoot.approaching .orb-face,
 #nowRoot.approaching .why,
@@ -360,6 +361,10 @@ body.in-space .app{background:transparent}
 #nowRoot.approaching .swipe-hint,
 #nowRoot.approaching .pull-note,
 #nowRoot.approaching .orb-ring{opacity:0!important;transition:none}
+/* The world breathes. Hold that breath while something is flying towards it, or
+   the traveller aims at where the orb was a second ago and lands with a jolt.
+   -5px is the animation's own 0% frame, so letting go doesn't move it either. */
+#nowRoot.approaching .orb-float{animation:none!important;transform:translateY(-5px)!important}
 #nowRoot .why,#nowRoot .runway,#nowRoot .dayline,#nowRoot .eyebrow{transition:opacity .5s ease .15s}
 .sky.warp .star{animation:none;opacity:.9;transition:transform 2.2s cubic-bezier(.6,0,.9,.4), opacity 2.2s ease}
 .sky.warp .shooter{opacity:0}
@@ -1572,7 +1577,18 @@ function chooseTask(){
 
   var best = ranked[0];
   if(!transit && best.score < -60 && L.pending && L.inWindow) return { lunch:true, early:true };
-  if(!transit && best.score < -60) return { task:null, reason:"nofit", gap:ctx.runway };
+  if(!transit && best.score < -60){
+    /* Nothing fits in the gap before the next thing in the diary. Rather than an
+       empty screen and a dead ten minutes, put that diary task up now — you can
+       always start it early if you're ready for it. */
+    var soon = ctx.runway.kind === "fixed" ? nextFixed(true) : null;
+    if(soon && planetOf(soon) === S.session.planet){
+      S.ui.pinnedId = null;
+      return { task:soon, fixed:true, early:true, startsIn:Math.max(0, ctx.runway.mins),
+               why:["Nothing else fits before it. Start it early if you're ready."] };
+    }
+    return { task:null, reason:"nofit", gap:ctx.runway };
+  }
   best.rest = ranked.slice(1).filter(function(r){ return r.score > -900; }).map(function(r){ return r.task; });
   S.ui.pinnedId = best.task.id;
   return best;
@@ -1635,8 +1651,8 @@ var Orb = { stage:null, swipe:null, holdT:null, moved:false, movedAt:0, twoFinge
 /* A world you're standing on, and a moon in front of it carrying the one thing
    you're doing. The planet keeps its own weather and its gentle float; the moon
    is the part you handle — push it away, send it up, spin the rolodex. */
-function planetSkin(){
-  var p = planetById(S.session.planet);
+function planetSkin(which){
+  var p = planetById(which === undefined ? S.session.planet : which);
   if(!p) return { cls:"", inner:"" };
   if(p.id === "home" || p.kind === "planet"){
     return p.id === "home"
@@ -1899,8 +1915,24 @@ function enterPlanet(id, el){
   if(!stage || !target || reduceMotion()){ landOn(id); return; }
 
   var from = centreOf(target);
-  /* the world travels with you; everything else is scenery you leave behind */
-  var traveller = liftOverlay(target, "lift-planet");
+  /* The world travels with you; everything else is scenery you leave behind.
+     What matters is that the thing in your hand is drawn the same way at both
+     ends of the journey — a little planet's surface lives on the button around
+     it, so the lift has to carry that class or the stripes vanish and reappear
+     at the last second. Where the sky's version and the close-up disagree
+     (a comet, a belt), the traveller wears the close-up from the start: any
+     change is better spent at forty pixels than at four hundred. */
+  var skin = planetSkin(id);
+  var sysTex = (String(el.className).match(/\b(gas|world|belt|comet)\b/) || [""])[0];
+  var traveller;
+  if(sysTex === skin.cls){
+    traveller = liftOverlay(target, "lift-planet " + sysTex);
+  } else {
+    traveller = liftOverlay(target, "lift-planet " + skin.cls);
+    var face = traveller.firstChild;
+    face.innerHTML = skin.inner;
+  }
+  traveller.style.setProperty("--orb-h", String(planetHue(id)));
   el.style.visibility = "hidden";
   var ghost = liftOverlay(stage, "lift-sys");
   var sr = stage.getBoundingClientRect();
@@ -1913,17 +1945,22 @@ function enterPlanet(id, el){
   var orb = document.getElementById("orb");
   var root = document.getElementById("nowRoot");
   if(!orb){ ghost.remove(); traveller.remove(); return; }
+  /* Hide and still the destination first, then measure it: the rect has to be
+     the one the traveller will actually land on. */
+  root.classList.add("approaching");
   var to = centreOf(orb);
 
   traveller.style.transformOrigin = "50% 50%";
   traveller.style.transition = "none";
   traveller.style.transform = "translate(0,0) scale(1)";
-  root.classList.add("approaching");
   void traveller.offsetWidth;
 
   requestAnimationFrame(function(){
     ghost.classList.add("gone");
-    traveller.style.transition = "transform "+FLY_MS+"ms cubic-bezier(.72,0,.16,1)";
+    /* Moving towards something at a steady speed makes it swell faster the
+       closer you get. Ease in, but not from a standstill — a full second of
+       nothing reads as a hang, not as distance. */
+    traveller.style.transition = "transform "+FLY_MS+"ms cubic-bezier(.45,0,.15,1)";
     traveller.style.transform = flipTo(from, to);
   });
 
@@ -1933,13 +1970,15 @@ function enterPlanet(id, el){
     document.removeEventListener("pointerdown", Flight.skip, true);
     Flight = null;
     if(ghost.parentNode) ghost.remove();
+    /* Hand over in a single frame: reveal the real world and take the traveller
+       away together. Any overlap at all shows up as a flicker, because the two
+       spheres are alike but not identical. */
     var rt = document.getElementById("nowRoot");
+    var fl = document.getElementById("orbFloat");
+    if(fl){ fl.style.transition = "none"; fl.style.opacity = "1"; }
     if(rt) rt.classList.remove("approaching");
-    /* hand over: the traveller and the world are the same size in the same
-       place, so fading one out changes nothing you can see */
-    traveller.style.transition = "opacity .28s ease";
-    traveller.style.opacity = "0";
-    setTimeout(function(){ if(traveller.parentNode) traveller.remove(); }, 300);
+    if(traveller.parentNode) traveller.remove();
+    if(fl) requestAnimationFrame(function(){ fl.style.transition = ""; fl.style.opacity = ""; });
     revealFace();
     moonArrive();
     var open = planetOpen(id).filter(function(t){ return !isCooling(t); });
@@ -1951,7 +1990,12 @@ function enterPlanet(id, el){
     traveller.style.transform = flipTo(from, to);
     setTimeout(arrive, 440);
   } };
-  Flight.t = setTimeout(arrive, FLY_MS + 60);
+  /* Land on the frame the transition actually finishes, not on a guess — a
+     handover even one frame early shows the last of the growth snap. */
+  traveller.addEventListener("transitionend", function(ev){
+    if(ev.propertyName === "transform") arrive();
+  });
+  Flight.t = setTimeout(arrive, FLY_MS + 260);
   setTimeout(function(){ if(Flight) document.addEventListener("pointerdown", Flight.skip, true); }, 500);
 }
 function landOn(id, quiet){
@@ -2072,7 +2116,7 @@ function canPick(){
   if(!isErrandPlanet(S.session.planet) && S.session.lunchState === "active") return false;
   return true;
 }
-function openPicker(){
+function openPicker(at){
   if(!canPick()) return;
   var list = pickerList();
   if(list.length < 2){ toast(list.length ? "That's the only thing here." : "Nothing here to choose from."); return; }
@@ -2117,6 +2161,10 @@ function openPicker(){
   var rl = document.querySelector("#nowRoot .runway");
   if(rl){ rl.dataset.was = rl.textContent; rl.textContent = "Scroll · tap to pick"; }
   el.addEventListener("pointerdown", pickDown);
+  /* The press that opened this wheel is still on the glass. Hand it straight to
+     the wheel so the same finger can carry on and spin it — otherwise you have
+     to lift off and touch down again before anything moves. */
+  if(at) pickDown({ clientY: at.y }, true);
 }
 function layoutPicker(){
   var orb = document.getElementById("orb");
@@ -2137,8 +2185,10 @@ function layoutPicker(){
     el.classList.toggle("on", ad < 0.04);
   });
 }
-function pickDown(e){
-  Pick.armed = true;
+function pickDown(e, carryOn){
+  /* carryOn means the wheel opened under a finger that is already down: it can
+     spin straight away, but the release that opened it must not pick anything */
+  if(!carryOn) Pick.armed = true;
   Pick.drag = { y:e.clientY, t:performance.now() };
   Pick.moved = false; Pick.snapping = false; Pick.vel = 0;
   window.addEventListener("pointermove", pickMove);
@@ -2225,7 +2275,7 @@ function swipeDown(e){
   Orb.swipe = { x:e.clientX, y:e.clientY, t:performance.now(), dir:null };
   clearTimeout(Orb.holdT);
   Orb.holdT = setTimeout(function(){
-    if(Orb.swipe && !Orb.swipe.dir){ cancelSwipe(); openPicker(); }
+    if(Orb.swipe && !Orb.swipe.dir){ var at = { y:Orb.swipe.y }; cancelSwipe(); openPicker(at); }
   }, 480);
   var mn = document.getElementById("moon");
   if(mn) mn.classList.add("held");
@@ -2483,20 +2533,25 @@ function whyLine(choice){
   return "Nothing else is more use to you this minute.";
 }
 function viewOne(choice){
-  var t = choice.task, p = dayProgress(), fixedNow = choice.fixed, w = runway();
+  var t = choice.task, p = dayProgress(), w = runway();
+  var early = !!choice.early;                       /* the diary task, offered ahead of time */
+  var fixedNow = choice.fixed && !early;
   var spentAlready = isRecurring(t) ? 0 : Math.round(t.actualMinutes || 0);
-  var sub = fixedNow ? "until "+minsToHHMM(taskEndMins(t))
+  var sub = early ? t.fixedStart+" · "+t.duration+" min"
+          : fixedNow ? "until "+minsToHHMM(taskEndMins(t))
           : (isRecurring(t) ? t.duration+" min · "+repeatLabel(t.repeatEvery)
           : (spentAlready > 0
               ? (timeLeftOn(t) > 0 ? timeLeftOn(t)+" min left · "+fmtDur(spentAlready)+" in"
                                    : "over · "+fmtDur(spentAlready)+" in")
               : t.duration+(t.estimated ? "ish min" : " min")+" · "+t.type));
-  var line = fixedNow
+  var line = early
+    ? (choice.startsIn > 0 ? "Starts in "+fmtDur(choice.startsIn)+" · tap to start it now" : "Tap to start")
+    : fixedNow
     ? "You're in this until "+minsToHHMM(taskEndMins(t))
     : (w.kind === "none" ? "Nothing in the way" : fmtDur(w.mins)+" until "+w.what);
   return ''+
     '<p class="eyebrow'+(fixedNow?" hot":"")+'">'+esc(planetLabel(S.session.planet))+
-      (fixedNow ? " · happening now" : (isRecurring(t) ? " · check-in" : ""))+'</p>'+
+      (early ? " · up next" : fixedNow ? " · happening now" : (isRecurring(t) ? " · check-in" : ""))+'</p>'+
     orbHTML(faceTask(t, sub), { flag:flagFor(t) })+
     '<p class="why"><b>Why this?</b> '+esc(whyLine(choice))+'</p>'+
     '<p class="runway">'+esc(line)+'</p>'+
@@ -2588,6 +2643,7 @@ function orbTap(){
   }
   if(!choice.task) return;
   if(isErrandPlanet(s.planet)){ settleTask(choice.task, 0); renderNow(true); return; }
+  if(choice.early){ beginFocus(choice.task, choice.task.duration); return; }
   if(choice.fixed){ beginFocus(choice.task, Math.max(1, taskEndMins(choice.task) - minsOfDay())); return; }
   beginFocus(choice.task);
 }
@@ -4364,7 +4420,9 @@ document.addEventListener("visibilitychange", function(){
 });
 window.addEventListener("resize", function(){ if(Pick.on) layoutPicker(); });
 document.addEventListener("pointerdown", function(e){
-  if(Pick.on && !e.target.closest("#orb")) closePicker();
+  /* A press on the wheel itself is how you spin it — only a press somewhere
+     else means you're done with it. */
+  if(Pick.on && !e.target.closest("#orb, #orbPick")) closePicker();
 }, true);
 
 if(!CAN_STORE){
@@ -4397,7 +4455,7 @@ if(!S.profile.sawGestures && S.session.started) showGestures();
    app out from under a running timer. */
 (function () {
   if (!('serviceWorker' in navigator) || location.protocol !== 'https:') return;
-  var BUILD = '20260902-1217-c0b4c5';
+  var BUILD = '20260902-1246-50e215';
   window.addEventListener('load', function () {
     navigator.serviceWorker.register('sw.js?v=' + BUILD).then(function (reg) {
       function watch(sw) {

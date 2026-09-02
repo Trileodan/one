@@ -34,6 +34,10 @@ losing your place. **Pull down** and you get the whole world — planet and moon
 and letting go catapults it back into orbit. Tap to start the clock; press and
 hold and this world's tasks come round on a rolodex of moons.
 
+If there's a meeting in the diary and nothing sensible fits in the gap before
+it, ONE puts the meeting up early rather than showing you an empty screen — tap
+it and you start it there and then.
+
 Adding a task needs one thing: what it is. ONE reads the sentence — *"Call
 Harrogate today 20m"*, *"Team meeting tomorrow 11am 1h"* — guesses the length
 when you don't say, files it in the world you're standing in, and puts you
