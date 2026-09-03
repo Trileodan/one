@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="ONE">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="one-build" content="20260903-1212-142010">
+<meta name="one-build" content="20260903-1255-ca265a">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png" sizes="192x192">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -107,6 +107,12 @@ button,input,select,textarea{font:inherit;color:inherit}
 .topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:10px;padding:14px 18px 10px;backdrop-filter:blur(14px)}
 .mark{font-family:var(--display);font-variation-settings:'wdth' 78,'wght' 900;font-size:19px;letter-spacing:.10em;line-height:1;color:var(--ink);opacity:.85}
 .mark span{color:var(--hi)}
+/* The time is the one thing you always want to know, so it sits beside the mark
+   at every level — solar system, world, project. */
+.clock-now{
+  font-family:var(--mono);font-size:12px;letter-spacing:.1em;color:var(--ink-2);
+  opacity:.75;line-height:1;padding-top:2px;font-variant-numeric:tabular-nums;
+}
 .topbar-spacer{flex:1}
 .statchips{display:flex;gap:6px;justify-content:flex-end}
 .statchip{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;padding:5px 9px;border-radius:999px;border:1px solid var(--line);color:var(--ink-2);background:transparent;white-space:nowrap;cursor:pointer;max-width:44vw;overflow:hidden;text-overflow:ellipsis}
@@ -916,6 +922,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--hi)}
 <div class="app">
   <header class="topbar">
     <div class="mark">O<span>N</span>E</div>
+    <div class="clock-now" id="clockNow" aria-label="Time now"></div>
     <div class="topbar-spacer"></div>
     <div class="statchips" id="statchips"></div>
   </header>
@@ -961,10 +968,6 @@ var todayKey = function(d){ d = d || new Date(); return d.getFullYear()+"-"+pad(
    tints, the paper. Work keeps ONE's orange; the others take their own. */
 /* Where your body can be. Being out and about used to live here; it's a world
    of its own now, so this list is only about what a job physically needs. */
-var DEFAULT_LOCATIONS = [
-  { id:"home", label:"Home",      kind:"place", hue:150 },
-  { id:"work", label:"Workplace", kind:"place", hue:22  }
-];
 /* The day is booked against worlds, not addresses. "Work 9 to 5" says which
    part of your life owns that stretch of the day; where your body happens to be
    is a separate question, and only decides what's physically possible. */
@@ -972,8 +975,6 @@ var DEFAULT_SCHEDULE = [
   { from:"09:00", to:"17:00", planet:"work" },
   { from:"18:00", to:"20:00", planet:"home" }
 ];
-var HUE_POOL = [35, 190, 320, 95, 260, 10];
-/* the colours you can give a place, one per row of the wheel */
 /* Twenty colours, chosen to stay apart from each other against a black sky —
    the point is that you learn "the blue one is Work" without reading a label,
    and that stops working the moment two of them are nearly the same. */
@@ -1007,8 +1008,7 @@ function surfaceFor(p){
 }
 
 /* A planet is a part of your life, not a building: you can be in Work at the
-   kitchen table. Where you physically are is separate metadata (S.locations),
-   and only decides whether a job is possible right now.
+   kitchen table.
 
    These four are a suggestion and nothing more. Once the app has started for
    the first time they have exactly the same standing as one you made five
@@ -1022,17 +1022,16 @@ var DEFAULT_PLANETS = [
 ];
 
 var DEFAULTS = {
-  version:8,
+  version:9,
   profile:{ name:"", tone:"normal", sawGestures:false },
   settings:{
     lunchDuration:45, lunchFrom:"12:00", lunchTo:"13:00", lunchRequired:true,
-    workUntil:"17:30", defaultDuration:30, autoLocation:true, autoPlanet:true, warnMinutes:10, chime:true
+    workUntil:"17:30", defaultDuration:30, autoPlanet:true, warnMinutes:10, chime:true
   },
   planets: JSON.parse(JSON.stringify(DEFAULT_PLANETS)),
-  locations: JSON.parse(JSON.stringify(DEFAULT_LOCATIONS)),
   schedule: JSON.parse(JSON.stringify(DEFAULT_SCHEDULE)),
   session:{
-    date:null, started:false, motivation:"meh", location:"work", lastPlace:"work", segIndex:-1,
+    date:null, started:false, motivation:"meh", segIndex:-1,
     planet:null, project:null, enteredAt:null, sessionDone:false, keepGoing:false, lightUntil:0, blockShown:null,
     lunchState:"pending", lunchEndsAt:null, workFinished:false, dayClosed:false, briefed:false, spun:false
   },
@@ -1057,39 +1056,21 @@ var S = load() || JSON.parse(JSON.stringify(DEFAULTS));
 
 (function migrate(){
   var was = +S.version || 0;
-  if(!Array.isArray(S.locations) || !S.locations.length) S.locations = JSON.parse(JSON.stringify(DEFAULT_LOCATIONS));
   if(!Array.isArray(S.schedule)) S.schedule = JSON.parse(JSON.stringify(DEFAULT_SCHEDULE));
-  var KNOWN_HUES = { home:150, work:22, out:215 };
-  S.locations.forEach(function(l,i){
-    if(typeof l.hue !== "number") l.hue = KNOWN_HUES[l.id] != null ? KNOWN_HUES[l.id] : HUE_POOL[i % HUE_POOL.length];
-  });
-  /* Before v4 the hue only tinted the neutrals and the sphere was always
-     orange. Now it paints the sphere too, so anything still on an old default
-     moves to a colour that was picked to be looked at. Anything chosen by hand
-     is left exactly as it is. */
-  if(was && was < 4){
-    var OLD = { home:150, work:215, out:285 };
-    S.locations.forEach(function(l){
-      if(OLD[l.id] === l.hue && KNOWN_HUES[l.id] != null) l.hue = KNOWN_HUES[l.id];
-    });
-  }
-
-  var legacy = { home:"home", work:"work", "else":"out", errand:"out" };
-  if(legacy[S.session.location]) S.session.location = legacy[S.session.location];
-  if(!locById(S.session.location)) S.session.location = (S.locations[0]||{}).id;
+  /* v9: where your body is turned out not to earn its keep. A task belongs to a
+     part of your life, and that was doing all the useful work; "you have to be
+     at the workplace for this" mostly just hid things from you. The whole layer
+     goes, and nothing about the tasks themselves is lost. */
+  delete S.locations;
+  delete S.session.location; delete S.session.lastPlace;
+  delete S.settings.autoLocation;
 
   ["lunchRequired","lunchFrom","lunchTo","lunchDuration","workUntil"].forEach(function(k){
     if(S.session[k] != null && S.settings[k] == null) S.settings[k] = S.session[k];
   });
 
   S.tasks.forEach(function(t){
-    if(!Array.isArray(t.locations)){
-      var one = t.location;
-      if(legacy[one]) one = legacy[one];
-      if(!one || (one !== "anywhere" && !locById(one))) one = "anywhere";
-      t.locations = [one];
-      delete t.location;
-    }
+    delete t.location; delete t.locations; delete t.needsPlace;
     if(!("fixedStart" in t)) t.fixedStart = null;
     if(!("fixedEnd" in t)) t.fixedEnd = null;
     if(!("warned" in t)) t.warned = false;
@@ -1119,16 +1100,12 @@ var S = load() || JSON.parse(JSON.stringify(DEFAULTS));
        a place; now it's a world of its own, so those tasks emigrate and stop
        carrying a physical requirement they no longer need. */
     if(!t.planet){
-      if(t.locations && t.locations.some(isTransit)) t.planet = "errands";
+      if(t.type === "Errand") t.planet = "errands";
       else if(t.type === "Personal Project") t.planet = "projects";
       else if(t.category === "Personal") t.planet = "home";
       else t.planet = "work";
     }
     delete t.category;      /* behaviour comes from the task, not from which box it sat in */
-    if(Array.isArray(t.locations)){
-      var kept = t.locations.filter(function(x){ return x === "anywhere" || (locById(x) && !isTransit(x)); });
-      t.locations = kept.length ? kept : ["anywhere"];
-    }
 
     /* "Must do today" was importance and urgency wearing one coat. Split them:
        the urgency becomes a real deadline, the importance stays importance. */
@@ -1137,7 +1114,6 @@ var S = load() || JSON.parse(JSON.stringify(DEFAULTS));
     if(["optional","normal","important"].indexOf(t.priority) < 0) t.priority = "normal";
     if(!("estimated" in t)) t.estimated = false;
     if(!("avoidCount" in t)) t.avoidCount = 0;
-    if(!("needsPlace" in t)) t.needsPlace = null;
   });
   /* ---- v7: every orbiting thing is just a Planet ----
      Comets and belts were special objects whose behaviour came from their
@@ -1181,7 +1157,7 @@ var S = load() || JSON.parse(JSON.stringify(DEFAULTS));
   if(hadLoc){
     S.schedule = S.schedule.map(function(sg){
       if(sg.planet) return sg;
-      var l = locById(sg.loc), want = l ? l.label : "";
+      var want = String(sg.loc || "");
       var hit = null;
       (S.planets||[]).forEach(function(p){
         if(!hit && want && p.name.toLowerCase().indexOf(want.toLowerCase().split(/\s+/)[0]) > -1) hit = p.id;
@@ -1203,37 +1179,14 @@ var S = load() || JSON.parse(JSON.stringify(DEFAULTS));
   S.ui.selecting = false;
   if(S.session.planet && !planetById(S.session.planet)) S.session.planet = null;
 
-  /* v6: transit places retire into the Errands planet. Anything that pointed at
-     one - the schedule, where you are, a task's requirement - is mended here. */
-  var gone = S.locations.filter(function(l){ return l.kind === "transit"; }).map(function(l){ return l.id; });
-  if(gone.length){
-    S.locations = S.locations.filter(function(l){ return l.kind !== "transit"; });
-    if(!S.locations.length) S.locations = JSON.parse(JSON.stringify(DEFAULT_LOCATIONS));
-    var home = (S.locations[0]||{}).id;
-    S.schedule.forEach(function(sg){ if(gone.indexOf(sg.loc) > -1) sg.loc = home; });
-    if(gone.indexOf(S.session.location) > -1) S.session.location = home;
-    if(gone.indexOf(S.session.lastPlace) > -1) S.session.lastPlace = home;
-    S.tasks.forEach(function(t){
-      if(!Array.isArray(t.locations)) return;
-      t.locations = t.locations.filter(function(x){ return gone.indexOf(x) < 0; });
-      if(!t.locations.length) t.locations = ["anywhere"];
-      if(t.needsPlace && gone.indexOf(t.needsPlace) > -1) t.needsPlace = null;
-    });
-  }
-  if(locById("work") && S.locations.filter(function(l){ return l.id === "work"; })[0].label === "Work"){
-    S.locations.filter(function(l){ return l.id === "work"; })[0].label = "Workplace";
-  }
-  S.version = 8;
+  S.version = 9;
 })();
 
 (function rollover(){
   var t = todayKey();
   if(S.session.date !== t){
-    var keep = locById(S.session.location) ? S.session.location : (S.locations[0]||{}).id;
     S.session = JSON.parse(JSON.stringify(DEFAULTS.session));
     S.session.date = t;
-    S.session.location = keep;
-    S.session.lastPlace = isTransit(keep) ? (((places()[0]||{}).id) || keep) : keep;
     S.focus = null; S.ui.arrival = null; S.ui.pinnedId = null;
     S.tasks.forEach(function(x){
       if(x.status === "done") x.archived = true;
@@ -1264,24 +1217,8 @@ function mmss(sec){
 }
 
 /* ============================================================
-   3. LOCATIONS + DAY SHAPE
+   3. THE SHAPE OF THE DAY
    ============================================================ */
-function locById(id){
-  if(!Array.isArray(S.locations)) return null;
-  for(var i=0;i<S.locations.length;i++) if(S.locations[i].id === id) return S.locations[i];
-  return null;
-}
-function isTransit(id){ var l = locById(id); return !!l && l.kind === "transit"; }
-function locLabel(id){ if(id === "anywhere") return "Anywhere"; var l = locById(id); return l ? l.label : "Anywhere"; }
-function locHue(id){ var l = locById(id); return l ? l.hue : 215; }
-function places(){ return S.locations.filter(function(l){ return l.kind === "place"; }); }
-function transitLocs(){ return S.locations.filter(function(l){ return l.kind === "transit"; }); }
-function slug(s){
-  var base = String(s).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || "place";
-  var id = base, n = 2;
-  while(locById(id)){ id = base+"-"+n; n++; }
-  return id;
-}
 function sortedSchedule(){ return S.schedule.slice().sort(function(a,b){ return hhmmToMins(a.from) - hhmmToMins(b.from); }); }
 function segmentAt(m){
   var seg = sortedSchedule();
@@ -1441,7 +1378,7 @@ function dueLabel(t){
 function dateFromToday(n){ var d = new Date(); d.setDate(d.getDate()+n); return todayKey(d); }
 
 function applyHue(){
-  var h = S.session.planet ? planetHue(S.session.planet) : locHue(S.session.location);
+  var h = S.session.planet ? planetHue(S.session.planet) : 212;
   var r = document.documentElement.style;
   r.setProperty("--loc-h", String(h));
   r.setProperty("--orb-h", String(h));
@@ -1460,7 +1397,7 @@ var EFFORT = { easy:"Easy win", normal:"Normal", deep:"Deep work" };
 /* "Deep Work" isn't a kind of work, it's how heavy the work is — and mental
    load already says that. One less near-duplicate to choose between. */
 var TYPES = ["Admin","Email","Physical","Planning","Creative","Errand","Meeting","Personal Project"];
-var BLOCK_REASONS = ["Waiting for someone","Need information","Need equipment/materials","Wrong location","Can't access it right now","Other"];
+var BLOCK_REASONS = ["Waiting for someone","Need information","Need equipment/materials","Can't access it right now","Other"];
 var HOUSEHOLD = /\b(bin|bins|rubbish|recycling|washing|laundry|dishes|dishwasher|kitchen|bathroom|bedroom|tidy|hoover|vacuum|garage|garden|lawn|ironing|beds?|curtains?|blinds?|shelf|shelves|rail|boiler|radiator|plumber|electrician|light ?bulb|lamp|fence|shed|loft|attic|cupboard|drawer|hallway|carpet|door|window|dinner|tea|cooking|meal ?plan|kids?|school run)\b/i;
 var ERRANDY = /\b(petrol|diesel|fuel|milk|bread|shop|shopping|groceries|chemist|pharmacy|post office|parcel|bank|collect|pick up|pickup|drop off|dry clean|car wash|cash)\b/i;
 
@@ -1783,8 +1720,6 @@ function makeTask(o){
     priority:o.priority||"normal", effort:o.effort||"normal",
     due:o.due||null,
     duration:o.duration||S.settings.defaultDuration, estimated:!!o.estimated,
-    locations: isBatchPlanet(planet) ? ["anywhere"]
-             : ((o.locations && o.locations.length) ? o.locations.slice() : ["anywhere"]),
     type:o.type||"Admin",
     fixedStart:o.fixedStart||null, fixedEnd:o.fixedEnd||null, warned:false,
     unblocks:o.unblocks||null,
@@ -1793,7 +1728,7 @@ function makeTask(o){
     urgent:!!o.urgent, prepMins:o.prepMins||0, waitingOn:null, cancelledAt:null, reopened:0,
     notes:(o.notes||"").trim(),
     status:"open", blockedReason:null, postponedToday:0, lastPostponedAt:null,
-    avoidCount:0, needsPlace:null,
+    avoidCount:0,
     actualMinutes:0, createdAt:Date.now(), completedAt:null, archived:false
   };
 }
@@ -1801,7 +1736,6 @@ function makeTask(o){
 function setPlanet(t, id){
   if(!planetById(id)) return;
   t.planet = id;
-  if(isBatchPlanet(id)) t.locations = ["anywhere"];
 }
 function liveTasks(){ return S.tasks.filter(function(t){ return !t.archived; }); }
 function byId(id){ for(var i=0;i<S.tasks.length;i++) if(S.tasks[i].id===id) return S.tasks[i]; return null; }
@@ -1938,14 +1872,14 @@ function fixedToday(){
 function currentFixed(){
   var m = minsOfDay(), f = fixedToday();
   for(var i=0;i<f.length;i++){
-    if(m >= hhmmToMins(f[i].fixedStart) && m < taskEndMins(f[i]) && locationOK(f[i])) return f[i];
+    if(m >= hhmmToMins(f[i].fixedStart) && m < taskEndMins(f[i])) return f[i];
   }
   return null;
 }
 function nextFixed(hereOnly){
   var m = minsOfDay(), f = fixedToday();
   for(var i=0;i<f.length;i++){
-    if(startsEffectively(f[i]) > m && (!hereOnly || locationOK(f[i]))) return f[i];
+    if(startsEffectively(f[i]) > m && true) return f[i];
   }
   return null;
 }
@@ -1954,7 +1888,7 @@ function nextFixed(hereOnly){
 function inPrepFor(){
   var m = minsOfDay(), f = fixedToday();
   for(var i=0;i<f.length;i++){
-    if(prepOf(f[i]) && m >= startsEffectively(f[i]) && m < hhmmToMins(f[i].fixedStart) && locationOK(f[i])) return f[i];
+    if(prepOf(f[i]) && m >= startsEffectively(f[i]) && m < hhmmToMins(f[i].fixedStart)) return f[i];
   }
   return null;
 }
@@ -2005,7 +1939,6 @@ function workingHours(){
   return end == null ? true : minsOfDay() < end;
 }
 function departureImminent(){
-  if(isTransit(S.session.location)) return false;
   if(!transitTasks().length) return false;
   if(S.session.workFinished) return true;
   var left = hhmmToMins(S.settings.workUntil) - minsOfDay();
@@ -2017,14 +1950,6 @@ function departureImminent(){
    ============================================================ */
 /* Can this actually be done from where your body is? Nothing to do with which
    world it belongs to — a Work task can need the workplace, or nowhere at all. */
-function locationOK(t){
-  var here = S.session.location;
-  /* a run of small things is done wherever you happen to be */
-  if(isBatchPlanet(planetOf(t))) return true;
-  if(t.needsPlace && t.needsPlace !== here) return false;
-  if(isTransit(here)) return t.locations.indexOf("anywhere") > -1;
-  return t.locations.indexOf("anywhere") > -1 || t.locations.indexOf(here) > -1;
-}
 function recentDone(n){
   return doneToday().sort(function(a,b){ return b.completedAt - a.completedAt; }).slice(0,n);
 }
@@ -2136,7 +2061,7 @@ function chooseTask(){
   var L = lunchInfo(), transit = isBatchPlanet(S.session.planet);
   if(!transit && (L.overdue || S.session.lunchState === "active")) return { lunch:true };
 
-  var pool = planetPool().filter(function(t){ return !t.fixedStart && !isResting(t); }).filter(locationOK);
+  var pool = planetPool().filter(function(t){ return !t.fixedStart && !isResting(t); });
   if(!pool.length) return { task:null, reason:"none" };
 
   /* You said one of these was next. That isn't a scoring hint, it's an
@@ -2878,22 +2803,6 @@ function leavePlanet(){
   setTimeout(function(){ if(thrown.parentNode) thrown.remove(); }, 720);
 }
 
-/* where your body is — separate from which world you're working in */
-function setPlace(id){
-  if(!locById(id)) return;
-  var prevPlace = S.session.lastPlace;
-  S.session.location = id;
-  if(isTransit(id)) S.session.briefed = true;
-  else {
-    var outstanding = transitTasks();
-    S.session.lastPlace = id;
-    S.session.briefed = false;
-    if(prevPlace && prevPlace !== id && outstanding.length && isTransit(prevPlace)){
-      toast(outstanding.length+" thing"+(outstanding.length===1?"":"s")+" still on the errand run.");
-    }
-  }
-  unpin(); save(); renderNow(true); renderChips();
-}
 
 /* ============================================================
    THE PICKER — press and hold to flick through what's here
@@ -2905,7 +2814,7 @@ var Pick = { on:false, list:[], els:[], pos:0, vel:0, raf:null, drag:null, step:
 /* Long press means one thing: show me the tasks where I am. Projects have
    their own way in now, so the browser doesn't need filters. */
 function pickerList(){
-  var pool = planetPool().filter(function(t){ return !t.fixedStart && !isResting(t); }).filter(locationOK);
+  var pool = planetPool().filter(function(t){ return !t.fixedStart && !isResting(t); });
   var recent = recentDone(3);
   var ctx = {
     recent:recent, lunch:lunchInfo(), transit:isBatchPlanet(S.session.planet),
@@ -3212,7 +3121,7 @@ function viewSig(v){
   var sky = planets().map(function(p){ return p.id+p.hue+(p.surface||""); }).join("");
   var here = S.session.planet ? projectsOf(S.session.planet).map(function(p){ return p.id+p.name; }).join("") : "";
   return [v.kind, v.id||"", v.why||"", v.paused?1:0, v.mins||"", S.session.planet||"-",
-          S.session.project||"-", S.session.location, sky, here,
+          S.session.project||"-", sky, here,
           v.choice && v.choice.rest ? v.choice.rest.length : 0].join("|");
 }
 var lastNowSig = null;
@@ -3267,7 +3176,7 @@ function sessionShouldEnd(){
   var worked = mine.length >= 2 || sessionMinutes() >= 25;
   var dayOver = !isBatchPlanet(id) && minsLeftToday() <= 0;
   if(!worked && !dayOver) return false;
-  var live = planetOpen(id).filter(function(t){ return !isResting(t) && locationOK(t); });
+  var live = planetOpen(id).filter(function(t){ return !isResting(t); });
   if(!live.length) return false;
   /* Nothing left that matters. */
   if(!live.some(function(t){ return isDueToday(t) || t.priority === "important" || t.fixedStart || isUrgent(t); }))
@@ -3294,18 +3203,17 @@ function paintDayRing(){
   if(el) el.setAttribute("stroke-dashoffset", (351.9 * (1 - p.frac)).toFixed(1));
 }
 function viewStart(){
-  var seg = segmentAt(minsOfDay());
-  var here = seg && locById(seg.seg.loc) ? seg.seg.loc : S.session.location;
+  var b0 = blockNow();
   return ''+
   '<div class="stack" style="gap:22px;padding:20px 0">'+
     '<div class="stack" style="gap:8px">'+
-      '<p class="eyebrow left">'+esc(locLabel(here))+' · '+minsToHHMM(minsOfDay())+'</p>'+
+      '<p class="eyebrow left">'+esc(b0.kind === "in" ? planetLabel(b0.planet) : "Today")+'</p>'+
       '<h1 class="big">Right<br>then</h1>'+
       '<p class="lede">Dump everything you\'re carrying. I\'ll work out the order, the timing and what fits where.</p>'+
     '</div>'+
     '<button class="btn go wide" id="dump-open">Brain dump</button>'+
     '<button class="btn wide" data-act="start-day">Start with what\'s already there</button>'+
-    '<p class="hint">Lunch, working hours and where you\'ll be live in Setup and Day — set once, forget.</p>'+
+    '<p class="hint">Lunch and the shape of your day live in Setup and Day — set once, forget.</p>'+
   '</div>';
 }
 /* ============================================================
@@ -3496,7 +3404,7 @@ function viewSystem(){
   var greet = hour < 12 ? "Morning" : (hour < 18 ? "Afternoon" : "Evening");
   var any = planets().length;
   return '<div class="sysview">'+
-    '<p class="eyebrow left">'+esc(greet)+(who() ? ", "+esc(S.profile.name) : "")+' · '+minsToHHMM(minsOfDay())+'</p>'+
+    '<p class="eyebrow left">'+esc(greet)+(who() ? ", "+esc(S.profile.name) : "")+'</p>'+
     sysHTML()+
     /* An empty sky is a decision you made, not a fault to recover from. The Sun
        stays; nothing is quietly put back. */
@@ -3556,8 +3464,8 @@ function setFinish(mins){
    see them. One question only: which of these do you want?
    ============================================================ */
 var SAT_OPTS = {
-  inner:19, maxSize:15.5, minSize:8, gap:3, start:-90, labels:true, perRing:[4,6,8,9],
-  radii:[[32], [27, 41.5], [22, 32, 42], [19.5, 28, 36.5, 44.5]]
+  inner:19, maxSize:11.5, minSize:7, gap:3, start:-90, labels:true, perRing:[5,7,9,10],
+  radii:[[31], [26, 40], [21.5, 31, 41], [19, 27.5, 36, 44]]
 };
 function projectLayout(){
   var list = projectsOf(S.session.planet);
@@ -4282,27 +4190,6 @@ function parseSpoken(raw){
   if(eat(/\b(deep work|proper(ly)? focus|head down|concentrate|focus session)\b/i)) d.effort = "deep";
   else if(eat(/\b(quick|quickly|easy|small|two minute|five minute)\b/i)) d.effort = "easy";
 
-  /* where. "On the way home" is a journey, so transit phrases are read before
-     location names — otherwise the word "home" hijacks it. */
-  var here = null;
-  var transit = null;
-  var TRANSIT_PHRASE = /\b(?:(?:on|in)\s+(?:the|my)\s+way(?:\s+(?:home|back|in|out|there|to\s+\w+))?|while\s+i'?m\s+out|when\s+i'?m\s+out|out\s+and\s+about|in\s+town|at\s+the\s+shops?|on\s+the\s+road)\b/i;
-  if(transit && TRANSIT_PHRASE.test(text)){ here = transit; text = text.replace(TRANSIT_PHRASE, " "); }
-  if(!here) S.locations.forEach(function(l){
-    if(here) return;
-    var words = l.label.replace(/&/g," ").split(/\s+/).filter(function(w){ return w.length > 2; });
-    var re = new RegExp("\\b(?:at|in|from|when i'?m at|while i'?m at)?\\s*"+
-                        words.map(function(w){ return w.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"); }).join("\\s+(?:and\\s+)?")+"\\b","i");
-    if(re.test(text)){ here = l.id; text = text.replace(re, " "); }
-  });
-  if(!here && transit && ERRANDY.test(text)) here = transit;
-  if(!here && HOUSEHOLD.test(text)) here = locById("home") ? "home" : (places()[0]||{}).id;
-  if(here){
-    d.locations = [here];
-    said.push(locLabel(here));
-    if(isTransit(here)){ d.type = "Errand"; d.effort = d.effort || "easy"; }
-  }
-
 
   /* what's left is the name */
   var name = text.replace(/\b(add (a )?task|add|remind me to|remember to|i need to|i've got to|i have to|note to self|please|task)\b/ig," ")
@@ -4839,7 +4726,6 @@ var WHY_NOT = [
   { id:"waiting",label:"Done my bit — waiting to hear", kind:"waiting" },
   { id:"person", label:"Waiting for someone",    kind:"block" },
   { id:"thing",  label:"Need something",         kind:"block" },
-  { id:"place",  label:"Wrong location",         kind:"place" },
   { id:"gone",   label:"Not needed any more",    kind:"cancel" },
   { id:"other",  label:"Other",                  kind:"defer" }
 ];
@@ -4989,18 +4875,6 @@ function mitigate(t, kind){
                 duration: m.mins, urgent: m.urgent,
                 after: kind === "follow" ? "snooze" : null, note: m.note });
 }
-function sheetWhereNeeded(id){
-  var t = byId(id);
-  return ''+
-  '<div class="sheet-head"><h2 class="sec">Where do you need to be?</h2></div>'+
-  '<p class="hint">'+esc(t ? t.name : "")+' — I\'ll keep it quiet until you\'re there.</p>'+
-  '<div class="choices" style="margin-top:10px">'+
-    S.locations.filter(function(l){ return l.kind === "place"; }).map(function(l){
-      return '<button class="choice grow" data-act="needplace" data-needplace="'+esc(l.id)+'" data-id="'+esc(id)+'">'+esc(l.label)+'</button>';
-    }).join("")+
-    '<button class="choice grow" data-act="needplace" data-needplace="" data-id="'+esc(id)+'">Not sure</button>'+
-  '</div>';
-}
 /* one place decides what a "no" actually meant */
 function applyWhyNot(t, rid){
   var r = whyNotById(rid) || whyNotById("other");
@@ -5026,13 +4900,6 @@ function applyWhyNot(t, rid){
     unpin(); save();
     Orb.moonAway = true;      /* still owed an answer — back out and it comes home */
     openSheet(sheetCheckIn(t.id));
-    return;
-  }
-  if(r.kind === "place"){
-    t.postponedToday++;
-    unpin(); save();
-    Orb.moonAway = true;
-    openSheet(sheetWhereNeeded(t.id));
     return;
   }
   if(r.kind === "block"){
@@ -5120,9 +4987,6 @@ function sheetEdit(id){
   var projectBtns = prs.map(function(pr){
     return '<button class="choice" data-act="setproject" data-setproject="'+esc(pr.id)+'" data-id="'+esc(t.id)+'" aria-pressed="'+(projectOf(t)===pr.id)+'">'+esc(pr.name)+'</button>';
   }).join("");
-  var locBtns = S.locations.filter(function(l){ return l.kind === "place"; }).map(function(l){
-    return '<button class="choice" data-eloc="'+esc(l.id)+'" aria-pressed="'+(t.locations.indexOf(l.id)>-1)+'">'+esc(l.label)+'</button>';
-  }).join("");
   var whenBtns = WHEN_CHOICES.map(function(w){
     var on = w.v === "none" ? !t.due
            : (w.v === "today" ? t.due === todayKey()
@@ -5138,9 +5002,11 @@ function sheetEdit(id){
   '<div class="field"><label for="ed-notes">Notes</label>'+
     '<textarea id="ed-notes" rows="3" placeholder="Anything you\'ll want to know when you come back to this">'+esc(t.notes||"")+'</textarea></div>'+
   '<div class="field"><label>Which part of life?</label><div class="choices">'+planetBtns+'</div></div>'+
-  (prs.length ? '<div class="field"><label>Project</label><div class="choices">'+
-     '<button class="choice" data-act="setproject" data-setproject="" data-id="'+esc(t.id)+'" aria-pressed="'+(!projectOf(t))+'">None</button>'+
-     projectBtns+'</div><p class="hint">Optional. A task is perfectly happy without one.</p></div>' : '')+
+  '<div class="field" id="ed-project-row"'+(prs.length?"":" hidden")+'>'+
+    (prs.length ? '<label>Project in '+esc(planetLabel(planetOf(t)))+'</label><div class="choices">'+
+      '<button class="choice" data-act="setproject" data-setproject="" data-id="'+esc(t.id)+'" aria-pressed="'+(!projectOf(t))+'">None</button>'+
+      projectBtns+'</div><p class="hint">Optional. A task is perfectly happy without one.</p>' : '')+
+  '</div>'+
   '<div class="field"><label>How long</label><div class="stepper">'+
     '<button class="step" data-edur="-15" data-id="'+id+'">−15</button><button class="step" data-edur="-5" data-id="'+id+'">−5</button>'+
     '<div class="val" id="ed-dur">'+t.duration+'<small>minutes</small></div>'+
@@ -5160,9 +5026,6 @@ function sheetEdit(id){
   '<div class="field"><label>Kind of work</label><div class="choices">'+
     TYPES.map(function(x){ return '<button class="choice" data-etype="'+esc(x)+'" aria-pressed="'+(t.type===x)+'">'+esc(x)+'</button>'; }).join("")+
   '</div></div>'+
-  (isBatchPlanet(planetOf(t)) ? '' :
-  '<div class="field"><label>Do you have to be somewhere?</label><div class="choices">'+locBtns+'</div>'+
-    '<p class="hint">Nothing tapped = anywhere.</p></div>')+
   '<div class="field"><label>Comes back round</label><div class="choices">'+
     REPEATS.map(function(r){ return '<button class="choice'+(r.v?" cool":"")+'" data-erep="'+r.v+'" aria-pressed="'+((t.repeatEvery||0)===r.v)+'">'+r.l+'</button>'; }).join("")+
   '</div>'+(isRecurring(t) ? '<p class="hint">Checked '+(t.checkCount||0)+'× today'+(isCooling(t)?' · next in '+coolMins(t)+'m':' · due now')+'.</p>' : '')+'</div>'+
@@ -5184,6 +5047,20 @@ function sheetEdit(id){
     '<button class="btn go" data-act="save-edit" data-id="'+id+'">Save</button>'+
   '</div>';
 }
+/* redraw just the project row, in place, without losing the rest of the sheet */
+function paintProjectField(r, t){
+  var host = r.querySelector("#ed-project-row");
+  if(!host) return;
+  var prs = projectsOf(planetOf(t));
+  if(!prs.length){ host.hidden = true; host.innerHTML = ""; return; }
+  host.hidden = false;
+  host.innerHTML = '<label>Project in '+esc(planetLabel(planetOf(t)))+'</label><div class="choices">'+
+    '<button class="choice" data-act="setproject" data-setproject="" data-id="'+esc(t.id)+'" aria-pressed="'+(!projectOf(t))+'">None</button>'+
+    prs.map(function(pr){
+      return '<button class="choice" data-act="setproject" data-setproject="'+esc(pr.id)+'" data-id="'+esc(t.id)+'" aria-pressed="'+(projectOf(t)===pr.id)+'">'+esc(pr.name)+'</button>';
+    }).join("")+
+    '</div><p class="hint">Optional. A task is perfectly happy without one.</p>';
+}
 function openEditSheet(id){
   openSheet(sheetEdit(id), function(){
     var t = byId(id), r = document.getElementById("sheetRoot");
@@ -5201,8 +5078,14 @@ function openEditSheet(id){
     r.querySelectorAll("[data-eplanet]").forEach(function(b){
       b.addEventListener("click", function(){
         setPlanet(t, b.dataset.eplanet);
+        /* A project belongs to one world. Move the task and the projects on
+           offer move with it — and a project it can no longer be in is
+           dropped rather than left dangling. */
+        var pr = projectById(t.projectId);
+        if(pr && pr.planetId !== t.planet) t.projectId = null;
         r.querySelectorAll("[data-eplanet]").forEach(function(x){ x.setAttribute("aria-pressed", String(x.dataset.eplanet === t.planet)); });
         save(); renderChips();
+        paintProjectField(r, t);
       });
     });
     r.querySelectorAll("[data-ewhen]").forEach(function(b){
@@ -5247,27 +5130,7 @@ function openEditSheet(id){
         save();
       });
     });
-    r.querySelectorAll("[data-eloc]").forEach(function(b){
-      b.addEventListener("click", function(){
-        var id2 = b.dataset.eloc;
-        t.locations = t.locations.filter(function(x){ return x !== "anywhere"; });
-        var i = t.locations.indexOf(id2);
-        if(i>-1) t.locations.splice(i,1); else t.locations.push(id2);
-        var chosen = t.locations.slice();
-        if(!t.locations.length) t.locations = ["anywhere"];   /* none tapped means exactly that */
-        t.needsPlace = null;
-        r.querySelectorAll("[data-eloc]").forEach(function(x){ x.setAttribute("aria-pressed", String(chosen.indexOf(x.dataset.eloc) > -1)); });
-        save();
-      });
-    });
   });
-}
-function sheetAddLocation(){
-  return ''+
-  '<div class="sheet-head"><h2 class="sec">New place</h2><button class="icon-btn" data-act="close-sheet" aria-label="Close">✕</button></div>'+
-  '<div class="field"><label>Call it</label><input type="text" id="nl-name" placeholder="The workshop" autocomplete="off"></div>'+
-  '<p class="hint">Somewhere you physically have to be for certain jobs. It doesn\'t change which world a task lives in.</p>'+
-  '<button class="btn go wide" id="nl-save">Add it</button>';
 }
 function bindCommitMinutes(){
   var r = document.getElementById("sheetRoot");
@@ -5301,17 +5164,6 @@ function commitTo(mins){
               : "Right — that's a proper job. "+mins+" minutes to a finish or a safe stop.");
 }
 
-function bindAddLocation(){
-  var r = document.getElementById("sheetRoot");
-  var n = r.querySelector("#nl-name"); if(n) n.focus();
-  r.querySelector("#nl-save").addEventListener("click", function(){
-    var label = (n.value||"").trim();
-    if(!label){ toast("Give it a name first."); n.focus(); return; }
-    if(S.locations.length >= 6){ toast("Six places is plenty."); return; }
-    S.locations.push({ id:slug(label), label:label, kind:"place", hue:HUE_POOL[S.locations.length % HUE_POOL.length] });
-    save(); closeSheet(); render(); toast(label+" added.");
-  });
-}
 
 /* ============================================================
    14. DAY TAB
@@ -5447,7 +5299,6 @@ function rowHTML(t){
   if(t.effort === "deep") meta += '<span class="mini cool">Deep</span>';
   if(t.effort === "easy") meta += '<span class="mini good">Easy</span>';
   meta += '<span class="mini planet-tag" style="--orb-h:'+planetHue(planetOf(t))+'">'+esc(planetLabel(planetOf(t)))+'</span>';
-  t.locations.forEach(function(l){ if(l !== "anywhere") meta += '<span class="mini">'+esc(locLabel(l))+'</span>'; });
   if(isRecurring(t)){
     meta += '<span class="mini cool">'+esc(repeatLabel(t.repeatEvery))+'</span>';
     meta += isCooling(t) ? '<span class="mini">next in '+coolMins(t)+'m</span>' : '<span class="mini hot">due now</span>';
@@ -5667,15 +5518,6 @@ function renderYou(){
         '<button class="icon-btn" data-act="planet-delete" data-id="'+esc(pl.id)+'" aria-label="Delete">✕</button>'+
       '</div></div>';
   }).join("");
-  /* Where your body can be. Separate question, and only used to work out what
-     is actually possible right now. */
-  var locRows = S.locations.map(function(l){
-    return '<div class="row"><div class="row-main"><div class="row-title">'+esc(l.label)+'</div>'+
-      '<div class="row-meta"><span class="mini'+(l.kind==="transit"?" cool":"")+'">'+(l.kind==="transit"?"On the move":"A place")+'</span>'+
-      (S.session.location === l.id ? '<span class="mini good">You\'re here</span>' : '')+'</div></div>'+
-      (S.locations.length > 1 ? '<div class="row-actions"><button class="icon-btn" data-act="loc-del" data-id="'+esc(l.id)+'" aria-label="Remove">✕</button></div>' : '')+
-    '</div>';
-  }).join("");
 
   document.getElementById("youRoot").innerHTML = ''+
   '<div class="stack" style="gap:20px">'+
@@ -5718,12 +5560,6 @@ function renderYou(){
         '<p class="hint">Out of the sky, everything inside kept. Bring one back whenever the context returns.</p>'+
       '</div>' : '')+
     '<hr class="divider">'+
-    '<div class="group"><div class="group-head"><h2 class="sec">Where you can be</h2><span class="count">'+S.locations.length+'</span></div>'+
-      locRows+
-      '<button class="btn wide" data-act="loc-add">+ Add a place</button>'+
-      '<p class="hint">Nothing to do with which world you\'re in — this only decides what\'s physically possible right now. A Work task can need the workplace, or nowhere in particular.</p>'+
-    '</div>'+
-    '<hr class="divider">'+
     '<div class="stack">'+
       (S.session.workFinished
         ? '<button class="btn wide" data-act="resume-work">Work isn\'t finished after all</button>'
@@ -5760,6 +5596,8 @@ function buildId(){
   return (m && m.content) ? m.content : "dev";
 }
 function renderChips(){
+  var clk = document.getElementById("clockNow");
+  if(clk) clk.textContent = minsToHHMM(minsOfDay());
   var s = S.session, L = lunchInfo();
   var motLabel = { motivated:"Motivated", meh:"Meh", unmotivated:"Unmotivated" }[s.motivation];
   var chips = '<button class="statchip'+(s.motivation==="motivated"?" is-hi":"")+'" data-act="cycle-mot">'+motLabel+'</button>';
@@ -5941,7 +5779,10 @@ document.addEventListener("click", function(e){
     case "setproject": {
       if(!t) break;
       t.projectId = b.dataset.setproject || null;
-      save(); closeSheet(); render();
+      save();
+      var inEditor = document.getElementById("ed-project-row");
+      if(inEditor){ paintProjectField(document.getElementById("sheetRoot"), t); renderList(); break; }
+      closeSheet(); render();
       toast(t.projectId ? "Filed under "+projectLabel(t.projectId)+"." : "Ungrouped.");
       break;
     }
@@ -5966,16 +5807,6 @@ document.addEventListener("click", function(e){
       stopTicker(); closeSheet();
       if(wt){ Orb.moonAway = false; openSheet(sheetWaitingOn(wt.id)); } else render();
     } break;
-    case "needplace": {
-      var np = b.dataset.needplace;
-      if(t){
-        if(np){ t.locations = [np]; toast("Parked until you're at "+locLabel(np)+"."); }
-        else toast("Parked for now.");
-        save();
-      }
-      closeSheet(); renderNow(true); renderList();
-      break;
-    }
     case "setplanet": {
       if(t){ setPlanet(t, b.dataset.setplanet); save(); toast("✓ "+t.name+" lives in "+planetLabel(t.planet)+" now."); }
       closeSheet(); render();
@@ -5983,7 +5814,6 @@ document.addEventListener("click", function(e){
     }
     case "leave-planet": closeSheet(); leavePlanet(); break;
     case "step-out": closeSheet(); stepOut(); break;
-    case "setplace": setPlace(b.dataset.place); break;
     case "keep-going": S.session.sessionDone = false; S.session.keepGoing = true; unpin(); save(); renderNow(true); break;
     case "unblock-skip": closeSheet(); toast("Parked. I won't keep asking."); render(); break;
     case "unblock-add": {
@@ -6108,24 +5938,6 @@ document.addEventListener("click", function(e){
       toast("Motivation: "+S.session.motivation+".");
       break;
     }
-    case "loc-add": openSheet(sheetAddLocation(), bindAddLocation); break;
-    case "loc-del": {
-      var ld = locById(id); if(!ld) break;
-      if(S.locations.length <= 1){ toast("You need somewhere to be."); break; }
-      var stranded = 0;
-      S.tasks.forEach(function(x){
-        var i = x.locations.indexOf(id);
-        if(i > -1){ x.locations.splice(i,1); stranded++; if(!x.locations.length) x.locations = ["anywhere"]; }
-      });
-      var fallback = S.locations.filter(function(x){ return x.id !== id; })[0].id;
-      S.schedule.forEach(function(sg){ if(sg.loc === id) sg.loc = fallback; });
-      S.locations = S.locations.filter(function(x){ return x.id !== id; });
-      if(S.session.location === id) S.session.location = fallback;
-      if(S.session.lastPlace === id) S.session.lastPlace = (places()[0]||S.locations[0]).id;
-      save(); applyHue(); render();
-      toast(stranded ? ld.label+" removed — "+stranded+" task(s) moved." : ld.label+" removed.");
-      break;
-    }
     case "seg-add": {
       var first = planets()[0];
       if(!first){ toast("Make a planet first — a stretch has to be for something."); break; }
@@ -6240,6 +6052,11 @@ setInterval(function(){
 }, 15000);
 /* the sky keeps time even while you're looking at it */
 setInterval(function(){ if(!Flight){ paintOrbits(); paintProjOrbits(); } }, 20000);
+/* the clock in the corner is a clock, so it ticks */
+setInterval(function(){
+  var clk = document.getElementById("clockNow");
+  if(clk) clk.textContent = minsToHHMM(minsOfDay());
+}, 20000);
 
 document.addEventListener("visibilitychange", function(){
   if(document.visibilityState !== "visible") return;
@@ -6322,7 +6139,7 @@ if(!S.profile.sawGestures && S.session.started) showGestures();
    app out from under a running timer. */
 (function () {
   if (!('serviceWorker' in navigator) || location.protocol !== 'https:') return;
-  var BUILD = '20260903-1212-142010';
+  var BUILD = '20260903-1255-ca265a';
   window.addEventListener('load', function () {
     navigator.serviceWorker.register('sw.js?v=' + BUILD).then(function (reg) {
       function watch(sw) {
