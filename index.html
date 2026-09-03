@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="ONE">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="one-build" content="20260903-0711-0775fc">
+<meta name="one-build" content="20260903-1212-142010">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png" sizes="192x192">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -88,7 +88,12 @@
 }
 
 *{box-sizing:border-box}
+/* Nothing in ONE is meant to be scrolled sideways. The sky, the stage bleed and
+   a long world's name all reach past the column on purpose; clip is used rather
+   than hidden so the sticky topbar keeps working. */
+html{overflow-x:clip}
 body{
+  overflow-x:clip;
   margin:0;background:var(--bg);color:var(--ink);
   font-family:var(--body);font-size:16px;line-height:1.45;
   -webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;
@@ -98,7 +103,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--hi);outline-offset:2px;border-radius:6px}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.001s!important;animation-iteration-count:1!important;transition-duration:.001s!important}}
 
-.app{max-width:540px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;background:var(--bg);position:relative;transition:background-color .7s ease}
+.app{max-width:540px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;background:var(--bg);position:relative;overflow-x:clip;transition:background-color .7s ease}
 .topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:10px;padding:14px 18px 10px;backdrop-filter:blur(14px)}
 .mark{font-family:var(--display);font-variation-settings:'wdth' 78,'wght' 900;font-size:19px;letter-spacing:.10em;line-height:1;color:var(--ink);opacity:.85}
 .mark span{color:var(--hi)}
@@ -160,9 +165,9 @@ h2.sec{font-family:var(--display);font-variation-settings:'wdth' 88,'wght' 700;f
 .orb.icy{background:radial-gradient(circle at 38% 32%, #FFFFFF 0%, hsl(var(--orb-h) 92% 78%) 26%, hsl(var(--orb-h) 88% 56%) 60%, hsl(calc(var(--orb-h) - 6) 86% 34%) 100%)}
 .orb.rock{background:radial-gradient(circle at 34% 28%, hsl(calc(var(--orb-h) + 16) 42% 62%), hsl(var(--orb-h) 34% 38%) 56%, hsl(calc(var(--orb-h) - 10) 40% 16%))}
 
-/* ---------- the moon: the one thing you're doing ----------
+/* ---------- the taskeroid: the one thing you're doing ----------
    It hangs between you and the world, like an eclipse seen from the sun. The
-   planet stays where it is; the moon is what you push around. */
+   planet stays where it is; the taskeroid is what you push around. */
 .orb-wrap{position:relative;width:var(--orb);height:var(--orb);display:grid;place-items:center;transform:translateY(-16px)}
 .moon{
   position:absolute;left:50%;top:50%;width:60%;aspect-ratio:1;
@@ -216,9 +221,9 @@ h2.sec{font-family:var(--display);font-variation-settings:'wdth' 88,'wght' 700;f
   0%{transform:translate(-50%,-50%) translateY(78vh) scale(.5);opacity:0}
   100%{transform:translate(-50%,-50%) translateY(0) scale(1);opacity:1}
 }
-/* ---------- the rolodex of moons ----------
+/* ---------- the rolodex of taskeroids ----------
    Press and hold and this world's tasks come round on a wheel, each one the
-   moon it would be if you chose it. */
+   taskeroid it would be if you chose it. */
 .orb-pick{position:absolute;inset:0;z-index:8;touch-action:none}
 .pick-item{
   position:absolute;left:50%;top:50%;width:56%;aspect-ratio:1;border-radius:50%;
@@ -334,7 +339,7 @@ h2.sec{font-family:var(--display);font-variation-settings:'wdth' 88,'wght' 700;f
 #sky{z-index:0}
 .app{position:relative;z-index:1}
 body.in-space .app{background:transparent}
-.sysview{display:flex;flex-direction:column;justify-content:center;min-height:calc(100vh - 210px)}
+.sysview{display:flex;flex-direction:column;justify-content:center;min-height:calc(100vh - 210px);width:100%}
 /* The flight: the camera pulls back for a beat, then runs at the world you
    picked — which slides to the middle of the screen as you close on it. */
 /* --- what makes travel read as one move, not two animations ---
@@ -398,9 +403,11 @@ body.in-space .app{background:transparent}
 }
 .gateway::after{content:"";position:absolute;inset:-13px;border-radius:50%}  /* a thumb-sized target */
 .gateway:active .gw-body{filter:brightness(1.2)}
+/* Outside the world's own edge, or it looks like it's circling the taskeroid
+   rather than the planet. --orb is the sphere's diameter. */
 @keyframes gwOrbit{
-  0%  {transform:rotate(0deg)   translateX(min(30vw,150px)) rotate(0deg)}
-  100%{transform:rotate(360deg) translateX(min(30vw,150px)) rotate(-360deg)}
+  0%  {transform:rotate(0deg)   translateX(calc(var(--orb) / 2 + 20px)) rotate(0deg)}
+  100%{transform:rotate(360deg) translateX(calc(var(--orb) / 2 + 20px)) rotate(-360deg)}
 }
 #nowRoot.approaching .gateway{opacity:0!important;transition:none}
 .orb-stage.picking .gateway{opacity:0;pointer-events:none;transition:opacity .2s ease}
@@ -495,7 +502,7 @@ body.in-space .app{background:transparent}
 .body.snug .body-name{font-size:10px;letter-spacing:.1em;max-width:74px}
 .body.tight .body-name{font-size:8.5px;letter-spacing:.06em;max-width:58px}
 .body.tight .upright{gap:5px}
-.body.crowd .body-name{font-size:7.5px;letter-spacing:.02em;max-width:46px}
+.body.crowd .body-name{font-size:7.5px;letter-spacing:.02em;max-width:38px}
 .body.crowd .upright{gap:4px}
 .body.sat .body-name{max-width:82px}
 .body.sat.snug .body-name{max-width:66px}
@@ -744,6 +751,10 @@ body.in-space .app{background:transparent}
 
 .field{display:flex;flex-direction:column;gap:9px}
 .field > label{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.task-notes{
+  max-width:34ch;margin:6px auto 0;text-align:center;font-size:13.5px;line-height:1.5;
+  color:var(--ink-2);opacity:.9;white-space:pre-wrap;
+}
 .in-project{text-align:center;margin-top:-2px}
 .crumb{opacity:.5;padding:0 2px}
 .finish-line{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
@@ -954,12 +965,12 @@ var DEFAULT_LOCATIONS = [
   { id:"home", label:"Home",      kind:"place", hue:150 },
   { id:"work", label:"Workplace", kind:"place", hue:22  }
 ];
+/* The day is booked against worlds, not addresses. "Work 9 to 5" says which
+   part of your life owns that stretch of the day; where your body happens to be
+   is a separate question, and only decides what's physically possible. */
 var DEFAULT_SCHEDULE = [
-  { from:"00:00", to:"08:00", loc:"home" },
-  { from:"08:00", to:"09:00", loc:"out"  },
-  { from:"09:00", to:"17:00", loc:"work" },
-  { from:"17:00", to:"18:00", loc:"out"  },
-  { from:"18:00", to:"23:59", loc:"home" }
+  { from:"09:00", to:"17:00", planet:"work" },
+  { from:"18:00", to:"20:00", planet:"home" }
 ];
 var HUE_POOL = [35, 190, 320, 95, 260, 10];
 /* the colours you can give a place, one per row of the wheel */
@@ -1015,14 +1026,14 @@ var DEFAULTS = {
   profile:{ name:"", tone:"normal", sawGestures:false },
   settings:{
     lunchDuration:45, lunchFrom:"12:00", lunchTo:"13:00", lunchRequired:true,
-    workUntil:"17:30", defaultDuration:30, autoLocation:true, warnMinutes:10, chime:true
+    workUntil:"17:30", defaultDuration:30, autoLocation:true, autoPlanet:true, warnMinutes:10, chime:true
   },
   planets: JSON.parse(JSON.stringify(DEFAULT_PLANETS)),
   locations: JSON.parse(JSON.stringify(DEFAULT_LOCATIONS)),
   schedule: JSON.parse(JSON.stringify(DEFAULT_SCHEDULE)),
   session:{
     date:null, started:false, motivation:"meh", location:"work", lastPlace:"work", segIndex:-1,
-    planet:null, project:null, enteredAt:null, sessionDone:false, keepGoing:false, lightUntil:0,
+    planet:null, project:null, enteredAt:null, sessionDone:false, keepGoing:false, lightUntil:0, blockShown:null,
     lunchState:"pending", lunchEndsAt:null, workFinished:false, dayClosed:false, briefed:false, spun:false
   },
   projects:[],
@@ -1047,7 +1058,7 @@ var S = load() || JSON.parse(JSON.stringify(DEFAULTS));
 (function migrate(){
   var was = +S.version || 0;
   if(!Array.isArray(S.locations) || !S.locations.length) S.locations = JSON.parse(JSON.stringify(DEFAULT_LOCATIONS));
-  if(!Array.isArray(S.schedule) || !S.schedule.length) S.schedule = JSON.parse(JSON.stringify(DEFAULT_SCHEDULE));
+  if(!Array.isArray(S.schedule)) S.schedule = JSON.parse(JSON.stringify(DEFAULT_SCHEDULE));
   var KNOWN_HUES = { home:150, work:22, out:215 };
   S.locations.forEach(function(l,i){
     if(typeof l.hue !== "number") l.hue = KNOWN_HUES[l.id] != null ? KNOWN_HUES[l.id] : HUE_POOL[i % HUE_POOL.length];
@@ -1096,6 +1107,7 @@ var S = load() || JSON.parse(JSON.stringify(DEFAULTS));
     if(!("waitingOn" in t)) t.waitingOn = null;
     if(!("cancelledAt" in t)) t.cancelledAt = null;
     if(!("reopened" in t)) t.reopened = 0;
+    if(!("notes" in t)) t.notes = "";      /* v9: anything that needs explaining */
     /* the old "Deep Work" type carried two meanings; keep the one that matters */
     if(t.type === "Deep Work"){
       t.type = "Planning";
@@ -1162,6 +1174,28 @@ var S = load() || JSON.parse(JSON.stringify(DEFAULTS));
     if(!planetById(pr.planetId)) pr.planetId = (S.planets[0]||{}).id || null;
   });
   S.tasks.forEach(function(t){ if(!("projectId" in t)) t.projectId = null; });
+  /* v9: the day books planets. An old place-based schedule keeps its hours and
+     is pointed at the world with the closest name, or dropped if there isn't
+     one — the shape of your day is worth more than the label on it. */
+  var hadLoc = S.schedule.some(function(sg){ return sg.loc && !sg.planet; });
+  if(hadLoc){
+    S.schedule = S.schedule.map(function(sg){
+      if(sg.planet) return sg;
+      var l = locById(sg.loc), want = l ? l.label : "";
+      var hit = null;
+      (S.planets||[]).forEach(function(p){
+        if(!hit && want && p.name.toLowerCase().indexOf(want.toLowerCase().split(/\s+/)[0]) > -1) hit = p.id;
+        if(!hit && want && want.toLowerCase().indexOf(p.name.toLowerCase()) > -1) hit = p.id;
+      });
+      return { from:sg.from, to:sg.to, planet:hit };
+    }).filter(function(sg){ return !!sg.planet; });
+    if(!S.schedule.length) S.schedule = JSON.parse(JSON.stringify(DEFAULT_SCHEDULE))
+      .filter(function(sg){ return planetById(sg.planet); });
+  }
+  S.schedule.forEach(function(sg){ delete sg.loc; });
+  S.schedule = S.schedule.filter(function(sg){ return planetById(sg.planet); });
+  if(!("autoPlanet" in S.settings)) S.settings.autoPlanet = true;
+  if(!("blockShown" in S.session)) S.session.blockShown = null;
   /* v8: standing inside a project is a place you are, not a filter you set */
   if(S.ui && "project" in S.ui){ delete S.ui.project; }
   if(!("project" in S.session)) S.session.project = null;
@@ -1257,18 +1291,77 @@ function segmentAt(m){
   }
   return null;
 }
-/* the schedule drives location; a manual spin holds until the next change */
-function applySchedule(){
-  if(!S.settings.autoLocation) return false;
-  var hit = segmentAt(minsOfDay());
-  if(!hit || hit.i === S.session.segIndex) return false;
-  S.session.segIndex = hit.i;
-  if(locById(hit.seg.loc) && hit.seg.loc !== S.session.location){
-    S.session.location = hit.seg.loc;
-    if(!isTransit(hit.seg.loc)) S.session.lastPlace = hit.seg.loc;
-    return true;
+/* ---------- the block you're in ----------
+   Everything about the shape of the day comes from here: which world today
+   thinks you should be in, when that stretch ends, and what's booked next. */
+function blockNow(){
+  var m = minsOfDay(), hit = segmentAt(m);
+  if(hit && planetById(hit.seg.planet)){
+    return { kind:"in", planet:hit.seg.planet, from:hhmmToMins(hit.seg.from),
+             to:hhmmToMins(hit.seg.to), mins: hhmmToMins(hit.seg.to) - m, i:hit.i };
   }
-  return false;
+  var next = null;
+  sortedSchedule().forEach(function(sg){
+    if(!planetById(sg.planet)) return;
+    var f = hhmmToMins(sg.from);
+    if(f > m && (!next || f < next.from)) next = { planet:sg.planet, from:f, to:hhmmToMins(sg.to) };
+  });
+  if(next) return { kind:"gap", planet:next.planet, from:next.from, to:next.to, mins: next.from - m };
+  return { kind:"none" };
+}
+/* "At Work until 17:00 · 5h left" — the sentence that tells you where the day
+   is up to, in the words the day itself is written in. */
+function blockLine(){
+  var b = blockNow();
+  if(b.kind === "in")  return { text:"At "+planetLabel(b.planet)+" until "+minsToHHMM(b.to), mins:b.mins };
+  if(b.kind === "gap") return { text:"Nothing planned until "+planetLabel(b.planet)+" at "+minsToHHMM(b.from), mins:b.mins };
+  return { text:"Nothing booked in", mins:0 };
+}
+/* The schedule opens the right world for you. It never locks you in: you can
+   walk out whenever you like, and ONE will have something to say about it. */
+function applySchedule(){
+  if(!S.settings.autoPlanet) return false;
+  var hit = segmentAt(minsOfDay());
+  if(!hit || !planetById(hit.seg.planet)) return false;
+  if(hit.i === S.session.segIndex) return false;
+  S.session.segIndex = hit.i;
+  return true;
+}
+function scheduledPlanet(){
+  var b = blockNow();
+  return b.kind === "in" ? b.planet : null;
+}
+/* Open the app during a booked stretch and it puts you on that world — once
+   per block, and never over the top of something you're already doing. */
+function honourBlock(){
+  if(!S.settings.autoPlanet || !S.session.started || S.session.dayClosed) return false;
+  var want = scheduledPlanet();
+  if(!want || S.focus || S.session.planet || S.ui.selecting) return false;
+  var key = want + "@" + (segmentAt(minsOfDay())||{i:0}).i;
+  if(S.session.blockShown === key) return false;
+  S.session.blockShown = key;
+  S.session.planet = want;
+  S.session.project = null;
+  S.session.enteredAt = Date.now();
+  S.session.sessionDone = false; S.session.keepGoing = false;
+  unpin(); save();
+  return true;
+}
+/* Leaving early is allowed. It just doesn't go entirely unremarked. */
+var WANDER = [
+  "Off already? {where} has you until {till}.",
+  "{where} until {till}, says your own diary. But you're the boss.",
+  "Right, we're leaving {where} an hour — sorry, {left} — early."
+];
+function wanderedOff(from){
+  var b = blockNow();
+  if(b.kind !== "in" || b.planet !== from) return;
+  if(!humour(1, true)) return;
+  spend(1);
+  var line = WANDER[(witBudget().n + doneToday().length) % WANDER.length];
+  toast(line.replace("{where}", planetLabel(from))
+            .replace("{till}", minsToHHMM(b.to))
+            .replace("{left}", fmtDur(Math.max(1, b.mins))));
 }
 /* ---------- planets ----------
    A planet is whatever part of your life you say it is. There is no special
@@ -1397,8 +1490,7 @@ function coachCtx(){
   var log = todayLog(), since = S.session.enteredAt || 0;
   var sess = log.filter(function(l){ return l.at >= since; });
   var live = liveTasks();
-  var end = hhmmToMins(S.settings.workUntil);
-  var minsLeft = S.session.workFinished ? 0 : Math.max(0, end - minsOfDay());
+  var minsLeft = minsLeftToday();
   var mins = function(a){ return a.reduce(function(x,l){ return x + (l.minutes||0); }, 0); };
   var last = log.length ? log[log.length-1] : null;
   /* a run is completions close enough together to feel like a run */
@@ -1416,7 +1508,7 @@ function coachCtx(){
     recentTypes: log.slice(-3).map(function(l){ return l.type; }),
     streak: streak + (log.length ? 1 : 0),
     sinceLast: last ? Math.round((Date.now() - last.at)/60000) : null,
-    minsLeft: minsLeft, finishAt: S.settings.workUntil, runway: w,
+    minsLeft: minsLeft, finishAt: S.settings.workUntil, block: blockLine(), runway: w,
     nextFixed: nextFixed(true),
     waiting: live.filter(isWaiting).length,
     blocked: live.filter(function(t){ return t.status === "blocked"; }).length,
@@ -1632,7 +1724,7 @@ function phrase(read, intent, ev, f, c){
     /* -------- stopping is allowed to be the answer -------- */
     case "USER_HAS_DONE_ENOUGH":
       out = "You've cleared the important stuff. Nothing worth opening for "+fmtDur(Math.max(1,c.minsLeft))+
-            ". You're done at "+c.finishAt+".";
+            ". "+(c.block && c.block.text ? c.block.text+"." : "You're done at "+c.finishAt+".");
       break;
 
     case "SESSION_COMPLETE":
@@ -1699,6 +1791,7 @@ function makeTask(o){
     projectId: o.projectId || null,
     repeatEvery:o.repeatEvery||0, nextDueAt:null, checkCount:0, wakeAt:null,
     urgent:!!o.urgent, prepMins:o.prepMins||0, waitingOn:null, cancelledAt:null, reopened:0,
+    notes:(o.notes||"").trim(),
     status:"open", blockedReason:null, postponedToday:0, lastPostponedAt:null,
     avoidCount:0, needsPlace:null,
     actualMinutes:0, createdAt:Date.now(), completedAt:null, archived:false
@@ -1885,10 +1978,26 @@ function runway(){
   if(nf) walls.push({ mins:startsEffectively(nf) - m, what:nf.name+" at "+nf.fixedStart, kind:"fixed",
                       prep:prepOf(nf), task:nf });
   if(L.pending) walls.push({ mins:Math.max(0, L.to - m), what:"lunch", kind:"lunch" });
-  if(!S.session.workFinished && end != null && end > m) walls.push({ mins:end - m, what:"the end of the day", kind:"day" });
+  /* The wall at the end of the day is the end of the stretch you're in. If
+     nothing is booked, fall back to the finishing time you set. */
+  var bl = blockNow();
+  if(!S.session.workFinished){
+    if(bl.kind === "in") walls.push({ mins:bl.mins, what:"the end of "+planetLabel(bl.planet), kind:"day" });
+    else if(bl.kind === "gap") walls.push({ mins:bl.mins, what:planetLabel(bl.planet), kind:"day" });
+    else if(end != null && end > m) walls.push({ mins:end - m, what:"the end of the day", kind:"day" });
+  }
   if(!walls.length) return { mins:600, what:"", kind:"none" };
   walls.sort(function(a,b){ return a.mins - b.mins; });
   return walls[0];
+}
+/* How much of today is genuinely left to work with: the stretch you're in if
+   you're in one, otherwise the finishing time you set. */
+function minsLeftToday(){
+  if(S.session.workFinished) return 0;
+  var b = blockNow();
+  if(b.kind === "in") return Math.max(0, b.mins);
+  var end = hhmmToMins(S.settings.workUntil);
+  return Math.max(0, (end == null ? 600 : end) - minsOfDay());
 }
 function workingHours(){
   if(S.session.workFinished) return false;
@@ -2060,7 +2169,7 @@ function chooseTask(){
              !(t.lastPostponedAt && (Date.now() - t.lastPostponedAt) < 12*60000);
     }),
     runway: transit ? { mins:600, what:"", kind:"none" } : runway(),
-    minsLeftOfDay: Math.max(0, hhmmToMins(S.settings.workUntil) - minsOfDay())
+    minsLeftOfDay: minsLeftToday()
   };
 
   /* Once a task is on the orb it stays there until something actually changes.
@@ -2156,8 +2265,8 @@ var Orb = { stage:null, swipe:null, holdT:null, moved:false, movedAt:0, twoFinge
 /* The sphere is the world you're standing on: one task, four directions, no
    dial. Which world you're in is decided out in the solar system, deliberately,
    not by nudging a control while you're trying to work. */
-/* A world you're standing on, and a moon in front of it carrying the one thing
-   you're doing. The planet keeps its own weather and its gentle float; the moon
+/* A world you're standing on, and a taskeroid in front of it carrying the one
+   thing you're doing. The planet keeps its weather and its gentle float; the
    is the part you handle — push it away, send it up, spin the rolodex. */
 function planetSkin(which){
   var p = planetById(which === undefined ? S.session.planet : which);
@@ -2662,6 +2771,53 @@ function landOn(id, quiet){
 }
 
 /* ---------- inward: sling it away, then fall back into the system ---------- */
+/* ---------- one way out, at every scale ----------
+   The catapult is the same move whichever level you're leaving: whatever is in
+   front of you is thrown past the camera, and the wider view falls back into
+   place behind it. Only the two ends of the journey change. */
+function catapult(opts){
+  var throwing = document.getElementById(opts.throwId);
+  if(!throwing || reduceMotion()){ opts.settle(); return; }
+  var anchor = opts.anchorEl || throwing;
+  var from = centreOf(anchor);
+  var camera = { x:from.x, y:from.y, d:from.d * 2.05 };
+  var thrown = liftOverlay(throwing, "lift-orb");
+  throwing.style.visibility = "hidden";
+  thrown.classList.add("thrown");
+
+  opts.settle();
+
+  var stage = document.getElementById(opts.stageId);
+  var body = stage && opts.targetSel ? stage.querySelector(opts.targetSel) : null;
+  if(stage && body){
+    var to = centreOf(body);
+    var sr = stage.getBoundingClientRect();
+    stage.style.transformOrigin = ((to.x - sr.left) / stage.offsetWidth * 100).toFixed(1)+"% "+
+                                  ((to.y - sr.top) / stage.offsetHeight * 100).toFixed(1)+"%";
+    stage.style.transition = "none";
+    stage.style.transform = flipTo(to, camera);
+    stage.style.opacity = "0";
+    stage.classList.add("zooming");
+    void stage.offsetWidth;
+    requestAnimationFrame(function(){
+      stage.style.transition = "transform "+(opts.ms||1650)+"ms cubic-bezier(.34,.42,.28,1) 120ms, opacity 460ms ease 120ms";
+      stage.style.transform = "translate(0,0) scale(1)";
+      stage.style.opacity = "1";
+    });
+    setTimeout(function(){ stage.classList.remove("zooming"); }, 780);
+    /* clear the inline transform only once the browser says the move is over,
+       otherwise the last frame snaps */
+    var done = function(e){
+      if(e && e.propertyName !== "transform") return;
+      stage.removeEventListener("transitionend", done);
+      stage.style.transition = ""; stage.style.transform = ""; stage.style.opacity = ""; stage.style.transformOrigin = "";
+    };
+    stage.addEventListener("transitionend", done);
+    setTimeout(done, (opts.ms||1650) + 450);
+    if(opts.stars !== false) streakStars(false, from.x, from.y);
+  }
+  setTimeout(function(){ if(thrown.parentNode) thrown.remove(); }, 720);
+}
 function leavePlanet(){
   if(S.focus && !S.focus.paused){ toast("Clock's running. Finish it or park it first."); return; }
   var wrap = document.getElementById("orbWrap");
@@ -2669,12 +2825,14 @@ function leavePlanet(){
   var leaving = S.session.planet;
 
   var settle = function(){
+    var was = S.session.planet;
     S.session.planet = null;
     S.session.project = null; S.ui.selecting = false;
     S.focus = null; stopTicker();
     S.ui.arrival = null;
     unpin(); save();
     applyHue(); renderNow(true); renderChips(); renderList();
+    wanderedOff(was);
   };
   if(!wrap || !orb || reduceMotion()){ settle(); return; }
 
@@ -2755,7 +2913,7 @@ function pickerList(){
     workingHours: workingHours(),
     workEasyWin: pool.some(function(t){ return t.effort === "easy" || t.duration <= 15; }),
     runway: isBatchPlanet(S.session.planet) ? { mins:600, what:"", kind:"none" } : runway(),
-    minsLeftOfDay: Math.max(0, hhmmToMins(S.settings.workUntil) - minsOfDay())
+    minsLeftOfDay: minsLeftToday()
   };
   return pool.map(function(t){ return { t:t, s:scoreTask(t, ctx).score }; })
              .sort(function(a,b){ return b.s - a.s; })
@@ -3107,7 +3265,7 @@ function sessionShouldEnd(){
   var mine = todayLog().filter(function(l){ return l.at >= (S.session.enteredAt||0); });
   /* a real stint, not one quick job — otherwise "you're done" is just annoying */
   var worked = mine.length >= 2 || sessionMinutes() >= 25;
-  var dayOver = !isBatchPlanet(id) && minsOfDay() > hhmmToMins(S.settings.workUntil);
+  var dayOver = !isBatchPlanet(id) && minsLeftToday() <= 0;
   if(!worked && !dayOver) return false;
   var live = planetOpen(id).filter(function(t){ return !isResting(t) && locationOK(t); });
   if(!live.length) return false;
@@ -3118,7 +3276,7 @@ function sessionShouldEnd(){
      and you've already had a proper one. Starting a forty-minute job with
      twenty minutes left isn't productivity, it's a worse stopping point. */
   var w = runway();
-  var room = Math.min(w.kind === "none" ? 600 : w.mins, Math.max(0, hhmmToMins(S.settings.workUntil) - minsOfDay()));
+  var room = Math.min(w.kind === "none" ? 600 : w.mins, minsLeftToday());
   if(room > 0 && room <= 35 && productiveToday() &&
      !live.some(function(t){ return timeLeftOn(t) <= room - 2 || t.duration <= room - 2; })) return "noRoom";
   return false;
@@ -3295,6 +3453,7 @@ function deletePlanet(id, moveTo, wipe){
     S.projects = (S.projects||[]).filter(function(pr){ return pr.planetId !== id; });
   }
   S.planets = S.planets.filter(function(x){ return x.id !== id; });
+  S.schedule = (S.schedule||[]).filter(function(sg){ return sg.planet !== id; });
   if(S.session.planet === id){ S.session.planet = null; S.session.project = null; S.ui.selecting = false; }
   if(S.session.project && !projectById(S.session.project)) S.session.project = null;
   if(S.focus && !byId(S.focus.taskId)){ S.focus = null; stopTicker(); }
@@ -3354,11 +3513,12 @@ function viewSystem(){
    today that changes, and everything downstream of it — what fits, what's
    worth opening, whether stopping is the right answer — has to move with it. */
 function finishLine(){
-  if(S.session.workFinished) return '<p class="finish-line">Work\'s done for today. <button class="linky" data-act="finish-time">Change</button></p>';
-  var end = hhmmToMins(S.settings.workUntil), left = end - minsOfDay();
-  return '<p class="finish-line">Working until <b>'+esc(S.settings.workUntil)+'</b>'+
-    (left > 0 ? ' · '+fmtDur(left)+' left' : ' · that\'s been and gone')+
-    ' <button class="linky" data-act="finish-time">Change</button></p>';
+  if(S.session.workFinished)
+    return '<p class="finish-line">That\'s you done for today. <button class="linky" data-act="finish-time">Change</button></p>';
+  var b = blockLine();
+  return '<p class="finish-line">'+esc(b.text)+
+    (b.mins > 0 ? ' · <b>'+fmtDur(b.mins)+'</b> left' : '')+
+    ' <button class="linky" data-act="finish-time">Day</button></p>';
 }
 var FINISH_NUDGES = [-60, -30, -15, 15, 30, 60];
 function sheetFinishTime(){
@@ -3396,8 +3556,8 @@ function setFinish(mins){
    see them. One question only: which of these do you want?
    ============================================================ */
 var SAT_OPTS = {
-  inner:18, maxSize:20, minSize:8.5, gap:3, start:-90, labels:true, perRing:[4,6,8,9],
-  radii:[[31], [26, 41], [21, 31.5, 42], [19, 28, 36.5, 44.5]]
+  inner:19, maxSize:15.5, minSize:8, gap:3, start:-90, labels:true, perRing:[4,6,8,9],
+  radii:[[32], [27, 41.5], [22, 32, 42], [19.5, 28, 36.5, 44.5]]
 };
 function projectLayout(){
   var list = projectsOf(S.session.planet);
@@ -3487,8 +3647,15 @@ function openProjects(){
   unpin(); save(); renderNow(true); renderList();
 }
 function closeProjects(){
-  S.ui.selecting = false; Orb.pulledBack = null;
-  unpin(); save(); renderNow(true); renderList();
+  /* out of choosing, back onto the world: the whole selection stage is thrown
+     past you and the planet swells back to fill the screen */
+  var settle = function(){
+    S.ui.selecting = false; Orb.pulledBack = null;
+    unpin(); save(); renderNow(true); renderList();
+  };
+  var parent = document.querySelector("#projStage .body.parent .body-orb");
+  catapult({ throwId:"projStage", anchorEl:parent || undefined, settle:settle,
+             stageId:"orbStage", targetSel:"#orb", ms:1150, stars:false });
 }
 /* Stepping into a project is the same journey as landing on a world, one scale
    smaller: the thing you tapped grows into the object in front of you. */
@@ -3554,10 +3721,18 @@ function enterProject(id, el){
   Flight.t = setTimeout(arrive, 1450);
 }
 function closeProject(){
-  /* out of a project, back to choosing one */
-  S.session.project = null;
-  S.ui.selecting = hasProjects(S.session.planet);
-  unpin(); save(); renderNow(true); renderList(); renderChips();
+  /* out of a project, back to choosing one: the satellite you were standing on
+     is thrown away and the selection view falls back in around it */
+  var leaving = S.session.project;
+  var settle = function(){
+    S.session.project = null;
+    S.ui.selecting = hasProjects(S.session.planet);
+    Orb.pulledBack = S.session.planet;      /* no second pull-back on top of this */
+    unpin(); save(); renderNow(true); renderList(); renderChips();
+  };
+  catapult({ throwId:"orbWrap", anchorEl:document.getElementById("orb") || undefined,
+             settle:settle, stageId:"projStage",
+             targetSel:'[data-project="'+leaving+'"] .body-orb', ms:1250, stars:false });
 }
 /* one gesture, one meaning: down is out */
 function stepOut(){
@@ -3689,6 +3864,7 @@ function viewOne(choice){
       ? '<p class="in-project"><button class="linky" data-act="jump-project" data-project="'+esc(projectOf(t))+'">'+
           esc(projectLabel(projectOf(t)))+'</button></p>'
       : '')+
+    (t.notes ? '<p class="task-notes">'+esc(t.notes)+'</p>' : '')+
     '<p class="why"><b>Why this?</b> '+esc(whyLine(choice))+'</p>'+
     '<p class="runway">'+esc(note)+'</p>'+
     '<p class="dayline">'+p.count+' done · '+fmtDur(p.done)+' on the clock</p>'+
@@ -3729,6 +3905,7 @@ function viewFocus(){
   return ''+
     '<p class="eyebrow hot">'+(f.paused ? "Paused" : "Working")+'</p>'+
     orbHTML(inner, { running:true, flag:flagFor(t), hints:{ u:"Done", l:"Park it", r:"Add", d:"" } })+
+    (t.notes ? '<p class="task-notes">'+esc(t.notes)+'</p>' : '')+
     '<p class="runway" id="runwayLine"></p>'+
     '<p class="dayline">Tap to '+(f.paused?"resume":"pause")+' · swipe up when it\'s done</p>';
 }
@@ -3751,7 +3928,7 @@ function viewDayClosed(){
   var d = doneToday(), mins = d.reduce(function(a,t){ return a+(t.actualMinutes||t.duration); },0);
   return ''+
     '<p class="eyebrow">Today</p>'+
-    orbHTML('<div class="orb-count">'+d.length+'</div><div class="orb-sub">tasks destroyed</div>')+
+    orbHTML('<div class="orb-count">'+d.length+'</div><div class="orb-sub">taskeroids destroyed</div>')+
     '<p class="runway">'+fmtDur(dayProgress().done)+' on the clock</p>'+
     '<div style="margin-top:16px">'+coachHTML(["That's the day.", d.length+" things done and "+fmtDur(dayProgress().done)+" on the clock."])+'</div>'+
     '<button class="btn wide" data-act="reopen" style="margin-top:12px">Actually, I\'m not finished</button>';
@@ -4184,7 +4361,7 @@ var cap = null;
 function newCapture(){
   return { text:"", duration:null, priority:null, due:null, when:null,
            fixedStart:null, repeatEvery:null, planet:null, projectId:null, unblocks:null, open:null,
-           urgent:null, type:null, after:null, note:null };
+           urgent:null, type:null, after:null, note:null, notes:"" };
 }
 
 /* ---------- reading the sentence ---------- */
@@ -4353,6 +4530,7 @@ function sheetCapture(){
     '<button class="qc-chip" id="qc-imp" type="button" aria-pressed="'+(cap.priority==="important")+'">Important</button>'+
     '<button class="qc-chip" id="qc-urg" type="button" aria-pressed="'+(!!cap.urgent)+'">Do next</button>'+
     '<button class="qc-chip" id="qc-when" type="button" aria-pressed="'+(cap.due?"true":"false")+'">'+esc(capWhenLabel())+'</button>'+
+    '<button class="qc-chip'+(cap.notes?"":" ghost")+'" id="qc-notes" type="button" aria-pressed="'+(!!cap.notes)+'">Notes</button>'+
     '<button class="qc-chip ghost" id="qc-more" type="button">•••&nbsp;More</button>'+
   '</div>'+
   '<div id="qc-time-row" class="qc-drawer" hidden><div class="stepper">'+
@@ -4360,6 +4538,9 @@ function sheetCapture(){
     '<div class="val" id="qc-dur">'+mins+'<small>minutes</small></div>'+
     '<button class="step" data-qcdur="5">+5</button><button class="step" data-qcdur="15">+15</button>'+
   '</div><p class="hint">Leave it alone and I\'ll guess from the words.</p></div>'+
+  '<div id="qc-notes-row" class="qc-drawer" hidden>'+
+    '<textarea id="qc-notes-text" rows="3" placeholder="Anything that needs explaining">'+esc(cap.notes||"")+'</textarea>'+
+    '<p class="hint">Only if it needs it. Most things don\'t.</p></div>'+
   '<div id="qc-when-row" class="qc-drawer" hidden><div class="choices">'+
     WHEN_CHOICES.map(function(w){
       return '<button class="choice" data-qcwhen="'+w.v+'" aria-pressed="false">'+w.l+'</button>';
@@ -4400,6 +4581,13 @@ function bindCapture(){
     cap.urgent = !cap.urgent;
     syncCapChips();
   });
+  var notesRow = root.querySelector("#qc-notes-row");
+  root.querySelector("#qc-notes").addEventListener("click", function(){
+    notesRow.hidden = !notesRow.hidden;
+    if(!notesRow.hidden){ var ta = root.querySelector("#qc-notes-text"); if(ta) ta.focus(); }
+  });
+  var nta = root.querySelector("#qc-notes-text");
+  if(nta) nta.addEventListener("input", function(){ cap.notes = nta.value; syncCapChips(); });
   root.querySelectorAll("[data-qcdur]").forEach(function(b){
     b.addEventListener("click", function(){
       cap.duration = Math.max(5, Math.min(480, (cap.duration || S.settings.defaultDuration) + (+b.dataset.qcdur)));
@@ -4428,7 +4616,8 @@ function syncCapChips(){
   var root = document.getElementById("sheetRoot");
   if(!root) return;
   var t = root.querySelector("#qc-time"), i = root.querySelector("#qc-imp"), w = root.querySelector("#qc-when");
-  var u = root.querySelector("#qc-urg");
+  var u = root.querySelector("#qc-urg"), nc = root.querySelector("#qc-notes");
+  if(nc){ nc.classList.toggle("ghost", !cap.notes); nc.setAttribute("aria-pressed", String(!!cap.notes)); }
   if(t){ t.textContent = cap.duration ? cap.duration+"m" : "Time"; t.setAttribute("aria-pressed", String(!!cap.duration)); }
   if(i) i.setAttribute("aria-pressed", String(cap.priority === "important"));
   if(u) u.setAttribute("aria-pressed", String(!!cap.urgent));
@@ -4464,6 +4653,7 @@ function buildCaptured(raw){
     repeatEvery: fixedStart ? 0 : repeat,
     urgent: cap.urgent != null ? cap.urgent : !!parsed.urgent,
     projectId: project || null,
+    notes: cap.notes || "",
     unblocks: cap.unblocks || null,
     fixedStart: fixedStart,
     fixedEnd: fixedStart ? minsToHHMM(hhmmToMins(fixedStart) + mins) : null
@@ -4943,6 +5133,10 @@ function sheetEdit(id){
   return ''+
   '<div class="sheet-head"><h2 class="sec">Task details</h2><button class="icon-btn" data-act="close-sheet" aria-label="Close">✕</button></div>'+
   '<div class="field"><label>Name</label><input type="text" id="ed-name" value="'+esc(t.name)+'"></div>'+
+  /* Some jobs need a sentence of explanation. Most don't, so this stays quiet
+     until there's something in it. */
+  '<div class="field"><label for="ed-notes">Notes</label>'+
+    '<textarea id="ed-notes" rows="3" placeholder="Anything you\'ll want to know when you come back to this">'+esc(t.notes||"")+'</textarea></div>'+
   '<div class="field"><label>Which part of life?</label><div class="choices">'+planetBtns+'</div></div>'+
   (prs.length ? '<div class="field"><label>Project</label><div class="choices">'+
      '<button class="choice" data-act="setproject" data-setproject="" data-id="'+esc(t.id)+'" aria-pressed="'+(!projectOf(t))+'">None</button>'+
@@ -5131,8 +5325,8 @@ function renderPlan(){
   var bands = segs.map(function(s){
     var f = Math.max(startM, hhmmToMins(s.from)), t = Math.min(endM, hhmmToMins(s.to));
     if(t <= f) return "";
-    var l = locById(s.loc);
-    return '<div class="tl-band" style="top:'+y(f)+'px;height:'+((t-f)*PX_PER_MIN)+'px;background:hsl('+(l?l.hue:210)+' 45% 55% / .6)"></div>';
+    return '<div class="tl-band" style="top:'+y(f)+'px;height:'+((t-f)*PX_PER_MIN)+
+      'px;background:hsl('+planetHue(s.planet)+' 62% 55% / .6)" title="'+esc(planetLabel(s.planet))+'"></div>';
   }).join("");
   var hours = "";
   for(var h = 6; h <= 23; h++) hours += '<div class="tl-hour" style="top:'+y(h*60)+'px">'+pad(h)+':00</div>';
@@ -5185,14 +5379,14 @@ function renderPlan(){
 
   var segRows = segs.map(function(s, i){
     return '<div class="seg-row">'+
-      '<span class="swatch" style="background:hsl('+locHue(s.loc)+' 45% 55%)"></span>'+
+      '<span class="swatch" style="background:hsl('+planetHue(s.planet)+' 62% 55%)"></span>'+
       '<input type="time" data-seg="'+i+'" data-k="from" value="'+esc(s.from)+'">'+
       '<input type="time" data-seg="'+i+'" data-k="to" value="'+esc(s.to)+'">'+
-      '<select data-seg="'+i+'" data-k="loc">'+S.locations.map(function(l){
-        return '<option value="'+esc(l.id)+'"'+(l.id===s.loc?" selected":"")+'>'+esc(l.label)+'</option>';
+      '<select data-seg="'+i+'" data-k="planet">'+planets().map(function(pl){
+        return '<option value="'+esc(pl.id)+'"'+(pl.id===s.planet?" selected":"")+'>'+esc(pl.name)+'</option>';
       }).join("")+'</select>'+
       '<button class="icon-btn" data-act="seg-del" data-i="'+i+'" aria-label="Remove">✕</button></div>';
-  }).join("");
+  }).join("") || '<div class="empty">Nothing booked. Your day is your own.</div>';
 
   document.getElementById("planRoot").innerHTML = ''+
   '<div class="stack" style="gap:18px">'+
@@ -5205,15 +5399,17 @@ function renderPlan(){
       '<div class="tl-body">'+hours+lunchBlock+blocks+nowLine+'</div>'+
     '</div>'+
     '<hr class="divider">'+
-    '<div class="group"><div class="group-head"><h2 class="sec">Where you are, when</h2>'+
-      '<span class="count">'+(S.settings.autoLocation?"auto":"manual")+'</span></div>'+
+    /* Blocks of the day, booked against worlds. Open ONE inside one and it puts
+       you there; you can always walk out. */
+    '<div class="group"><div class="group-head"><h2 class="sec">Which world, when</h2>'+
+      '<span class="count">'+(S.settings.autoPlanet?"auto":"manual")+'</span></div>'+
       segRows+
-      '<button class="btn sm" data-act="seg-add">+ Add a segment</button>'+
+      '<button class="btn sm" data-act="seg-add"'+(planets().length?"":" disabled")+'>+ Book a stretch</button>'+
       '<div class="choices" style="margin-top:8px">'+
-        '<button class="choice grow" data-autoloc="1" aria-pressed="'+(S.settings.autoLocation)+'">Follow this schedule</button>'+
-        '<button class="choice grow" data-autoloc="0" aria-pressed="'+(!S.settings.autoLocation)+'">I\'ll spin it myself</button>'+
+        '<button class="choice grow" data-autoplanet="1" aria-pressed="'+(S.settings.autoPlanet)+'">Open me where I should be</button>'+
+        '<button class="choice grow" data-autoplanet="0" aria-pressed="'+(!S.settings.autoPlanet)+'">I\'ll choose each time</button>'+
       '</div>'+
-      '<p class="hint">Spinning the dial always wins — the schedule takes over again at the next change.</p>'+
+      '<p class="hint">You\'re never locked in — leaving early is always allowed.</p>'+
     '</div>'+
   '</div>';
 
@@ -5228,13 +5424,13 @@ function renderPlan(){
       save(); applySchedule(); applyHue(); renderPlan(); renderChips();
     });
   });
-  root.querySelectorAll("[data-autoloc]").forEach(function(b){
+  root.querySelectorAll("[data-autoplanet]").forEach(function(b){
     b.addEventListener("click", function(){
-      S.settings.autoLocation = b.dataset.autoloc === "1";
-      S.session.segIndex = -1;
+      S.settings.autoPlanet = b.dataset.autoplanet === "1";
+      S.session.segIndex = -1; S.session.blockShown = null;
       save();
-      if(S.settings.autoLocation) applySchedule();
-      applyHue(); renderPlan(); renderNow(true);
+      if(S.settings.autoPlanet){ applySchedule(); honourBlock(); }
+      applyHue(); render();
     });
   });
 }
@@ -5257,6 +5453,7 @@ function rowHTML(t){
     meta += isCooling(t) ? '<span class="mini">next in '+coolMins(t)+'m</span>' : '<span class="mini hot">due now</span>';
     if(t.checkCount) meta += '<span class="mini good">checked '+t.checkCount+'×</span>';
   }
+  if(t.notes) meta += '<span class="mini">note</span>';
   if(t.urgent && t.status === "open") meta += '<span class="mini hot">Do next</span>';
   if(t.prepMins) meta += '<span class="mini">'+t.prepMins+'m to get ready</span>';
   if(isWaiting(t)) meta += '<span class="mini cool">waiting'+(t.waitingOn ? " on "+esc(t.waitingOn) : "")+'</span>';
@@ -5380,7 +5577,7 @@ function renderDone(){
   }).join("");
   document.getElementById("doneRoot").innerHTML = '<div class="stack" style="gap:18px">'+
     '<p class="eyebrow left">Today</p>'+
-    '<div class="slab"><div class="num">'+d.length+'</div><h2 class="sec">'+(d.length===1?"task destroyed":"tasks destroyed")+'</h2></div>'+
+    '<div class="slab"><div class="num">'+d.length+'</div><h2 class="sec">'+(d.length===1?"taskeroid destroyed":"taskeroids destroyed")+'</h2></div>'+
     '<div class="duo">'+
       '<div class="slab"><div class="num cool">'+fmtDur(mins)+'</div><p class="hint">measured</p></div>'+
       '<div class="slab"><div class="num">'+(est ? Math.round(act/est*100)+'%' : '—')+'</div><p class="hint">of estimate</p></div>'+
@@ -5804,6 +6001,8 @@ document.addEventListener("click", function(e){
     case "save-edit":
       if(t){
         var nm = document.getElementById("ed-name"); if(nm) t.name = nm.value.trim() || t.name;
+        var nt = document.getElementById("ed-notes");
+        if(nt) t.notes = nt.value.trim();
         var s1 = document.getElementById("ed-start"), e1 = document.getElementById("ed-end");
         t.fixedStart = (s1 && s1.value) ? s1.value : null;
         t.fixedEnd = (e1 && e1.value) ? e1.value : null;
@@ -5927,13 +6126,18 @@ document.addEventListener("click", function(e){
       toast(stranded ? ld.label+" removed — "+stranded+" task(s) moved." : ld.label+" removed.");
       break;
     }
-    case "seg-add":
-      S.schedule.push({ from:"12:00", to:"13:00", loc:(places()[0]||S.locations[0]).id });
+    case "seg-add": {
+      var first = planets()[0];
+      if(!first){ toast("Make a planet first — a stretch has to be for something."); break; }
+      var last = sortedSchedule().slice(-1)[0];
+      var startAt = last ? last.to : "09:00";
+      S.schedule.push({ from:startAt, to:minsToHHMM(Math.min(1439, hhmmToMins(startAt)+120)), planet:first.id });
       S.session.segIndex = -1; save(); renderPlan();
       break;
+    }
     case "seg-del": {
       var target = sortedSchedule()[+b.dataset.i], real = S.schedule.indexOf(target);
-      if(real > -1 && S.schedule.length > 1){ S.schedule.splice(real,1); S.session.segIndex = -1; save(); renderPlan(); }
+      if(real > -1){ S.schedule.splice(real,1); S.session.segIndex = -1; save(); renderPlan(); renderNow(true); }
       break;
     }
     case "show-gestures": showGestures(); break;
@@ -5982,14 +6186,14 @@ function showGestures(){
   var el = document.createElement("div");
   el.className = "gestures";
   el.innerHTML = '<div class="card">'+
-    '<h2 class="sec">The orb</h2>'+
-    '<div class="gkey"><b>Tap</b><span>Start the task — tap again to pause</span></div>'+
+    '<h2 class="sec">The taskeroid</h2>'+
+    '<div class="gkey"><b>Tap</b><span>Start it — tap again to pause</span></div>'+
     '<div class="gkey"><b>Swipe ↑</b><span>Done</span></div>'+
     '<div class="gkey"><b>Swipe ←</b><span>Not right now — I\'ll ask why</span></div>'+
     '<div class="gkey"><b>Swipe →</b><span>Throw something new in and carry on</span></div>'+
-    '<div class="gkey"><b>Swipe ↓</b><span>Leave this world, back to the system</span></div>'+
-    '<div class="gkey"><b>Hold</b><span>Flick through this world\'s tasks and pick one</span></div>'+
-    '<p class="hint">Out in the solar system, tap a world to go in. Nothing from anywhere else follows you.</p>'+
+    '<div class="gkey"><b>Swipe ↓</b><span>Out one level: project, world, solar system</span></div>'+
+    '<div class="gkey"><b>Hold</b><span>Flick through the taskeroids here and pick one</span></div>'+
+    '<p class="hint">Out in the solar system, tap a world to go in. If it has projects, a small satellite orbits it — tap that to see them. Nothing from anywhere else follows you.</p>'+
     '<button class="btn go wide" id="g-close">Got it</button></div>';
   document.body.appendChild(el);
   el.querySelector("#g-close").addEventListener("click", function(){
@@ -6030,7 +6234,7 @@ function render(){
 setInterval(function(){
   checkWarnings();
   var moved = applySchedule();
-  if(moved) applyHue();
+  if(moved){ applyHue(); if(honourBlock()){ render(); return; } }
   if(S.ui.tab === "now" && !S.focus && !Orb.swipe && !Pick.on) renderNow();
   renderChips();
 }, 15000);
@@ -6042,6 +6246,7 @@ document.addEventListener("visibilitychange", function(){
   paintOrbits();
   checkWarnings();
   if(applySchedule()) applyHue();
+  if(honourBlock()){ applyHue(); render(); renderChips(); return; }
   paintProjOrbits();
   if(S.focus) startTicker(); else if(S.ui.tab === "now") renderNow(true);
   renderChips();
@@ -6099,6 +6304,7 @@ if(!CAN_STORE){
 window.__oneToast = toast;
 
 applySchedule();
+honourBlock();
 applyHue();
 checkWarnings();
 go(S.ui.tab || "now");
@@ -6116,7 +6322,7 @@ if(!S.profile.sawGestures && S.session.started) showGestures();
    app out from under a running timer. */
 (function () {
   if (!('serviceWorker' in navigator) || location.protocol !== 'https:') return;
-  var BUILD = '20260903-0711-0775fc';
+  var BUILD = '20260903-1212-142010';
   window.addEventListener('load', function () {
     navigator.serviceWorker.register('sw.js?v=' + BUILD).then(function (reg) {
       function watch(sw) {

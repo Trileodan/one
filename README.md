@@ -30,7 +30,7 @@ and never anything deeper than that.
 Projects have a place in the sky rather than a menu. Land on a world that has
 some and a single small **gateway satellite** drifts around it — one object,
 saying *there is more structure here* and deliberately not saying how much.
-Tap it and the camera pulls back: the world stays in the middle, the task moon
+Tap it and the camera pulls back: the world stays in the middle, the taskeroid
 steps aside, and the projects come out to where you can see them, spaced so
 that no two ever look accidentally paired. Tap one and the camera moves in
 until it is the thing in front of you.
@@ -58,19 +58,20 @@ inside a world, nothing from any other world exists** — no counts, no badges,
 no "up next" from the kitchen. Pull the sphere down against its own weight and
 let go, and it catapults back into orbit.
 
-The one thing you're doing hangs in front of that world as its **moon** —
+The one thing you're doing hangs in front of that world as its **taskeroid** —
 eclipsing it, the way it would look from the sun. A flag is planted on it if the
-job is overdue (red), due today (orange) or important (gold).
+job is overdue (red), due today (orange) or important (gold), and anything that
+needs explaining carries a note you can read while you're working on it.
 
-Handle the moon, not the world: **push it up** to finish and the next moon swings
-in from below, **left** for not right now (it asks why, and treats a bad time
-differently from not fancying it), **right** to throw something new in without
-losing your place. Saying no asks why in plain words — and one of the answers is
-*check back on it later*, where you pick the moment. Until it comes round the
-task is genuinely asleep: out of the running, out of the count. When it comes
-round, it asks for you first. **Pull down** and you get the whole world — planet and moon —
-and letting go catapults it back into orbit. Tap to start the clock; press and
-hold and this world's tasks come round on a rolodex of moons.
+Handle the taskeroid, not the world: **push it up** to finish and the next one
+swings in from below, **left** for not right now (it asks why, and treats a bad
+time differently from not fancying it), **right** to throw something new in
+without losing your place. Saying no asks why in plain words — and one of the
+answers is *check back on it later*, where you pick the moment. Until it comes
+round the task is genuinely asleep: out of the running, out of the count. When it
+comes round, it asks for you first. **Pull down** goes out one level and
+catapults whatever you were standing on back into orbit. Tap to start the clock;
+press and hold and the taskeroids here come round on a rolodex.
 
 If there's a meeting in the diary and nothing sensible fits in the gap before
 it, ONE puts the meeting up early rather than showing you an empty screen — tap
@@ -90,9 +91,19 @@ counted as productivity, and you never have to pretend you did it. And when you
 give up on a problem, ONE asks the useful question first — is there something to
 make safe, work around, or follow up before you walk away?
 
-Your finishing time isn't a setting you filled in once. Change it from the
-solar system or from the orb and everything moves with it: what fits, what's
-worth opening, and whether stopping is now the right answer. Because it can be.
+## The shape of the day
+
+The day is booked against **worlds**, not addresses. *Work 9 to 5, Home 7 to 8*
+says which part of your life owns that stretch. Open ONE inside one and it takes
+you straight there — you can always walk out, though it may have something to say
+about it — and the clock reads the day in the day's own words:
+
+    At Work until 17:00 · 5h left
+    Nothing planned until Home at 19:00 · 2h left
+    At Home until 20:00 · 1h left
+
+Everything downstream moves with it: what fits, what's worth opening, and
+whether stopping is now the right answer. Because it can be.
 ONE is allowed to recommend nothing — *"You've cleared the important stuff.
 Nothing worth opening for twenty minutes. You're done at 4:30."*
 
