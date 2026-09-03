@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="ONE">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="one-build" content="20260902-1955-f02453">
+<meta name="one-build" content="20260903-0711-0775fc">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png" sizes="192x192">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -220,19 +220,6 @@ h2.sec{font-family:var(--display);font-variation-settings:'wdth' 88,'wght' 700;f
    Press and hold and this world's tasks come round on a wheel, each one the
    moon it would be if you chose it. */
 .orb-pick{position:absolute;inset:0;z-index:8;touch-action:none}
-/* the wheel's own filter row: narrower browsing, never wider */
-.pick-filter{
-  position:absolute;left:0;right:0;top:-6px;z-index:9;display:flex;gap:6px;
-  justify-content:center;flex-wrap:wrap;padding:0 8px;
-}
-.pf{
-  appearance:none;cursor:pointer;border-radius:999px;border:1px solid var(--line);
-  background:var(--surface);color:var(--ink-2);padding:5px 10px;min-height:0;
-  font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;
-}
-.pf b{font-weight:700;opacity:.6;margin-left:3px}
-.pf[aria-pressed="true"]{background:var(--hi);border-color:var(--hi);color:var(--hi-ink)}
-.pf[aria-pressed="true"] b{opacity:.8}
 .pick-item{
   position:absolute;left:50%;top:50%;width:56%;aspect-ratio:1;border-radius:50%;
   appearance:none;border:0;cursor:pointer;color:#191712;padding:8% 11%;
@@ -388,6 +375,74 @@ body.in-space .app{background:transparent}
 }
 .orbit{width:calc(var(--rr) * 2%);height:calc(var(--rr) * 2%)}
 .orbit.dim{border-style:dashed;opacity:.5}
+/* ---------- the Project Gateway ----------
+   Not a task, not a world, not a button floating in space: a small cluster of
+   lights held in a ring, drifting slowly round the planet you're standing on.
+   It says there is more structure here, and nothing about how much. */
+.gateway{
+  position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;
+  appearance:none;background:none;border:0;padding:0;cursor:pointer;z-index:7;
+  animation:gwOrbit 46s linear infinite;
+}
+.gw-body{
+  position:absolute;inset:5px;border-radius:50%;
+  background:radial-gradient(circle at 34% 30%, hsl(var(--orb-h) 35% 82%), hsl(var(--orb-h) 30% 54%) 58%, hsl(var(--orb-h) 34% 30%));
+  box-shadow:0 4px 12px -4px rgba(0,0,8,.8), inset -3px -4px 8px -3px rgba(0,0,6,.6);
+  display:block;
+}
+.gw-node{position:absolute;width:3px;height:3px;border-radius:50%;background:hsl(var(--orb-h) 90% 88%);box-shadow:0 0 5px 1px hsl(var(--orb-h) 92% 70% / .9)}
+.gw-node.n1{left:32%;top:30%} .gw-node.n2{left:58%;top:46%} .gw-node.n3{left:38%;top:64%}
+.gw-ring{
+  position:absolute;inset:-3px;border-radius:50%;border:1px solid hsl(var(--orb-h) 70% 70% / .5);
+  transform:rotate(-22deg) scaleY(.42);
+}
+.gateway::after{content:"";position:absolute;inset:-13px;border-radius:50%}  /* a thumb-sized target */
+.gateway:active .gw-body{filter:brightness(1.2)}
+@keyframes gwOrbit{
+  0%  {transform:rotate(0deg)   translateX(min(30vw,150px)) rotate(0deg)}
+  100%{transform:rotate(360deg) translateX(min(30vw,150px)) rotate(-360deg)}
+}
+#nowRoot.approaching .gateway{opacity:0!important;transition:none}
+.orb-stage.picking .gateway{opacity:0;pointer-events:none;transition:opacity .2s ease}
+
+/* ---------- project satellites ----------
+   Smaller and plainer than a world, so the level you are on is never in doubt,
+   and always large enough to hit with a thumb. */
+.sys.picking{touch-action:none;user-select:none;-webkit-user-select:none}
+.sys.picking.arriving{animation:pullBack .55s cubic-bezier(.3,.9,.35,1) both}
+@keyframes pullBack{ from{transform:scale(1.55);opacity:.25} to{transform:scale(1);opacity:1} }
+.body.parent .body-orb{box-shadow:0 20px 52px -20px hsl(var(--orb-h) 96% 50% / .5)}
+.body.parent .body-name{font-size:12.5px;opacity:.9}
+.body.sat .body-orb,
+.orb.satskin{
+  background:radial-gradient(circle at 33% 28%, hsl(var(--orb-h) 30% 86%), hsl(var(--orb-h) 26% 60%) 52%, hsl(var(--orb-h) 30% 32%));
+  box-shadow:0 10px 26px -12px rgba(0,0,10,.8), inset -4px -5px 12px -5px rgba(0,0,6,.6);
+}
+/* the world you came from, still there behind the project you're standing on */
+.orb.satskin{box-shadow:0 34px 74px -26px var(--orb-glow)}
+.orb.satskin::before{
+  content:"";position:absolute;inset:-4.5%;border-radius:50%;z-index:4;pointer-events:none;
+  border:1px solid hsl(var(--orb-h) 60% 74% / .38);
+  transform:rotate(-14deg) scaleY(.3);
+}
+.body.sat.more .body-orb{
+  background:radial-gradient(circle at 33% 28%, hsl(var(--orb-h) 20% 62%), hsl(var(--orb-h) 18% 34%) 60%, hsl(var(--orb-h) 20% 18%));
+  border:1px dashed hsl(var(--orb-h) 40% 62% / .55);
+}
+.body.sat.loose .body-orb{
+  background:radial-gradient(circle at 33% 28%, #EDEAE2, #B9B5AA 52%, #6E6B62);
+  opacity:.85;
+}
+.sat-tex{
+  position:absolute;inset:0;border-radius:50%;
+  background:
+    radial-gradient(circle at 62% 36%, hsl(var(--orb-h) 60% 96% / .8) 0 6%, transparent 7%),
+    radial-gradient(circle at 40% 62%, hsl(var(--orb-h) 55% 92% / .6) 0 4%, transparent 5%);
+}
+.body.sat::after{content:"";position:absolute;left:50%;top:38%;width:56px;height:56px;transform:translate(-50%,-50%);border-radius:50%}
+.body.sat:active .upright{transform:scale(.94)}
+.lift-planet.sat .body-orb{border-radius:50%}
+
 /* an empty sky is a state, not a fault */
 .sys-empty{text-align:center;margin-top:18px}
 .sys-empty p{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);opacity:.75}
@@ -404,6 +459,13 @@ body.in-space .app{background:transparent}
   position:absolute;left:50%;top:calc(50% - var(--r));width:var(--sz);
   transform:translate(-50%,-50%) rotate(calc(-1 * var(--a)));
   appearance:none;background:none;border:0;padding:0;cursor:pointer;
+}
+/* A small world is still something you have to be able to hit with a thumb, so
+   the target is generous even when the sphere is not. It never grows past the
+   clearance the layout guaranteed, so neighbours can't share a tap. */
+.body::before{
+  content:"";position:absolute;left:50%;top:0;width:max(100%, 42px);aspect-ratio:1;
+  transform:translate(-50%,0);border-radius:50%;
 }
 .upright{
   display:flex;flex-direction:column;align-items:center;gap:8px;
@@ -433,6 +495,11 @@ body.in-space .app{background:transparent}
 .body.snug .body-name{font-size:10px;letter-spacing:.1em;max-width:74px}
 .body.tight .body-name{font-size:8.5px;letter-spacing:.06em;max-width:58px}
 .body.tight .upright{gap:5px}
+.body.crowd .body-name{font-size:7.5px;letter-spacing:.02em;max-width:46px}
+.body.crowd .upright{gap:4px}
+.body.sat .body-name{max-width:82px}
+.body.sat.snug .body-name{max-width:66px}
+.body.sat.tight .body-name{max-width:52px;font-size:8px}
 .sys .body.chosen{z-index:5}
 .sys .body.chosen .body-orb{box-shadow:0 0 60px 10px hsl(var(--orb-h) 96% 55% / .5)}
 
@@ -677,6 +744,8 @@ body.in-space .app{background:transparent}
 
 .field{display:flex;flex-direction:column;gap:9px}
 .field > label{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.in-project{text-align:center;margin-top:-2px}
+.crumb{opacity:.5;padding:0 2px}
 .finish-line{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
   color:var(--ink-2);opacity:.8;text-align:center;margin-top:10px}
 .finish-line b{font-weight:700;opacity:1}
@@ -942,7 +1011,7 @@ var DEFAULT_PLANETS = [
 ];
 
 var DEFAULTS = {
-  version:7,
+  version:8,
   profile:{ name:"", tone:"normal", sawGestures:false },
   settings:{
     lunchDuration:45, lunchFrom:"12:00", lunchTo:"13:00", lunchRequired:true,
@@ -953,12 +1022,12 @@ var DEFAULTS = {
   schedule: JSON.parse(JSON.stringify(DEFAULT_SCHEDULE)),
   session:{
     date:null, started:false, motivation:"meh", location:"work", lastPlace:"work", segIndex:-1,
-    planet:null, enteredAt:null, sessionDone:false, keepGoing:false, lightUntil:0,
+    planet:null, project:null, enteredAt:null, sessionDone:false, keepGoing:false, lightUntil:0,
     lunchState:"pending", lunchEndsAt:null, workFinished:false, dayClosed:false, briefed:false, spun:false
   },
   projects:[],
   tasks:[], focus:null, history:[],
-  ui:{ tab:"now", arrival:null, pinnedId:null, project:null },
+  ui:{ tab:"now", arrival:null, pinnedId:null, selecting:false, projPage:0 },
   log:[],
   /* An intentionally empty solar system is not the same as one that has never
      been set up. This is the flag that tells them apart, so deleting every
@@ -1093,6 +1162,11 @@ var S = load() || JSON.parse(JSON.stringify(DEFAULTS));
     if(!planetById(pr.planetId)) pr.planetId = (S.planets[0]||{}).id || null;
   });
   S.tasks.forEach(function(t){ if(!("projectId" in t)) t.projectId = null; });
+  /* v8: standing inside a project is a place you are, not a filter you set */
+  if(S.ui && "project" in S.ui){ delete S.ui.project; }
+  if(!("project" in S.session)) S.session.project = null;
+  if(S.session.project && !projectById(S.session.project)) S.session.project = null;
+  S.ui.selecting = false;
   if(S.session.planet && !planetById(S.session.planet)) S.session.planet = null;
 
   /* v6: transit places retire into the Errands planet. Anything that pointed at
@@ -1115,7 +1189,7 @@ var S = load() || JSON.parse(JSON.stringify(DEFAULTS));
   if(locById("work") && S.locations.filter(function(l){ return l.id === "work"; })[0].label === "Work"){
     S.locations.filter(function(l){ return l.id === "work"; })[0].label = "Workplace";
   }
-  S.version = 7;
+  S.version = 8;
 })();
 
 (function rollover(){
@@ -1238,6 +1312,24 @@ function projectsOf(planetId){
 }
 function projectLabel(id){ var pr = projectById(id); return pr ? pr.name : ""; }
 function projectOf(t){ return t.projectId && projectById(t.projectId) ? t.projectId : null; }
+/* ---------- where you are standing ----------
+   Four levels, and the camera position is the answer to "where am I?":
+     0  the solar system      1  a planet
+     2  choosing a project    3  inside a project
+   Pull down always means one level further out. */
+function inProject(){
+  var id = S.session.project;
+  if(!id) return null;
+  var pr = projectById(id);
+  if(!pr || pr.archived || pr.planetId !== S.session.planet){ S.session.project = null; return null; }
+  return pr;
+}
+function hasProjects(id){ return projectsOf(id).length > 0; }
+function level(){
+  if(!S.session.planet) return 0;
+  if(S.ui.selecting) return 2;
+  return inProject() ? 3 : 1;
+}
 function projectOpen(id){ return liveTasks().filter(function(t){ return t.status === "open" && projectOf(t) === id; }); }
 
 /* ---------- deadlines ---------- */
@@ -1914,9 +2006,15 @@ function scoreTask(t, ctx){
 
 /* Everything selection ever looks at is one world's worth of tasks. Nothing
    from another planet can be chosen, counted, or hinted at. */
+/* Inside a planet the whole planet is in scope. Inside a project you have
+   deliberately said "keep me on this", so nothing else from the planet gets
+   to interrupt — the isolation rule, one level down. */
 function planetPool(){
-  var here = S.session.planet;
-  return openTasks().filter(function(t){ return planetOf(t) === here; });
+  var here = S.session.planet, pr = inProject();
+  return openTasks().filter(function(t){
+    if(planetOf(t) !== here) return false;
+    return pr ? projectOf(t) === pr.id : true;
+  });
 }
 function chooseTask(){
   if(!S.session.planet) return { task:null, reason:"nowhere" };
@@ -2053,7 +2151,7 @@ function chime(low){
 /* ============================================================
    10. THE ORB
    ============================================================ */
-var Orb = { stage:null, swipe:null, holdT:null, moved:false, movedAt:0, twoFinger:false, moonAway:false };
+var Orb = { stage:null, swipe:null, holdT:null, moved:false, movedAt:0, twoFinger:false, moonAway:false, pulledBack:null };
 
 /* The sphere is the world you're standing on: one task, four directions, no
    dial. Which world you're in is decided out in the solar system, deliberately,
@@ -2064,6 +2162,10 @@ var Orb = { stage:null, swipe:null, holdT:null, moved:false, movedAt:0, twoFinge
 function planetSkin(which){
   var p = planetById(which === undefined ? S.session.planet : which);
   if(!p) return { cls:"", inner:"" };
+  /* Inside a project the object in front of you is the satellite you flew to,
+     grown large — not the world it came from. Same material at both ends of
+     the journey, and one glance tells you which level you're on. */
+  if(which === undefined && inProject()) return { cls:"satskin", inner:'<span class="sat-tex"></span>' };
   var sk = surfaceFor(p);
   return { cls:sk, inner: SURFACE_INNER[sk] || "" };
 }
@@ -2090,12 +2192,25 @@ function orbHTML(inner, opts){
         '<div class="orb-face" id="orbFace">'+inner+'</div>'+
       '</div>'+
     '</div>'+
+    gatewayHTML()+
     '<span class="swipe-hint u" id="hint-u">'+esc(lab("u","Done"))+'</span>'+
     '<span class="swipe-hint l" id="hint-l">'+esc(lab("l","Not now"))+'</span>'+
     '<span class="swipe-hint r" id="hint-r">'+esc(lab("r","Add"))+'</span>'+
     '<span class="swipe-hint d" id="hint-d">'+esc(lab("d","Leave"))+'</span>'+
     '<span class="pull-note">Let go to launch</span>'+
   '</div>';
+}
+/* ---------- the Project Gateway ----------
+   One small satellite, and only when there is something behind it. It is not a
+   task and it is not a world: it's the door. It says "there is more structure
+   here", and deliberately does not say how much. */
+function gatewayHTML(){
+  if(!S.session.planet || inProject()) return "";
+  if(!hasProjects(S.session.planet)) return "";
+  return '<button class="gateway" id="gateway" type="button" data-act="open-projects" '+
+    'aria-label="Projects in '+esc(planetLabel(S.session.planet))+'">'+
+    '<span class="gw-body"><span class="gw-node n1"></span><span class="gw-node n2"></span>'+
+    '<span class="gw-node n3"></span></span><span class="gw-ring"></span></button>';
 }
 function faceTask(t, sub){
   return '<div class="orb-task">'+esc(t.name)+'</div><div class="orb-sub">'+esc(sub || (t.duration+" min · "+t.type))+'</div>';
@@ -2134,39 +2249,137 @@ function revealFace(){
    each ring, so neighbours never line up and nothing eclipses anything. As the
    count grows the worlds get smaller and the rings spread — twelve planets are
    twelve planets, not a crowd. */
-var RING_RADII = [24, 34, 44];      /* per cent of the stage's half-width */
-function sysLayout(){
-  var list = planets(), n = list.length, out = [];
-  if(!n) return out;
-  /* One ring for a couple of worlds, two for a handful, three beyond that —
-     and however many go on a ring, they're spaced evenly round it. */
-  var ringCount = n <= 3 ? 1 : n <= 8 ? 2 : 3;
-  var radii = ringCount === 1 ? [33] : ringCount === 2 ? [29, 43] : RING_RADII;
-  var counts = [], base = Math.floor(n / ringCount), extra = n % ringCount;
-  for(var i=0;i<ringCount;i++) counts.push(base + (i >= ringCount - extra ? 1 : 0));
+/* ============================================================
+   THE ORBITAL LAYOUT ENGINE
+   Used for both the worlds around the Sun and the projects
+   around a world. Nothing here is random. The method is always:
 
-  /* A world must fit its own ring — neighbours on a circle of radius r sit
-     2·r·sin(pi/count) apart — and must not touch the ring inside or outside it.
-     Take the tightest of those and everything is clear by construction. */
-  var size = 28;
-  for(var ri=0; ri<ringCount; ri++){
-    if(counts[ri] > 1) size = Math.min(size, 2 * radii[ri] * Math.sin(Math.PI / counts[ri]) * 0.82);
-    if(ri) size = Math.min(size, (radii[ri] - radii[ri-1]) * 0.88);
+     1. deal the objects onto as many rings as they need
+     2. size them so that neighbours *cannot* touch
+     3. add a small, bounded wobble so it doesn't read as a pie chart
+     4. measure everything again — bodies, glow and labels
+     5. undo the wobble wherever it cost us the clearance
+
+   Step 5 is the important one. Aesthetics never get to override
+   readability: the irregularity is applied inside the space the
+   spacing already guaranteed, and anything that doesn't fit is
+   simply put back.
+   ============================================================ */
+/* A stable pseudo-random number from a string, so the same solar system is
+   laid out identically every time you open it — organic, never random. */
+function seededUnit(str, salt){
+  var h = 2166136261, key = String(str) + "|" + salt;
+  for(var i=0;i<key.length;i++){ h ^= key.charCodeAt(i); h = (h * 16777619) >>> 0; }
+  return ((h >>> 8) % 10000) / 10000;
+}
+/* Two circles on the stage, in per-cent units, with a required gap between
+   them. Everything the engine validates goes through here. */
+function clearOf(a, b, gap){
+  var ax = a.r * Math.cos(a.a * Math.PI/180), ay = a.r * Math.sin(a.a * Math.PI/180);
+  var bx = b.r * Math.cos(b.a * Math.PI/180), by = b.r * Math.sin(b.a * Math.PI/180);
+  var d = Math.sqrt((ax-bx)*(ax-bx) + (ay-by)*(ay-by));
+  return d >= (a.size + b.size)/2 + gap;
+}
+/* A label is wider than the body it belongs to, so it gets its own bounding
+   circle sitting just below the object. Two names must not collide either. */
+function labelBox(o, chars){
+  var w = Math.min(o.label ? o.label * 1.0 : 26, 26);
+  return { a:o.a, r:o.r, size: Math.max(o.size, w), _lab:true };
+}
+function ringsFor(n, opts){
+  /* Prefer more room over smaller objects: a new ring before a tighter one. */
+  var per = opts.perRing || [3, 5, 6, 7];
+  var t = 0;
+  for(var i=0;i<per.length;i++){ t += per[i]; if(n <= t) return i+1; }
+  return per.length;
+}
+/* The ring plan and the biggest size at which nothing can touch anything. The
+   size is never floored above what the geometry allows — if the honest answer
+   is "these don't fit", the caller is told so rather than handed an overlap. */
+function orbitPlan(n, opts){
+  var rings = ringsFor(n, opts);
+  var radii = (opts.radii && opts.radii[rings-1]) ||
+              [[34], [29, 44], [24, 34.5, 45], [22, 30.5, 38.5, 46]][rings-1];
+  var inner = opts.inner || 15, maxSize = opts.maxSize || 28;
+  var gap = opts.gap != null ? opts.gap : 2.5;
+  var rSlack = 1.3 * (opts.wobble == null ? 1 : opts.wobble);
+  var counts = [], base = Math.floor(n / rings), extra = n % rings;
+  for(var i=0;i<rings;i++) counts.push(base + (i >= rings - extra ? 1 : 0));
+  var size = maxSize;
+  for(var ri=0; ri<rings; ri++){
+    if(counts[ri] > 1) size = Math.min(size, 2 * radii[ri] * Math.sin(Math.PI / counts[ri]) - gap);
+    if(ri) size = Math.min(size, (radii[ri] - radii[ri-1]) - gap - rSlack);
+    size = Math.min(size, (radii[ri] - rSlack - inner) * 2 - gap);   /* clear of the centre */
+    size = Math.min(size, (49.5 - radii[ri] - rSlack) * 2);          /* clear of the edge */
   }
-  size = Math.max(8, Math.min(28, size));
-  /* the sun sits at 27% and must not be crowded either */
-  if(radii[0] - size/2 < 15) size = Math.max(8, (radii[0] - 15) * 2);
+  return { rings:rings, radii:radii, counts:counts, size:size, gap:gap, rSlack:rSlack };
+}
+/* How many objects this space can hold without going below a usable size. Past
+   that the answer is another page, never a tighter squeeze. */
+function orbitCapacity(opts){
+  var minSize = opts.minSize || 9, best = 1;
+  for(var n=1; n<=40; n++){ if(orbitPlan(n, opts).size >= minSize) best = n; }
+  return best;
+}
+function orbitLayout(items, opts){
+  opts = opts || {};
+  var n = items.length, out = [];
+  if(!n) return out;
+  var plan = orbitPlan(n, opts);
+  var rings = plan.rings, radii = plan.radii, counts = plan.counts;
+  var gap = plan.gap, rSlack = plan.rSlack;
+  var minSize = opts.minSize || 9;
+  var wob = opts.wobble == null ? 1 : opts.wobble;
+  var size = Math.max(minSize, plan.size);
 
+  /* --- base positions, then a bounded wobble --- */
+  var wobble = wob;
   var k = 0;
-  for(var r2=0; r2<ringCount; r2++){
-    var cnt = counts[r2];
-    var step = 360 / cnt, off = r2 * (step / 2) + r2 * 17;
+  for(var r2=0; r2<rings; r2++){
+    var cnt = counts[r2], step = 360 / cnt;
+    /* each ring starts a half-step round from the one inside it, so worlds on
+       neighbouring rings never line up along the same spoke */
+    var off = r2 * (step / 2) + r2 * 19 + (opts.start || -62);
     for(var j=0;j<cnt && k<n;j++, k++){
-      out.push({ id: list[k].id, a: +(off + j*step - 62).toFixed(2),
-                 r: radii[r2], size: +size.toFixed(1), n:n });
+      var seed = items[k].id || String(k);
+      var slack = Math.max(0, (step - (2 * Math.asin(Math.min(1,(size+gap)/(2*radii[r2]))) * 180/Math.PI)) / 2);
+      out.push({
+        id: items[k].id, ring:r2, size:+size.toFixed(2),
+        label: (items[k].name || "").length,
+        a: +(off + j*step + (seededUnit(seed,"a") - 0.5) * 2 * Math.min(slack, 9) * wobble).toFixed(2),
+        r: +(radii[r2] + (seededUnit(seed,"r") - 0.5) * 2 * rSlack).toFixed(2),
+        base:{ a: +(off + j*step).toFixed(2), r: radii[r2] },
+        n:n
+      });
     }
   }
+
+  /* --- 4 & 5. measure, and put back whatever the wobble cost --- */
+  var fix = function(useLabels){
+    for(var pass=0; pass<3; pass++){
+      var bad = false;
+      for(var x=0; x<out.length; x++){
+        for(var y=x+1; y<out.length; y++){
+          var a = useLabels ? labelBox(out[x]) : out[x];
+          var b2 = useLabels ? labelBox(out[y]) : out[y];
+          if(clearOf(a, b2, useLabels ? 0.5 : gap)) continue;
+          bad = true;
+          /* walk the later one back towards where the maths said it was safe */
+          out[y].a = out[y].a + (out[y].base.a - out[y].a) * 0.6;
+          out[y].r = out[y].r + (out[y].base.r - out[y].r) * 0.6;
+          if(pass === 2){ out[y].a = out[y].base.a; out[y].r = out[y].base.r; }
+        }
+      }
+      if(!bad) break;
+    }
+  };
+  fix(false);
+  if(opts.labels !== false) fix(true);
   return out;
+}
+function sysLayout(){
+  var list = planets();
+  return orbitLayout(list, { inner:17, maxSize:26, minSize:7.5, gap:3, perRing:[3,5,6,7], labels:true });
 }
 /* Seconds since midnight -> where the whole system sits. One revolution a day,
    so the sky at nine in the morning is not the sky at four in the afternoon. */
@@ -2191,9 +2404,10 @@ function sysBodyHTML(b){
   /* With a lot of worlds the names have to give way before the planets do:
      they shrink, they clip, and they never grow wider than the space between
      one world and the next. */
-  var many = (b.n||1) > 8, mid = (b.n||1) > 5;
+  var n = b.n || 1;
+  var cls = n > 14 ? " crowd" : n > 8 ? " tight" : n > 5 ? " snug" : "";
   return '<div class="slot" style="--a:'+b.a+'deg">'+
-    '<button class="body '+sk+(many?" tight":(mid?" snug":""))+'" type="button" data-planet="'+esc(p.id)+'" '+
+    '<button class="body '+sk+cls+'" type="button" data-planet="'+esc(p.id)+'" '+
       'style="--r:'+b.r+'%;--sz:'+b.size+'%;--orb-h:'+p.hue+';--a:'+b.a+'deg">'+
       '<span class="upright">'+
         '<span class="body-orb">'+(SURFACE_INNER[sk]||"")+'</span>'+
@@ -2240,7 +2454,7 @@ function sysHTML(){
         '<span class="sun-sub">'+(p.done ? fmtDur(p.done) : "today")+'</span>'+
       '</span></span></button>';
   var lay = sysLayout(), rings = [];
-  lay.forEach(function(b){ if(rings.indexOf(b.r) < 0) rings.push(b.r); });
+  lay.forEach(function(b){ if(rings.indexOf(b.base.r) < 0) rings.push(b.base.r); });
   return '<div class="sys" id="sysStage">'+
       rings.map(function(r,i){ return '<span class="orbit'+(i%2?" dim":"")+'" style="--rr:'+r+'" aria-hidden="true"></span>'; }).join("")+
       '<div class="orbit-field" id="orbitField">'+
@@ -2435,7 +2649,7 @@ function enterPlanet(id, el){
 }
 function landOn(id, quiet){
   S.session.planet = id;
-  S.ui.project = null;      /* you arrive looking at the whole world */
+  S.session.project = null; S.ui.selecting = false; S.ui.projPage = 0;   /* you arrive looking at the whole world */
   S.session.enteredAt = Date.now();
   S.session.sessionDone = false;
   S.session.keepGoing = false;
@@ -2456,7 +2670,7 @@ function leavePlanet(){
 
   var settle = function(){
     S.session.planet = null;
-    S.ui.project = null;
+    S.session.project = null; S.ui.selecting = false;
     S.focus = null; stopTicker();
     S.ui.arrival = null;
     unpin(); save();
@@ -2530,12 +2744,10 @@ var Pick = { on:false, list:[], els:[], pos:0, vel:0, raf:null, drag:null, step:
 
 /* Only this world's tasks, ever. Manual selection is useful; browsing the rest
    of your life while you are trying to work is not. */
+/* Long press means one thing: show me the tasks where I am. Projects have
+   their own way in now, so the browser doesn't need filters. */
 function pickerList(){
   var pool = planetPool().filter(function(t){ return !t.fixedStart && !isResting(t); }).filter(locationOK);
-  /* Browsing can be narrowed to one project, but never widened past this world.
-     The isolation rule holds at every level. */
-  if(S.ui.project === "__loose") pool = pool.filter(function(t){ return !projectOf(t); });
-  else if(S.ui.project && projectById(S.ui.project)) pool = pool.filter(function(t){ return projectOf(t) === S.ui.project; });
   var recent = recentDone(3);
   var ctx = {
     recent:recent, lunch:lunchInfo(), transit:isBatchPlanet(S.session.planet),
@@ -2575,7 +2787,6 @@ function openPicker(at){
   el.innerHTML = pickItemsHTML(list);
   Pick.els = [].slice.call(el.querySelectorAll(".pick-item"));
   bindPickItems();
-  mountPickFilter();
   layoutPicker();
   var rl = document.querySelector("#nowRoot .runway");
   if(rl){ rl.dataset.was = rl.textContent; rl.textContent = "Scroll · tap to pick"; }
@@ -2614,46 +2825,6 @@ function bindPickItems(){
       else { Pick.settleTo = Pick.pos + off; Pick.vel = 0; Pick.snapping = true; pickRun(); }
     });
   });
-}
-/* When a world has projects, the wheel gets a row of filters above it — All,
-   then each project, then the loose ones. Still this world only: browsing goes
-   narrower, never wider. */
-function mountPickFilter(){
-  var prs = projectsOf(S.session.planet);
-  var host = document.getElementById("orbStage");
-  var old = document.getElementById("pickFilter");
-  if(old) old.remove();
-  if(!prs.length || !host) return;
-  var loose = planetOpen(S.session.planet).some(function(t){ return !projectOf(t); });
-  var el = document.createElement("div");
-  el.id = "pickFilter"; el.className = "pick-filter";
-  el.innerHTML = '<button class="pf" type="button" data-pf="" aria-pressed="'+(!S.ui.project)+'">All</button>'+
-    prs.map(function(pr){
-      return '<button class="pf" type="button" data-pf="'+esc(pr.id)+'" aria-pressed="'+(S.ui.project===pr.id)+'">'+
-        esc(pr.name)+' <b>'+projectOpen(pr.id).length+'</b></button>';
-    }).join("")+
-    (loose ? '<button class="pf" type="button" data-pf="__loose" aria-pressed="'+(S.ui.project==="__loose")+'">Other</button>' : '');
-  host.appendChild(el);
-  el.addEventListener("pointerdown", function(e){ e.stopPropagation(); });
-  el.addEventListener("click", function(e){
-    var b = e.target.closest("[data-pf]"); if(!b) return;
-    e.stopPropagation();
-    var was = S.ui.project;
-    S.ui.project = b.dataset.pf || null;
-    var next = pickerList();
-    if(!next.length){ S.ui.project = was; toast("Nothing in there right now."); return; }
-    save(); Pick.list = next; Pick.pos = 0; Pick.vel = 0; Pick.snapping = false;
-    repaintPicker();
-  });
-}
-function repaintPicker(){
-  var el = document.getElementById("orbPick");
-  if(!el) return;
-  el.innerHTML = pickItemsHTML(Pick.list);
-  Pick.els = [].slice.call(el.querySelectorAll(".pick-item"));
-  bindPickItems();
-  mountPickFilter();
-  layoutPicker();
 }
 function layoutPicker(){
   var orb = document.getElementById("orb");
@@ -2748,7 +2919,6 @@ function choosePicked(i){
 function closePicker(){
   if(!Pick.on) return;
   Pick.on = false;
-  var pf = document.getElementById("pickFilter"); if(pf) pf.remove();
   if(Pick.raf){ cancelAnimationFrame(Pick.raf); Pick.raf = null; }
   var el = document.getElementById("orbPick");
   if(el) el.remove();
@@ -2761,6 +2931,8 @@ function closePicker(){
 /* ---------- swipes on the sphere ---------- */
 function swipeDown(e){
   if(Orb.twoFinger || Pick.on) return;
+  /* the gateway is its own object in this space, not part of the world */
+  if(e.target.closest && e.target.closest(".gateway")) return;
   Orb.swipe = { x:e.clientX, y:e.clientY, t:performance.now(), dir:null };
   clearTimeout(Orb.holdT);
   Orb.holdT = setTimeout(function(){
@@ -2866,6 +3038,7 @@ function nowView(){
   /* No planet chosen means you're out in the system, looking at your life from
      a distance. That is a legitimate place to be — it's where you stop. */
   if(!s.planet) return { kind:"system" };
+  if(S.ui.selecting) return { kind:"projects" };
   var over = s.sessionDone ? "cleared" : sessionShouldEnd();
   if(over) return { kind:"sessionDone", why:over };
   if(!isBatchPlanet(s.planet) && s.lunchState === "active") return { kind:"lunchOn" };
@@ -2879,7 +3052,9 @@ function viewSig(v){
   /* the shape of the sky is part of what's on screen, so changing it has to
      count as a change */
   var sky = planets().map(function(p){ return p.id+p.hue+(p.surface||""); }).join("");
-  return [v.kind, v.id||"", v.why||"", v.paused?1:0, v.mins||"", S.session.planet||"-", S.session.location, sky,
+  var here = S.session.planet ? projectsOf(S.session.planet).map(function(p){ return p.id+p.name; }).join("") : "";
+  return [v.kind, v.id||"", v.why||"", v.paused?1:0, v.mins||"", S.session.planet||"-",
+          S.session.project||"-", S.session.location, sky, here,
           v.choice && v.choice.rest ? v.choice.rest.length : 0].join("|");
 }
 var lastNowSig = null;
@@ -2908,6 +3083,7 @@ function renderNow(force){
   if(v.kind === "closed"){ root.innerHTML = viewDayClosed(); orbMount(); revealFace(); return; }
   if(v.kind === "start"){ root.innerHTML = viewStart(); return; }
   if(v.kind === "system"){ root.innerHTML = viewSystem(); sysMount(); return; }
+  if(v.kind === "projects"){ root.innerHTML = viewProjects(); projectsMount(); return; }
   if(v.kind === "sessionDone"){ root.innerHTML = viewSessionDone(v.why); orbMount(); revealFace(); return; }
   if(v.kind === "focus"){ root.innerHTML = viewFocus(); orbMount(); startTicker(); return; }
   if(v.kind === "lunchOn"){ root.innerHTML = viewLunchActive(); orbMount(); return; }
@@ -3119,8 +3295,8 @@ function deletePlanet(id, moveTo, wipe){
     S.projects = (S.projects||[]).filter(function(pr){ return pr.planetId !== id; });
   }
   S.planets = S.planets.filter(function(x){ return x.id !== id; });
-  if(S.session.planet === id){ S.session.planet = null; S.ui.project = null; }
-  if(S.ui.project && !projectById(S.ui.project)) S.ui.project = null;
+  if(S.session.planet === id){ S.session.planet = null; S.session.project = null; S.ui.selecting = false; }
+  if(S.session.project && !projectById(S.session.project)) S.session.project = null;
   if(S.focus && !byId(S.focus.taskId)){ S.focus = null; stopTicker(); }
   unpin(); save(); closeSheet(); render();
   toast(name+" is gone."+(moveTo ? " Its work moved to "+planetLabel(moveTo)+"." : ""));
@@ -3212,6 +3388,214 @@ function setFinish(mins){
   save(); render();
   say("finishMoved", { at:S.settings.workUntil, left:Math.max(0, m - minsOfDay()) });
 }
+/* ============================================================
+   LEVEL 2 — PROJECT SELECTION
+   The camera pulls back a little. The planet you're on stays in
+   the middle but gets smaller; the task moon steps out of the
+   way; the projects inside this world come out to where you can
+   see them. One question only: which of these do you want?
+   ============================================================ */
+var SAT_OPTS = {
+  inner:18, maxSize:20, minSize:8.5, gap:3, start:-90, labels:true, perRing:[4,6,8,9],
+  radii:[[31], [26, 41], [21, 31.5, 42], [19, 28, 36.5, 44.5]]
+};
+function projectLayout(){
+  var list = projectsOf(S.session.planet);
+  var loose = planetOpen(S.session.planet).some(function(t){ return !projectOf(t); });
+  var items = list.slice();
+  if(loose) items.push({ id:"__loose", name:"Other tasks" });
+  /* Same engine as the sky, tuned for satellites: they sit further out because
+     the parent stays in the middle, and they are never shrunk below a thumb.
+     Past what the space genuinely holds you get another page — never a tighter
+     squeeze, because an unreadable cloud helps nobody. */
+  var cap = orbitCapacity(SAT_OPTS), pages = 1, page = 0, all = items;
+  if(items.length > cap){
+    var per = cap - 1;                       /* one slot goes to "more" */
+    pages = Math.ceil(items.length / per);
+    page = Math.min(Math.max(0, S.ui.projPage || 0), pages - 1);
+    items = all.slice(page*per, page*per + per);
+    items.push({ id:"__more", name:"More ("+(page+1)+"/"+pages+")" });
+  }
+  return { items:items, pages:pages, page:page, lay: orbitLayout(items, SAT_OPTS) };
+}
+function viewProjects(){
+  var here = S.session.planet, p = planetById(here);
+  var d = projectLayout();
+  var skin = planetSkin(here);
+  return ''+
+    '<p class="eyebrow left">'+esc(planetLabel(here))+' · projects</p>'+
+    '<div class="sys picking" id="projStage">'+
+      d.lay.map(function(b){ return '<span class="orbit dim" style="--rr:'+b.base.r.toFixed(1)+'"></span>'; })
+        .filter(function(_,i,a){ return a.indexOf(a[i]) === i; }).join("")+
+      '<div class="orbit-field" id="projField">'+
+        '<div class="slot" style="--a:0deg">'+
+          '<button class="body parent '+esc(skin.cls)+'" type="button" data-act="leave-projects" '+
+            'style="--r:0%;--sz:34%;--orb-h:'+planetHue(here)+';--a:0deg" aria-label="Back to '+esc(planetLabel(here))+'">'+
+            '<span class="upright"><span class="body-orb">'+skin.inner+'</span>'+
+            '<span class="body-name">'+esc(planetLabel(here))+'</span></span>'+
+          '</button>'+
+        '</div>'+
+        d.lay.map(function(b, i){
+          var it = d.items[i], open = it.id === "__loose"
+            ? planetOpen(here).filter(function(t){ return !projectOf(t); }).length
+            : (projectById(it.id) ? projectOpen(it.id).length : 0);
+          if(it.id === "__more") open = 0;
+          var many = d.lay.length > 7, mid = d.lay.length > 4;
+          return '<div class="slot" style="--a:'+b.a+'deg">'+
+            '<button class="body sat'+(many?" tight":(mid?" snug":""))+
+              (it.id==="__loose"?" loose":"")+(it.id==="__more"?" more":"")+'" type="button" '+
+              'data-act="enter-project" data-project="'+esc(it.id)+'" '+
+              'style="--r:'+b.r+'%;--sz:'+b.size+'%;--orb-h:'+planetHue(here)+';--a:'+b.a+'deg">'+
+              '<span class="upright"><span class="body-orb"><span class="sat-tex"></span></span>'+
+              '<span class="body-name">'+esc(it.name)+'</span></span>'+
+            '</button>'+
+          '</div>';
+        }).join("")+
+      '</div>'+
+    '</div>'+
+    '<p class="runway">'+(d.pages > 1 ? "Page "+(d.page+1)+" of "+d.pages+" · " : "")+
+      'Which one? · pull down to go back</p>';
+}
+function projectsMount(){
+  var stage = document.getElementById("projStage");
+  if(!stage) return;
+  /* the camera pulls back once, when you arrive — a redraw is not an arrival */
+  if(Orb.pulledBack !== S.session.planet && !reduceMotion()){
+    Orb.pulledBack = S.session.planet;
+    stage.classList.add("arriving");
+    setTimeout(function(){ if(stage) stage.classList.remove("arriving"); }, 620);
+  }
+  paintProjOrbits();
+  /* pull down anywhere on the stage to step back out a level */
+  stage.addEventListener("pointerdown", levelSwipeDown);
+}
+function paintProjOrbits(){
+  var field = document.getElementById("projField");
+  if(!field) return;
+  var a = orbitAngle() * 0.5;      /* satellites drift, they don't race */
+  field.style.transform = "rotate("+a.toFixed(3)+"deg)";
+  field.querySelectorAll(".upright").forEach(function(u){
+    u.style.transform = "rotate("+(-a).toFixed(3)+"deg)";
+  });
+}
+
+/* ---------- moving between the levels ---------- */
+function openProjects(){
+  if(!S.session.planet || !hasProjects(S.session.planet)) return;
+  if(S.focus && !S.focus.paused){ toast("Clock's running. Finish it or park it first."); return; }
+  S.ui.selecting = true; S.session.project = null; Orb.pulledBack = null;
+  unpin(); save(); renderNow(true); renderList();
+}
+function closeProjects(){
+  S.ui.selecting = false; Orb.pulledBack = null;
+  unpin(); save(); renderNow(true); renderList();
+}
+/* Stepping into a project is the same journey as landing on a world, one scale
+   smaller: the thing you tapped grows into the object in front of you. */
+function enterProject(id, el){
+  if(id === "__more"){
+    var d0 = projectLayout();
+    S.ui.projPage = ((d0.page + 1) % d0.pages);
+    save(); renderNow(true);
+    return;
+  }
+  if(id === "__loose"){
+    S.session.project = null; S.ui.selecting = false;
+    unpin(); save(); renderNow(true); renderList();
+    toast("The loose ends in "+planetLabel(S.session.planet)+".");
+    return;
+  }
+  var pr = projectById(id);
+  if(!pr) return;
+  var target = el && el.querySelector(".body-orb");
+  var landed = function(){
+    S.session.project = id; S.ui.selecting = false;
+    unpin(); save(); renderNow(true); renderList(); renderChips();
+  };
+  if(!target || reduceMotion() || Flight){ landed(); return; }
+
+  var from = centreOf(target);
+  var stage = document.getElementById("projStage");
+  var traveller = liftOverlay(target, "lift-planet sat");
+  traveller.style.setProperty("--orb-h", String(planetHue(S.session.planet)));
+  el.style.visibility = "hidden";
+  var ghost = stage ? liftOverlay(stage, "lift-sys") : null;
+  if(ghost && stage){
+    var sr = stage.getBoundingClientRect();
+    ghost.style.setProperty("--ox", ((from.x - sr.left) / stage.offsetWidth * 100).toFixed(1)+"%");
+    ghost.style.setProperty("--oy", ((from.y - sr.top) / stage.offsetHeight * 100).toFixed(1)+"%");
+  }
+  landed();
+  var orb = document.getElementById("orb"), root = document.getElementById("nowRoot");
+  if(!orb){ if(ghost) ghost.remove(); traveller.remove(); return; }
+  root.classList.add("approaching");
+  var to = centreOf(orb);
+  traveller.style.transition = "none";
+  traveller.style.transform = "translate(0,0) scale(1)";
+  void traveller.offsetWidth;
+  requestAnimationFrame(function(){
+    if(ghost) ghost.classList.add("gone");
+    traveller.style.transition = "transform 1200ms cubic-bezier(.45,0,.15,1)";
+    traveller.style.transform = flipTo(from, to);
+  });
+  var arrive = function(){
+    clearTimeout(Flight && Flight.t);
+    Flight = null;
+    if(ghost && ghost.parentNode) ghost.remove();
+    var fl = document.getElementById("orbFloat"), rt = document.getElementById("nowRoot");
+    if(fl){ fl.style.transition = "none"; fl.style.opacity = "1"; }
+    if(rt) rt.classList.remove("approaching");
+    if(traveller.parentNode) traveller.remove();
+    if(fl) requestAnimationFrame(function(){ fl.style.transition = ""; fl.style.opacity = ""; });
+    revealFace(); moonArrive();
+  };
+  Flight = { skip:function(){} };
+  traveller.addEventListener("transitionend", function(ev){ if(ev.propertyName === "transform") arrive(); });
+  Flight.t = setTimeout(arrive, 1450);
+}
+function closeProject(){
+  /* out of a project, back to choosing one */
+  S.session.project = null;
+  S.ui.selecting = hasProjects(S.session.planet);
+  unpin(); save(); renderNow(true); renderList(); renderChips();
+}
+/* one gesture, one meaning: down is out */
+function stepOut(){
+  var lv = level();
+  if(lv === 3){ closeProject(); return; }
+  if(lv === 2){ closeProjects(); return; }
+  leavePlanet();
+}
+/* the project-selection stage has no orb, so it gets its own pull-down */
+function levelSwipeDown(e){
+  if(e.button) return;
+  var start = { y:e.clientY, t:performance.now() }, moved = 0;
+  var stage = document.getElementById("projStage");
+  var move = function(ev){
+    var dy = ev.clientY - start.y;
+    moved = dy;
+    if(stage && dy > 0){
+      stage.style.transition = "none";
+      stage.style.transform = "translateY("+Math.min(90, dy*0.5).toFixed(1)+"px) scale("+(1 - Math.min(0.06, dy/2200)).toFixed(4)+")";
+    }
+  };
+  var done = function(ev){
+    window.removeEventListener("pointermove", move);
+    window.removeEventListener("pointerup", done);
+    window.removeEventListener("pointercancel", done);
+    if(stage){
+      stage.style.transition = "transform .4s cubic-bezier(.2,1.2,.4,1)";
+      stage.style.transform = "";
+      setTimeout(function(){ if(stage) stage.style.transition = ""; }, 420);
+    }
+    var dy = (ev && ev.type === "pointerup") ? ev.clientY - start.y : moved;
+    if(dy > 70 && performance.now() - start.t < 1600) stepOut();
+  };
+  window.addEventListener("pointermove", move);
+  window.addEventListener("pointerup", done);
+  window.addEventListener("pointercancel", done);
+}
+
 /* stopping is a result, not a failure to continue */
 /* Stopping is a result, not a failure to continue. Two ways to arrive here:
    there's nothing left that matters, or there is but there isn't enough day
@@ -3294,11 +3678,17 @@ function viewOne(choice){
     ? "You're in this until "+minsToHHMM(taskEndMins(t))
     : (w.kind === "none" ? "Nothing in the way" : fmtDur(w.mins)+" until "+w.what);
   return ''+
-    '<p class="eyebrow'+((fixedNow||prep)?" hot":"")+'">'+esc(planetLabel(S.session.planet))+
+    '<p class="eyebrow'+((fixedNow||prep)?" hot":"")+'">'+
+      (inProject() ? esc(planetLabel(S.session.planet))+' <span class="crumb">·</span> '+esc(projectLabel(S.session.project))
+                   : esc(planetLabel(S.session.planet)))+
       (prep ? " · getting ready" : early ? " · up next" : fixedNow ? " · happening now"
-        : choice.urgent ? " · do next" : projectOf(t) ? " · "+esc(projectLabel(projectOf(t)))
-        : (isRecurring(t) ? " · check-in" : ""))+'</p>'+
+        : choice.urgent ? " · do next" : (isRecurring(t) ? " · check-in" : ""))+'</p>'+
     orbHTML(faceTask(t, sub), { flag:flagFor(t) })+
+    /* Its project, said quietly and worth a tap: it takes you straight in. */
+    (!inProject() && projectOf(t)
+      ? '<p class="in-project"><button class="linky" data-act="jump-project" data-project="'+esc(projectOf(t))+'">'+
+          esc(projectLabel(projectOf(t)))+'</button></p>'
+      : '')+
     '<p class="why"><b>Why this?</b> '+esc(whyLine(choice))+'</p>'+
     '<p class="runway">'+esc(note)+'</p>'+
     '<p class="dayline">'+p.count+' done · '+fmtDur(p.done)+' on the clock</p>'+
@@ -3420,7 +3810,7 @@ function orbSwipe(dir){
   /* capturing never derails what you're doing, whatever state you're in */
   if(dir === "r"){ openCapture(); return; }
   if(s.dayClosed) return;
-  if(dir === "d"){ leavePlanet(); return; }
+  if(dir === "d"){ stepOut(); return; }
   if(S.focus){
     if(committedTask()){ openSheet(sheetCommitCheck()); return; }
     if(dir === "u"){ moonAway("u", function(){ finishFocus(); moonArrive(); }); return; }
@@ -4056,8 +4446,9 @@ function buildCaptured(raw){
      sentence names one, take that. Otherwise it just lives in the planet, which
      is a perfectly good place for a task to live. */
   var project = cap.projectId !== undefined && cap.projectId !== null ? cap.projectId
-              : (S.session.planet === planet && S.ui.project && projectById(S.ui.project) &&
-                 projectById(S.ui.project).planetId === planet ? S.ui.project
+              : (S.session.planet === planet && S.session.project &&
+                 projectById(S.session.project) &&
+                 projectById(S.session.project).planetId === planet ? S.session.project
               : inferProject(nm, planet));
   var repeat = cap.repeatEvery != null ? cap.repeatEvery : (parsed.repeatEvery || 0);
   var explicitMins = cap.duration || parsed.duration || null;
@@ -4910,14 +5301,20 @@ function group(title, arr){
    just on the orb. Out in the system you can see the lot, by world, because
    you deliberately went looking. */
 function renderList(){
-  var here = S.session.planet;
-  var scope = here ? liveTasks().filter(function(t){ return planetOf(t) === here; }) : liveTasks();
+  var here = S.session.planet, pr = inProject();
+  var scope = here ? liveTasks().filter(function(t){
+        return planetOf(t) === here && (!pr || projectOf(t) === pr.id);
+      }) : liveTasks();
   var open = scope.filter(function(t){ return t.status === "open"; });
   var doneScope = doneToday().filter(function(t){ return !here || planetOf(t) === here; });
   var html = '<div class="stack" style="gap:20px">'+
-    '<div class="stack" style="gap:6px"><p class="eyebrow left">'+(here ? esc(planetLabel(here)) : "Everything")+'</p>'+
-    '<h1 class="big" style="font-size:clamp(1.7rem,7vw,2.2rem)">'+(here ? esc(planetLabel(here))+"'s list" : "The full list")+'</h1>'+
-    '<p class="hint">'+(here
+    '<div class="stack" style="gap:6px"><p class="eyebrow left">'+
+      (pr ? esc(planetLabel(here))+' · '+esc(pr.name) : here ? esc(planetLabel(here)) : "Everything")+'</p>'+
+    '<h1 class="big" style="font-size:clamp(1.7rem,7vw,2.2rem)">'+
+      (pr ? esc(pr.name) : here ? esc(planetLabel(here))+"'s list" : "The full list")+'</h1>'+
+    '<p class="hint">'+(pr
+      ? "Just "+esc(pr.name)+". You said to keep you on this."
+      : here
       ? "Only "+esc(planetLabel(here))+". The rest of your life stays out of sight until you leave."
       : "Look if you want. You don't have to decide anything here.")+'</p></div>'+
     '<button class="btn wide" data-act="add-task">+ Add a task</button>';
@@ -4941,7 +5338,8 @@ function renderList(){
            group(pre+"Important", imp) + group(pre+"Everything else", norm) + group(pre+"Optional", opt) +
            group(pre+"Coming back later", asleep);
   };
-  if(here){
+  if(here && pr){ html += bucket(open, ""); }
+  else if(here){
     /* Inside a world, projects are how the list is organised — but only if you
        made any. Ungrouped work is not a lesser kind of work. */
     var prs = projectsOf(here);
@@ -5180,7 +5578,9 @@ function renderChips(){
     }
   }
   if(s.started && !s.dayClosed && s.planet){
-    chips = '<button class="statchip is-hi" data-act="leave-planet">'+esc(planetLabel(s.planet))+' ✕</button>' + chips;
+    var pr0 = inProject();
+    chips = '<button class="statchip is-hi" data-act="step-out">'+
+      esc(pr0 ? projectLabel(pr0.id) : planetLabel(s.planet))+' ✕</button>' + chips;
   }
   document.getElementById("statchips").innerHTML = chips + extra;
 }
@@ -5348,9 +5748,15 @@ document.addEventListener("click", function(e){
       toast(t.projectId ? "Filed under "+projectLabel(t.projectId)+"." : "Ungrouped.");
       break;
     }
-    case "browse-project": {
-      S.ui.project = b.dataset.project || null;
-      save(); closeSheet(); renderNow(true); renderList();
+    case "open-projects": openProjects(); break;
+    case "enter-project": enterProject(b.dataset.project, b.closest("[data-project]")); break;
+    case "leave-projects": closeProjects(); break;
+    case "jump-project": {
+      var jp = projectById(b.dataset.project);
+      if(!jp) break;
+      S.session.project = jp.id; S.ui.selecting = false;
+      unpin(); save(); renderNow(true); renderList(); renderChips();
+      toast("Just "+jp.name+" now.");
       break;
     }
     case "waiting-worked": if(t) confirmWorked(t); break;
@@ -5379,6 +5785,7 @@ document.addEventListener("click", function(e){
       break;
     }
     case "leave-planet": closeSheet(); leavePlanet(); break;
+    case "step-out": closeSheet(); stepOut(); break;
     case "setplace": setPlace(b.dataset.place); break;
     case "keep-going": S.session.sessionDone = false; S.session.keepGoing = true; unpin(); save(); renderNow(true); break;
     case "unblock-skip": closeSheet(); toast("Parked. I won't keep asking."); render(); break;
@@ -5628,13 +6035,14 @@ setInterval(function(){
   renderChips();
 }, 15000);
 /* the sky keeps time even while you're looking at it */
-setInterval(function(){ if(!Flight) paintOrbits(); }, 20000);
+setInterval(function(){ if(!Flight){ paintOrbits(); paintProjOrbits(); } }, 20000);
 
 document.addEventListener("visibilitychange", function(){
   if(document.visibilityState !== "visible") return;
   paintOrbits();
   checkWarnings();
   if(applySchedule()) applyHue();
+  paintProjOrbits();
   if(S.focus) startTicker(); else if(S.ui.tab === "now") renderNow(true);
   renderChips();
 });
@@ -5675,7 +6083,7 @@ document.addEventListener("click", function(e){
 document.addEventListener("pointerdown", function(e){
   /* A press on the wheel itself is how you spin it — only a press somewhere
      else means you're done with it. */
-  if(Pick.on && !e.target.closest("#orb, #orbPick, #pickFilter")) closePicker();
+  if(Pick.on && !e.target.closest("#orb, #orbPick")) closePicker();
 }, true);
 
 if(!CAN_STORE){
@@ -5708,7 +6116,7 @@ if(!S.profile.sawGestures && S.session.started) showGestures();
    app out from under a running timer. */
 (function () {
   if (!('serviceWorker' in navigator) || location.protocol !== 'https:') return;
-  var BUILD = '20260902-1955-f02453';
+  var BUILD = '20260903-0711-0775fc';
   window.addEventListener('load', function () {
     navigator.serviceWorker.register('sw.js?v=' + BUILD).then(function (reg) {
       function watch(sw) {

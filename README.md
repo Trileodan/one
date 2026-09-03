@@ -27,6 +27,30 @@ task always belongs to a planet and *never* has to belong to a project:
 
 and never anything deeper than that.
 
+Projects have a place in the sky rather than a menu. Land on a world that has
+some and a single small **gateway satellite** drifts around it — one object,
+saying *there is more structure here* and deliberately not saying how much.
+Tap it and the camera pulls back: the world stays in the middle, the task moon
+steps aside, and the projects come out to where you can see them, spaced so
+that no two ever look accidentally paired. Tap one and the camera moves in
+until it is the thing in front of you.
+
+That gives four places to be, and one way back out of each:
+
+    Solar system  →  Planet  →  Choosing a project  →  Inside a project
+
+**Pull down means one level further out**, wherever you are. Inside a project,
+that project is the only thing that exists: what ONE offers you, what long-press
+shows, what "why this?" ranks, and where a captured task lands. You said keep me
+on this, so nothing else from the world gets to interrupt.
+
+Nothing is placed at random. The layout engine deals the objects onto as many
+orbits as they need, sizes them so neighbours *cannot* touch, adds a small
+bounded wobble so it never reads as a pie chart, then measures everything again
+— bodies and names — and puts back whatever the wobble cost. Past the point
+where a world genuinely runs out of room, you get another page rather than a
+tighter squeeze.
+
 The whole system makes one revolution a day, so the sky at nine in the morning
 isn't the sky at four in the afternoon. Tap a world and the camera travels to
 it — a few seconds through the stars, and you're standing on it. **While you're
