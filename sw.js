@@ -6,7 +6,7 @@
    old worker's files: the activate step below bins every cache that isn't this
    build's. That is the difference between an update landing and an update
    "getting stuck". */
-var BUILD = '20260903-1255-ca265a';
+var BUILD = '20260904-1341-4346d6';
 var CACHE = 'one-' + BUILD;
 var CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 

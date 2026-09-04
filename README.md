@@ -11,12 +11,29 @@ done. Everything orbiting it is a **planet**: a part of your life that owns
 tasks. That is the whole rule. There is no special Work object, no protected
 Home, nothing ONE insists on keeping.
 
-A fresh install suggests four — Work, Home, Errands, Projects — and from the
+A fresh install suggests three — Work, Home, Projects — and from the
 moment it starts they have exactly the same standing as one you made five
 minutes ago. Rename them, recolour them, change how they look, reorder them,
 archive them, delete them. Delete *all* of them: a Sun on its own is a valid,
 intentional state, and it stays that way through a reload. Your worlds might be
 Business, Family, University, Fitness and Money. They might just be Stuff.
+
+An **errand** is the exception that proves the rule: not a world you travel to
+but a kind of task — small, portable, and nothing to do with the thread you
+happen to be pulling on. Buying a birthday card can be done from Home or from
+Work, so it lives in one world and is marked reachable from the others. It then
+stays out of sight until a moment arrives where a small portable job is the
+right answer anyway:
+
+  * a gap too short to start real work, before something in the diary
+  * either side of lunch, while you're up and moving
+  * the breather straight after something long or heavy
+  * the last stretch of the day
+
+Outside those moments an errand is not on the table at all — it will not
+interrupt a good run at work. Inside one it is offered with the reason it was
+offered. You can always go and find it yourself by spinning the wheel; choosing
+by hand is you overriding ONE, and that is allowed.
 
 Any planet can hold **projects** — an optional layer of grouping inside it, for
 when one world would otherwise sprout six over-specific planets of its own. A
